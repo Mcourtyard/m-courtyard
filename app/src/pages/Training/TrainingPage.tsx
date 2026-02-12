@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { Play, Square, Zap, BarChart3, FileText, FolderOpen, Copy, Check, ArrowRight, Trash2, ChevronDown, ChevronRight, X, CheckCircle2, Circle } from "lucide-react";
+import { Play, Square, Gauge, Layers, Target, Gem, BarChart3, FileText, FolderOpen, Copy, Check, ArrowRight, Trash2, ChevronDown, ChevronRight, X, CheckCircle2, Circle, Trophy, Upload, Clock, TrendingDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
 import { useTrainingStore } from "@/stores/trainingStore";
@@ -95,7 +95,7 @@ export function TrainingPage() {
     useProjectStore();
   const {
     status, logs, currentJobId, trainLossData, valLossData, currentIter,
-    adapterPath, startTraining, stopTraining: storeStopTraining, resetAll,
+    adapterPath, startedAt, completedAt, startTraining, stopTraining: storeStopTraining, resetAll,
     initListeners, params, modelValid, updateParam, setModelValid, resetParams,
   } = useTrainingStore();
 
@@ -108,8 +108,11 @@ export function TrainingPage() {
   // Collapsible step states
   const [step1Open, setStep1Open] = useState(true);
   const [step2Open, setStep2Open] = useState(true);
-  const [step3Open, setStep3Open] = useState(true);
+  const [step3MethodOpen, setStep3MethodOpen] = useState(true);
+  const [step4Open, setStep4Open] = useState(true);
   const [paramsEdited, setParamsEdited] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   // Can start training? Model must be set and valid (or not a local path)
   const canStartTraining = !!(params.model && (modelValid !== false));
@@ -119,7 +122,8 @@ export function TrainingPage() {
     if (status === "running") {
       setStep1Open(false);
       setStep2Open(false);
-      setStep3Open(false);
+      setStep3MethodOpen(false);
+      setStep4Open(false);
     }
   }, [status]);
 
@@ -160,6 +164,10 @@ export function TrainingPage() {
 
   const selectedDataset = datasetVersions.find((v) => v.version === selectedVersion) || null;
 
+  // Method is considered done when model+dataset selected and a method is set
+  const methodDone = !!(params.model && selectedDataset && params.fine_tune_type);
+  const isLoraLike = params.fine_tune_type === "lora" || params.fine_tune_type === "dora";
+
   useEffect(() => {
     initListeners();
   }, [initListeners]);
@@ -175,13 +183,24 @@ export function TrainingPage() {
     }
   }, [logs]);
 
-  const applyPreset = (preset: "quick" | "standard" | "thorough") => {
-    const presets: Record<string, Partial<TrainingParams>> = {
-      quick: { iters: 100, batch_size: 4, lora_layers: 8, lora_rank: 8, learning_rate: 1e-5 },
-      standard: { iters: 1000, batch_size: 4, lora_layers: 16, lora_rank: 8, learning_rate: 1e-5 },
-      thorough: { iters: 2000, batch_size: 4, lora_layers: 16, lora_rank: 16, learning_rate: 5e-6 },
+  const applyPreset = (preset: "quick" | "standard" | "thorough" | "extreme") => {
+    const ft = params.fine_tune_type;
+    const isLora = ft === "lora" || ft === "dora";
+    // Common params shared by all methods
+    const common: Record<string, Partial<TrainingParams>> = {
+      quick: { iters: 100, batch_size: 4, learning_rate: 1e-5, max_seq_length: 2048, grad_checkpoint: false, grad_accumulation_steps: 1, save_every: 100, mask_prompt: false, optimizer: "adam", steps_per_eval: 100, steps_per_report: 10, val_batches: 10, seed: 0 },
+      standard: { iters: 1000, batch_size: 4, learning_rate: 1e-5, max_seq_length: 2048, grad_checkpoint: false, grad_accumulation_steps: 1, save_every: 100, mask_prompt: false, optimizer: "adam", steps_per_eval: 200, steps_per_report: 10, val_batches: 25, seed: 0 },
+      thorough: { iters: 2000, batch_size: 4, learning_rate: 5e-6, max_seq_length: 2048, grad_checkpoint: false, grad_accumulation_steps: 1, save_every: 200, mask_prompt: false, optimizer: "adam", steps_per_eval: 200, steps_per_report: 10, val_batches: 25, seed: 0 },
+      extreme: { iters: 5000, batch_size: 2, learning_rate: 2e-6, max_seq_length: 4096, grad_checkpoint: true, grad_accumulation_steps: 2, save_every: 500, mask_prompt: false, optimizer: "adam", steps_per_eval: 500, steps_per_report: 10, val_batches: 50, seed: 0 },
     };
-    const p = presets[preset];
+    // LoRA/DoRA specific params
+    const loraPresets: Record<string, Partial<TrainingParams>> = {
+      quick: { lora_layers: 8, lora_rank: 8, lora_scale: 20.0, lora_dropout: 0.0 },
+      standard: { lora_layers: 16, lora_rank: 8, lora_scale: 20.0, lora_dropout: 0.0 },
+      thorough: { lora_layers: 16, lora_rank: 16, lora_scale: 20.0, lora_dropout: 0.05 },
+      extreme: { lora_layers: 32, lora_rank: 32, lora_scale: 20.0, lora_dropout: 0.05 },
+    };
+    const p = { ...common[preset], ...(isLora ? loraPresets[preset] : {}) };
     for (const [k, v] of Object.entries(p)) {
       updateParam(k as keyof TrainingParams, v as any);
     }
@@ -240,7 +259,8 @@ export function TrainingPage() {
   const trainingSubSteps = [
     { key: "model", label: t("step.model"), done: !!params.model },
     { key: "data", label: t("step.data"), done: !!selectedDataset },
-    { key: "train", label: t("step.train"), done: status === "completed", active: status === "running" },
+    { key: "method", label: t("step.method"), done: methodDone },
+    { key: "params", label: t("step.params"), done: methodDone && (paramsEdited || (!!params.model && !!selectedDataset)), active: status === "running" },
     { key: "done", label: t("step.done"), done: status === "completed" },
   ];
 
@@ -274,32 +294,111 @@ export function TrainingPage() {
       {/* Unified Step Progress */}
       <StepProgress subSteps={trainingSubSteps} />
 
-      {/* Completed Banner */}
-      {status === "completed" && (
-        <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 space-y-3">
-          <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
-            <Check size={16} />
-            {t("completedBanner")}
-          </div>
-          {adapterPath && (
-            <p className="text-xs text-muted-foreground">
-              {t("savedAt")}<span className="font-mono text-foreground">{adapterPath}</span>
-            </p>
-          )}
-          <div className="flex gap-2">
-            {adapterPath && (
-              <button onClick={() => invoke("open_adapter_folder", { adapterPath })} className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
-                <FolderOpen size={12} />
-                {tc("openModelFolder")}
+      {/* Training Summary Panel */}
+      {status === "completed" && (() => {
+        const durationMs = (startedAt && completedAt) ? completedAt - startedAt : 0;
+        const durationMin = Math.floor(durationMs / 60000);
+        const durationSec = Math.floor((durationMs % 60000) / 1000);
+        const durationStr = durationMin > 0 ? `${durationMin}m ${durationSec}s` : `${durationSec}s`;
+        const finalTrainLoss = trainLossData.length > 0 ? trainLossData[trainLossData.length - 1][1] : null;
+        const firstTrainLoss = trainLossData.length > 0 ? trainLossData[0][1] : null;
+        const finalValLoss = valLossData.length > 0 ? valLossData[valLossData.length - 1][1] : null;
+        const lossImprove = (firstTrainLoss && finalTrainLoss) ? ((1 - finalTrainLoss / firstTrainLoss) * 100).toFixed(1) : null;
+        const modelShort = params.model.split("/").pop() || params.model;
+
+        return (
+          <div className="rounded-lg border border-success/30 bg-success/5 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-success/20 bg-success/10 px-5 py-3">
+              <Trophy size={18} className="text-success" />
+              <div>
+                <h3 className="text-sm font-semibold text-success">{t("summary.title")}</h3>
+                <p className="text-[11px] text-muted-foreground">{t("completedBanner")}</p>
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 gap-px bg-border/30 lg:grid-cols-4">
+              {/* Duration */}
+              <div className="bg-card px-4 py-3 space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <Clock size={10} />
+                  {t("summary.duration")}
+                </div>
+                <p className="text-lg font-semibold text-foreground font-mono">{durationMs > 0 ? durationStr : t("summary.noData")}</p>
+              </div>
+              {/* Final Train Loss */}
+              <div className="bg-card px-4 py-3 space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <TrendingDown size={10} />
+                  {t("summary.finalTrainLoss")}
+                </div>
+                <p className="text-lg font-semibold text-foreground font-mono">{finalTrainLoss !== null ? finalTrainLoss.toFixed(4) : t("summary.noData")}</p>
+              </div>
+              {/* Final Val Loss */}
+              <div className="bg-card px-4 py-3 space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <BarChart3 size={10} />
+                  {t("summary.finalValLoss")}
+                </div>
+                <p className="text-lg font-semibold text-foreground font-mono">{finalValLoss !== null ? finalValLoss.toFixed(4) : t("summary.noData")}</p>
+              </div>
+              {/* Loss Improvement */}
+              <div className="bg-card px-4 py-3 space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <Target size={10} />
+                  {t("summary.lossImprove")}
+                </div>
+                <p className={`text-lg font-semibold font-mono ${lossImprove && parseFloat(lossImprove) > 0 ? "text-success" : "text-foreground"}`}>
+                  {lossImprove !== null ? `${parseFloat(lossImprove) > 0 ? "↓" : "↑"} ${Math.abs(parseFloat(lossImprove))}%` : t("summary.noData")}
+                </p>
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="px-5 py-3 space-y-2 border-t border-border/30">
+              <div className="grid grid-cols-1 gap-1.5 text-xs lg:grid-cols-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">{t("summary.baseModel")}:</span>
+                  <span className="font-mono text-foreground truncate" title={params.model}>{modelShort}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">{t("summary.totalIters")}:</span>
+                  <span className="font-mono text-foreground">{currentIter}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">{t("summary.keyParams")}:</span>
+                  <span className="font-mono text-foreground">LR {params.learning_rate} · Batch {params.batch_size}{isLoraLike ? ` · ${params.fine_tune_type.toUpperCase()} R${params.lora_rank} L${params.lora_layers}` : " · Full"}</span>
+                </div>
+                {adapterPath && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">{t("summary.adapterPath")}:</span>
+                    <span className="font-mono text-foreground truncate" title={adapterPath}>{adapterPath.split("/").slice(-2).join("/")}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 border-t border-border/30 px-5 py-3">
+              {adapterPath && (
+                <button onClick={() => invoke("open_adapter_folder", { adapterPath })} className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
+                  <FolderOpen size={12} />
+                  {tc("openModelFolder")}
+                </button>
+              )}
+              <button onClick={() => navigate("/testing")} className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/20 px-3 py-1.5 text-xs text-success transition-colors hover:bg-success/30">
+                {t("goToTest")}
+                <ArrowRight size={12} />
               </button>
-            )}
-            <button onClick={() => navigate("/testing")} className="flex items-center gap-1.5 rounded-md border border-green-500/30 bg-green-500/20 px-3 py-1.5 text-xs text-green-400 transition-colors hover:bg-green-500/30">
-              {t("goToTest")}
-              <ArrowRight size={12} />
-            </button>
+              <button onClick={() => navigate("/export")} className="flex items-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs text-blue-400 transition-colors hover:bg-blue-500/30">
+                <Upload size={12} />
+                {t("summary.goToExport")}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ===== Step 1: Select Model (collapsible) ===== */}
       <div className="rounded-lg border border-border bg-card">
@@ -310,7 +409,7 @@ export function TrainingPage() {
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             {step1Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="flex items-center gap-1.5">
-              {params.model ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              {params.model ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
               2.1 {t("section.selectModel")}
             </span>
           </h3>
@@ -366,7 +465,7 @@ export function TrainingPage() {
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             {step2Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="flex items-center gap-1.5">
-              {selectedDataset ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              {selectedDataset ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
               2.2 {t("section.selectDataset")}
             </span>
           </h3>
@@ -439,75 +538,320 @@ export function TrainingPage() {
         )}
       </div>
 
-      {/* ===== Step 3: Training Parameters (collapsible) ===== */}
+      {/* ===== Step 3: Training Method (collapsible) ===== */}
       <div className="rounded-lg border border-border bg-card">
         <button
-          onClick={() => setStep3Open(!step3Open)}
+          onClick={() => setStep3MethodOpen(!step3MethodOpen)}
           className="flex w-full items-center justify-between p-4"
         >
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            {step3Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            {step3MethodOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="flex items-center gap-1.5">
-              {paramsDone ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
-              2.3 {t("section.params")}
+              {methodDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              2.3 {t("section.method")}
             </span>
           </h3>
-          {!step3Open && (
-            <span className="text-xs text-muted-foreground">
-              {t("paramsSummary", { iters: params.iters, batch: params.batch_size, layers: params.lora_layers, rank: params.lora_rank })}
-            </span>
+          {!step3MethodOpen && methodDone && (
+            <span className="text-xs text-primary font-medium">{t(`method.${params.fine_tune_type}`)}</span>
           )}
         </button>
-        {step3Open && (
-          <div className="border-t border-border p-4 space-y-4">
-            {/* Presets */}
-            <div className="flex gap-2">
-              {(["quick", "standard", "thorough"] as const).map((preset) => (
-                <button key={preset} onClick={() => applyPreset(preset)} disabled={status === "running"}
-                  className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50">
-                  <Zap size={12} />
-                  {t(`presets.${preset}`)}
+        {step3MethodOpen && (
+          <div className="border-t border-border p-4 space-y-3">
+            {!(params.model && selectedDataset) && (
+              <p className="text-xs text-muted-foreground/70">{t("method.hint")}</p>
+            )}
+            <div className="flex gap-3">
+              {(["lora", "dora", "full"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { updateParam("fine_tune_type", m); setParamsEdited(true); }}
+                  disabled={status === "running" || !(params.model && selectedDataset)}
+                  className={`flex-1 rounded-lg border px-3 py-3 text-left transition-colors disabled:opacity-40 ${
+                    params.fine_tune_type === m
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <span className={`block text-sm font-semibold ${
+                    params.fine_tune_type === m ? "text-foreground" : "text-muted-foreground"
+                  }`}>{t(`method.${m}`)}</span>
+                  <span className="block text-[10px] text-muted-foreground/70 mt-0.5">{t(`method.${m}Desc`)}</span>
                 </button>
               ))}
             </div>
+          </div>
+        )}
+      </div>
 
-            {/* Params Grid */}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-              {([
-                ["iters", params.iters, "number"],
-                ["batchSize", params.batch_size, "number"],
-                ["loraLayers", params.lora_layers, "number"],
-                ["loraRank", params.lora_rank, "number"],
-                ["learningRate", params.learning_rate, "text"],
-                ["seed", params.seed, "number"],
-              ] as const).map(([key, value, type]) => {
-                const paramKey = key === "batchSize" ? "batch_size"
-                  : key === "loraLayers" ? "lora_layers"
-                  : key === "loraRank" ? "lora_rank"
-                  : key === "learningRate" ? "learning_rate"
-                  : key;
+      {/* ===== Step 4: Training Parameters (collapsible) ===== */}
+      <div className="rounded-lg border border-border bg-card">
+        <button
+          onClick={() => setStep4Open(!step4Open)}
+          className="flex w-full items-center justify-between p-4"
+        >
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            {step4Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <span className="flex items-center gap-1.5">
+              {paramsDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              2.4 {t("section.params")}
+            </span>
+          </h3>
+          {!step4Open && (
+            <span className="text-xs text-muted-foreground">
+              {t("paramsSummary", { iters: params.iters, batch: params.batch_size, method: t(`method.${params.fine_tune_type}`) + (isLoraLike ? ` R${params.lora_rank} L${params.lora_layers}` : "") })}
+            </span>
+          )}
+        </button>
+        {step4Open && (
+          <div className="border-t border-border p-4 space-y-4">
+            {/* Presets */}
+            <div className="flex flex-wrap gap-2">
+              {(["quick", "standard", "thorough", "extreme"] as const).map((preset) => {
+                const PresetIcon = { quick: Gauge, standard: Layers, thorough: Target, extreme: Gem }[preset];
                 return (
-                  <div key={key}>
-                    <label className="mb-1 block text-xs font-medium text-foreground">{t(`params.${key}`)}</label>
-                    <input
-                      type={type} value={value}
-                      onChange={(e) => { updateParam(paramKey as keyof TrainingParams, type === "number" ? Number(e.target.value) : e.target.value as any); setParamsEdited(true); }}
-                      disabled={status === "running"}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
-                    />
-                    <p className="mt-0.5 text-xs text-muted-foreground/70">{t(`params.${key}Hint`)}</p>
-                  </div>
+                  <button key={preset} onClick={() => applyPreset(preset)} disabled={status === "running"}
+                    className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50">
+                    <PresetIcon size={12} />
+                    {t(`presets.${preset}`)}
+                  </button>
                 );
               })}
             </div>
 
-            {status !== "running" && (
-              <button onClick={resetParams}
-                className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
-                <Trash2 size={12} />
-                {tc("resetDefaults")}
-              </button>
+            {/* Basic Params Grid — common to all methods */}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              {/* Iterations */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-foreground">{t("params.iters")}</label>
+                <input type="number" value={params.iters}
+                  onChange={(e) => { updateParam("iters", Number(e.target.value)); setParamsEdited(true); }}
+                  disabled={status === "running"}
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.itersHint")}</p>
+              </div>
+              {/* Batch Size */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-foreground">{t("params.batchSize")}</label>
+                <input type="number" value={params.batch_size}
+                  onChange={(e) => { updateParam("batch_size", Number(e.target.value)); setParamsEdited(true); }}
+                  disabled={status === "running"}
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.batchSizeHint")}</p>
+              </div>
+              {/* Learning Rate */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-foreground">{t("params.learningRate")}</label>
+                <input type="text" value={params.learning_rate}
+                  onChange={(e) => { updateParam("learning_rate", e.target.value as any); setParamsEdited(true); }}
+                  disabled={status === "running"}
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.learningRateHint")}</p>
+              </div>
+              {/* LoRA Layers — only for lora/dora */}
+              {isLoraLike && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.loraLayers")}</label>
+                  <input type="number" value={params.lora_layers}
+                    onChange={(e) => { updateParam("lora_layers", Number(e.target.value)); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.loraLayersHint")}</p>
+                </div>
+              )}
+              {/* LoRA Rank — only for lora/dora */}
+              {isLoraLike && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.loraRank")}</label>
+                  <input type="number" value={params.lora_rank}
+                    onChange={(e) => { updateParam("lora_rank", Number(e.target.value)); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.loraRankHint")}</p>
+                </div>
+              )}
+              {/* Seed */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-foreground">{t("params.seed")}</label>
+                <input type="number" value={params.seed}
+                  onChange={(e) => { updateParam("seed", Number(e.target.value)); setParamsEdited(true); }}
+                  disabled={status === "running"}
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.seedHint")}</p>
+              </div>
+            </div>
+
+            {/* Advanced Params Toggle */}
+            <button
+              onClick={() => { setShowAdvanced(!showAdvanced); setActiveDropdown(null); }}
+              className="flex items-center gap-2 text-sm font-semibold text-foreground transition-colors"
+            >
+              {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              {showAdvanced ? t("params.hideAdvanced") : t("params.showAdvanced")}
+            </button>
+
+            {/* Advanced Params Grid */}
+            {showAdvanced && (
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 rounded-md border border-border/50 p-3">
+                {/* Optimizer — custom dropdown */}
+                <div className="relative">
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.optimizer")}</label>
+                  <button
+                    onClick={() => setActiveDropdown(activeDropdown === "optimizer" ? null : "optimizer")}
+                    disabled={status === "running"}
+                    className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
+                  >
+                    <span>{{ adam: "Adam", adamw: "AdamW", sgd: "SGD", adafactor: "Adafactor" }[params.optimizer]}</span>
+                    <ChevronDown size={14} className={`text-muted-foreground transition-transform ${activeDropdown === "optimizer" ? "rotate-180" : ""}`} />
+                  </button>
+                  {activeDropdown === "optimizer" && (
+                    <div className="absolute left-0 right-0 top-full z-10 mt-1 space-y-1 rounded-lg border border-border bg-background p-2 shadow-lg">
+                      {([["adam", "Adam"], ["adamw", "AdamW"], ["sgd", "SGD"], ["adafactor", "Adafactor"]] as const).map(([val, label]) => (
+                        <button key={val}
+                          onClick={() => { updateParam("optimizer", val as any); setParamsEdited(true); setActiveDropdown(null); }}
+                          className={`flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-left text-xs transition-colors ${
+                            params.optimizer === val ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-accent"
+                          }`}
+                        >
+                          {params.optimizer === val
+                            ? <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" /></span>
+                            : <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-muted-foreground/30" />}
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.optimizerHint")}</p>
+                </div>
+                {/* LoRA Scale — only for lora/dora */}
+                {isLoraLike && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">{t("params.loraScale")}</label>
+                    <input type="number" step="0.1" value={params.lora_scale}
+                      onChange={(e) => { updateParam("lora_scale", Number(e.target.value)); setParamsEdited(true); }}
+                      disabled={status === "running"}
+                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                    <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.loraScaleHint")}</p>
+                  </div>
+                )}
+                {/* LoRA Dropout — only for lora/dora */}
+                {isLoraLike && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-foreground">{t("params.loraDropout")}</label>
+                    <input type="number" step="0.01" min="0" max="1" value={params.lora_dropout}
+                      onChange={(e) => { updateParam("lora_dropout", Number(e.target.value)); setParamsEdited(true); }}
+                      disabled={status === "running"}
+                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                    <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.loraDropoutHint")}</p>
+                  </div>
+                )}
+                {/* Max Seq Length — custom dropdown */}
+                <div className="relative">
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.maxSeqLength")}</label>
+                  <button
+                    onClick={() => setActiveDropdown(activeDropdown === "seqLength" ? null : "seqLength")}
+                    disabled={status === "running"}
+                    className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
+                  >
+                    <span>{params.max_seq_length}</span>
+                    <ChevronDown size={14} className={`text-muted-foreground transition-transform ${activeDropdown === "seqLength" ? "rotate-180" : ""}`} />
+                  </button>
+                  {activeDropdown === "seqLength" && (
+                    <div className="absolute left-0 right-0 top-full z-10 mt-1 space-y-1 rounded-lg border border-border bg-background p-2 shadow-lg">
+                      {[512, 1024, 2048, 4096].map((val) => (
+                        <button key={val}
+                          onClick={() => { updateParam("max_seq_length", val); setParamsEdited(true); setActiveDropdown(null); }}
+                          className={`flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-left text-xs transition-colors ${
+                            params.max_seq_length === val ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-accent"
+                          }`}
+                        >
+                          {params.max_seq_length === val
+                            ? <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" /></span>
+                            : <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-muted-foreground/30" />}
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.maxSeqLengthHint")}</p>
+                </div>
+                {/* Gradient Accumulation Steps */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.gradAccumulationSteps")}</label>
+                  <input type="number" min="1" value={params.grad_accumulation_steps}
+                    onChange={(e) => { updateParam("grad_accumulation_steps", Number(e.target.value)); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.gradAccumulationStepsHint")}</p>
+                </div>
+                {/* Save Every */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.saveEvery")}</label>
+                  <input type="number" min="1" value={params.save_every}
+                    onChange={(e) => { updateParam("save_every", Number(e.target.value)); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.saveEveryHint")}</p>
+                </div>
+                {/* Grad Checkpoint — toggle */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.gradCheckpoint")}</label>
+                  <button
+                    onClick={() => { updateParam("grad_checkpoint", !params.grad_checkpoint); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className={`w-full rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                      params.grad_checkpoint
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-input bg-background text-muted-foreground hover:bg-accent"
+                    }`}>
+                    {params.grad_checkpoint ? "ON" : "OFF"}
+                  </button>
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.gradCheckpointHint")}</p>
+                </div>
+                {/* Mask Prompt — toggle */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.maskPrompt")}</label>
+                  <button
+                    onClick={() => { updateParam("mask_prompt", !params.mask_prompt); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className={`w-full rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                      params.mask_prompt
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-input bg-background text-muted-foreground hover:bg-accent"
+                    }`}>
+                    {params.mask_prompt ? "ON" : "OFF"}
+                  </button>
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.maskPromptHint")}</p>
+                </div>
+                {/* Steps Per Eval */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.stepsPerEval")}</label>
+                  <input type="number" value={params.steps_per_eval}
+                    onChange={(e) => { updateParam("steps_per_eval", Number(e.target.value)); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.stepsPerEvalHint")}</p>
+                </div>
+                {/* Steps Per Report */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.stepsPerReport")}</label>
+                  <input type="number" value={params.steps_per_report}
+                    onChange={(e) => { updateParam("steps_per_report", Number(e.target.value)); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.stepsPerReportHint")}</p>
+                </div>
+                {/* Val Batches */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">{t("params.valBatches")}</label>
+                  <input type="number" value={params.val_batches}
+                    onChange={(e) => { updateParam("val_batches", Number(e.target.value)); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
+                  <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.valBatchesHint")}</p>
+                </div>
+              </div>
             )}
+
           </div>
         )}
       </div>
@@ -530,7 +874,7 @@ export function TrainingPage() {
             <p className="text-center text-xs text-red-400">{t("invalidModelError")}</p>
           )}
           {!taskCheck.allowed && (
-            <p className="text-center text-xs text-amber-400">{getTaskLockHint(taskCheck.reason)}</p>
+            <p className="text-center text-xs text-warning">{getTaskLockHint(taskCheck.reason)}</p>
           )}
         </div>
       )}
@@ -590,7 +934,7 @@ export function TrainingPage() {
                     onClick={() => { navigator.clipboard.writeText(logs.join("\n")); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                     className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
                   >
-                    {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                    {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                     {copied ? tc("copied") : tc("copyLog")}
                   </button>
                 )}
@@ -606,8 +950,8 @@ export function TrainingPage() {
                     <div key={i} className={
                       line.startsWith("ERROR") || line.includes("error") ? "text-red-400" :
                       line.includes("Train loss") ? "text-blue-400" :
-                      line.includes("Val loss") ? "text-amber-400" :
-                      line.includes("Saved") ? "text-green-400" :
+                      line.includes("Val loss") ? "text-warning" :
+                      line.includes("Saved") ? "text-success" :
                       "text-foreground"
                     }>
                       {line}

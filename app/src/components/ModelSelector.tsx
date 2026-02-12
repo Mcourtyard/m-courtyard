@@ -40,10 +40,10 @@ const SOURCE_LABELS_STATIC: Record<string, string> = {
   ollama: "Ollama",
 };
 const SOURCE_COLORS: Record<string, string> = {
-  huggingface: "text-yellow-400 bg-yellow-500/15",
-  modelscope: "text-purple-400 bg-purple-500/15",
-  ollama: "text-green-400 bg-green-500/15",
-  trained: "text-cyan-400 bg-cyan-500/15",
+  huggingface: "text-tag-hf bg-tag-hf/15",
+  modelscope: "text-tag-ms bg-tag-ms/15",
+  ollama: "text-success bg-success/15",
+  trained: "text-tag-trained bg-tag-trained/15",
 };
 const RECOMMENDED_HF_MODELS = [
   { id: "mlx-community/Llama-3.2-3B-Instruct-4bit", label: "Llama 3.2 3B", size: "~2GB", descKey: "balanced" },
@@ -398,7 +398,7 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                                     <div className="min-w-0 flex-1">
                                       <span className={`truncate font-medium ${usable ? "text-foreground" : "text-muted-foreground/40"}`}>{m.name}</span>
                                       {m.is_mlx && m.source !== "trained" && (
-                                        <span className="ml-1.5 rounded bg-blue-500/15 px-1 py-0.5 text-[10px] text-blue-400">MLX</span>
+                                        <span className="ml-1.5 rounded bg-tag-mlx/15 px-1 py-0.5 text-[10px] text-tag-mlx">MLX</span>
                                       )}
                                       {!usable && reason && (
                                         <span className="ml-1.5 text-[10px] text-muted-foreground/40">({reason})</span>
@@ -481,7 +481,7 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               {downloaded && (
-                                <span className="flex items-center gap-0.5 rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] text-green-400">
+                                <span className="flex items-center gap-0.5 rounded bg-success/15 px-1.5 py-0.5 text-[10px] text-success">
                                   <CheckCircle2 size={10} />
                                   {t("modelSelector.downloaded")}
                                 </span>
@@ -527,12 +527,13 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                       </button>
                     </div>
                     {hfSource === "modelscope" && (
-                      <p className="text-xs text-yellow-400/80 rounded-md bg-yellow-500/10 border border-yellow-500/20 px-3 py-2">
+                      <p className="text-xs text-tag-hf/80 rounded-md bg-tag-hf/10 border border-tag-hf/20 px-3 py-2">
                         ⚠ {t("modelSelector.modelscopeWarnInline")}
                         <button onClick={navigateToSettings} className="underline mx-0.5">{t("modelSelector.settingsLink")}</button>
                         {t("modelSelector.modelscopeWarnSuffix")}
                       </p>
                     )}
+
                     <div className="space-y-1">
                       {RECOMMENDED_HF_MODELS.map((m) => {
                         const downloaded = isDownloaded(m.id);
@@ -558,13 +559,13 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                             )}
                             <div className="min-w-0 flex-1">
                               <span className={`font-medium ${unavailable ? "text-muted-foreground/40" : "text-foreground"}`}>{m.label}</span>
-                              <span className={`ml-1.5 rounded px-1 py-0.5 text-[10px] ${unavailable ? "bg-blue-500/5 text-blue-400/40" : "bg-blue-500/15 text-blue-400"}`}>MLX</span>
+                              <span className={`ml-1.5 rounded px-1 py-0.5 text-[10px] ${unavailable ? "bg-tag-mlx/5 text-tag-mlx/40" : "bg-tag-mlx/15 text-tag-mlx"}`}>MLX</span>
                               <span className="ml-1 text-muted-foreground/50">{t(`modelSelector.modelDesc.${m.descKey}`)}</span>
                               {unavailable && <span className="ml-1 text-[10px] text-muted-foreground/40">{t("modelSelector.unavailableSource")}</span>}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               {downloaded && (
-                                <span className="flex items-center gap-0.5 rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] text-green-400">
+                                <span className="flex items-center gap-0.5 rounded bg-success/15 px-1.5 py-0.5 text-[10px] text-success">
                                   <CheckCircle2 size={10} />
                                   {t("modelSelector.downloaded")}
                                 </span>

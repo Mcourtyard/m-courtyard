@@ -74,9 +74,9 @@ export function DashboardPage() {
 
   const StatusIcon = ({ ok }: { ok: boolean }) =>
     ok ? (
-      <CheckCircle2 size={14} className="text-green-500" />
+      <CheckCircle2 size={14} className="text-success" />
     ) : (
-      <XCircle size={14} className="text-yellow-500" />
+      <XCircle size={14} className="text-warning" />
     );
 
   return (
@@ -144,10 +144,10 @@ export function DashboardPage() {
       {env && !env.python_ready && (
         <div
           onClick={() => navigate("/settings")}
-          className="flex cursor-pointer items-center gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3"
+          className="flex cursor-pointer items-center gap-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3"
         >
-          <AlertCircle size={18} className="text-yellow-500" />
-          <p className="text-sm text-yellow-400">
+          <AlertCircle size={18} className="text-warning" />
+          <p className="text-sm text-warning">
             {t("common:setupHint")}
           </p>
         </div>

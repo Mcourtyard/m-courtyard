@@ -27,6 +27,19 @@
     "setupDesc": "Will create a Python virtual environment and install mlx-lm training framework",
     "browseModelDir": "Select {{source}} model directory"
   },
+  "theme": {
+    "title": "Theme",
+    "midnight": "Midnight",
+    "midnightDesc": "Default dark theme",
+    "ocean": "Ocean",
+    "oceanDesc": "Deep blue tones",
+    "sunset": "Sunset",
+    "sunsetDesc": "Warm amber tones",
+    "nebula": "Nebula",
+    "nebulaDesc": "Cosmic violet tones",
+    "light": "Light",
+    "lightDesc": "Clean light theme"
+  },
   "language": {
     "title": "Language",
     "current": "Current Language",
@@ -36,7 +49,7 @@
   "about": {
     "title": "About",
     "version": "Version",
-    "description": "AI Model Training Assistant for Apple Silicon",
+    "description": "Say Goodbye to Complexity, Easily Create Your AI Model",
     "github": "GitHub Repository"
   },
   "downloadSource": {

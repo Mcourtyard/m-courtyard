@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
-import { Monitor, Languages, Info, FolderOpen, RefreshCw, Download, RotateCcw, Globe } from "lucide-react";
+import { Monitor, Languages, Info, FolderOpen, RefreshCw, Download, RotateCcw, Globe, Palette } from "lucide-react";
 import { checkEnvironment, setupEnvironment, type EnvironmentStatus } from "@/services/environment";
+import { useThemeStore, type ThemeId } from "@/stores/themeStore";
 
 interface AppConfigResponse {
   huggingface: string;
@@ -84,9 +85,19 @@ export function SettingsPage() {
     }
   };
 
+  const { theme, setTheme } = useThemeStore();
+
   const setLanguage = (lang: string) => {
     i18n.changeLanguage(lang);
   };
+
+  const themes: { id: ThemeId; dotColor: string }[] = [
+    { id: "midnight", dotColor: "#52525b" },
+    { id: "ocean", dotColor: "#60a5fa" },
+    { id: "sunset", dotColor: "#f59e0b" },
+    { id: "nebula", dotColor: "#a78bfa" },
+    { id: "light", dotColor: "#d4d4d8" },
+  ];
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -125,25 +136,25 @@ export function SettingsPage() {
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-sm text-muted-foreground">{t("environment.python")}</span>
-            <span className={`text-sm font-medium ${env?.python_ready ? "text-green-500" : "text-yellow-500"}`}>
+            <span className={`text-sm font-medium ${env?.python_ready ? "text-success" : "text-warning"}`}>
               {env ? (env.python_ready ? t("environment.pythonReady") : t("environment.pythonNotReady")) : "..."}
             </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-sm text-muted-foreground">{t("environment.mlxLm")}</span>
-            <span className={`text-sm font-medium ${env?.mlx_lm_ready ? "text-green-500" : "text-yellow-500"}`}>
+            <span className={`text-sm font-medium ${env?.mlx_lm_ready ? "text-success" : "text-warning"}`}>
               {env ? (env.mlx_lm_ready ? t("environment.mlxLmReady", { version: env.mlx_lm_version || "?" }) : t("environment.mlxLmNotReady")) : "..."}
             </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-sm text-muted-foreground">{t("environment.uv")}</span>
-            <span className={`text-sm font-medium ${env?.uv_available ? "text-green-500" : "text-yellow-500"}`}>
+            <span className={`text-sm font-medium ${env?.uv_available ? "text-success" : "text-warning"}`}>
               {env ? (env.uv_available ? t("environment.uvReady") : t("environment.uvNotReady")) : "..."}
             </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-sm text-muted-foreground">{t("environment.ollama")}</span>
-            <span className={`text-sm font-medium ${env?.ollama_installed ? "text-green-500" : "text-muted-foreground"}`}>
+            <span className={`text-sm font-medium ${env?.ollama_installed ? "text-success" : "text-muted-foreground"}`}>
               {env ? (env.ollama_installed ? t("environment.ollamaReady") : t("environment.ollamaNotReady")) : "..."}
             </span>
           </div>
@@ -172,10 +183,44 @@ export function SettingsPage() {
           </div>
         )}
         {setupMsg && (
-          <p className={`text-sm ${setupMsg.includes("failed") || setupMsg.includes("error") ? "text-red-400" : "text-green-400"}`}>
+          <p className={`text-sm ${setupMsg.includes("failed") || setupMsg.includes("error") ? "text-red-400" : "text-success"}`}>
             {setupMsg}
           </p>
         )}
+      </section>
+
+      {/* Theme Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Palette size={18} className="text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            {t("theme.title")}
+          </h2>
+        </div>
+        <div className="flex gap-3">
+          {themes.map((th) => (
+            <button
+              key={th.id}
+              onClick={() => setTheme(th.id)}
+              className={`flex-1 rounded-lg border px-3 py-3 text-left transition-colors ${
+                theme === th.id
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:bg-accent"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className="inline-block h-4 w-4 rounded-full border border-foreground/20 shadow-sm"
+                  style={{ backgroundColor: th.dotColor, boxShadow: theme === th.id ? `0 0 8px ${th.dotColor}80` : undefined }}
+                />
+                <span className={`text-sm font-medium ${
+                  theme === th.id ? "text-foreground" : "text-muted-foreground"
+                }`}>{t(`theme.${th.id}`)}</span>
+              </div>
+              <span className="block text-[10px] text-muted-foreground/70">{t(`theme.${th.id}Desc`)}</span>
+            </button>
+          ))}
+        </div>
       </section>
 
       {/* Language Section */}
@@ -247,7 +292,7 @@ export function SettingsPage() {
           ))}
         </div>
         {config?.hf_source === "modelscope" && (
-          <p className="text-xs text-yellow-400/80">
+          <p className="text-xs text-warning/80">
             ⚠ {t("downloadSource.modelscopeWarn")}
           </p>
         )}
@@ -296,7 +341,7 @@ export function SettingsPage() {
               <div className="flex items-center gap-2">
                 <span className="truncate text-xs font-mono text-muted-foreground/70">{config?.huggingface || "..."}</span>
                 {config && (
-                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.huggingface_custom ? "bg-cyan-500/15 text-cyan-400" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.huggingface_custom ? "bg-tag-trained/15 text-tag-trained" : "bg-muted text-muted-foreground"}`}>
                     {config.huggingface_custom ? t("storage.custom") : t("storage.default")}
                   </span>
                 )}
@@ -321,7 +366,7 @@ export function SettingsPage() {
               <div className="flex items-center gap-2">
                 <span className="truncate text-xs font-mono text-muted-foreground/70">{config?.modelscope || "..."}</span>
                 {config && (
-                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.modelscope_custom ? "bg-cyan-500/15 text-cyan-400" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.modelscope_custom ? "bg-tag-trained/15 text-tag-trained" : "bg-muted text-muted-foreground"}`}>
                     {config.modelscope_custom ? t("storage.custom") : t("storage.default")}
                   </span>
                 )}
@@ -346,7 +391,7 @@ export function SettingsPage() {
               <div className="flex items-center gap-2">
                 <span className="truncate text-xs font-mono text-muted-foreground/70">{config?.ollama || "..."}</span>
                 {config && (
-                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.ollama_custom ? "bg-cyan-500/15 text-cyan-400" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.ollama_custom ? "bg-tag-trained/15 text-tag-trained" : "bg-muted text-muted-foreground"}`}>
                     {config.ollama_custom ? t("storage.custom") : t("storage.default")}
                   </span>
                 )}

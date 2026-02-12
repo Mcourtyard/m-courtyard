@@ -1,6 +1,6 @@
 {
   "appName": "M-Courtyard",
-  "appDescription": "AI 模型训练助手",
+  "appDescription": "告别繁琐，简单创建您的AI大模型",
   "loading": "加载中...",
   "save": "保存",
   "cancel": "取消",
@@ -142,6 +142,20 @@
     "openFolderTitle": "打开 {{source}} 文件夹",
     "openFolder": "打开文件夹",
     "downloadSources": "模型下载来源",
-    "manageDownloaded": "管理已下载模型"
+    "manageDownloaded": "管理已下载模型",
+    "downloadBtn": "下载",
+    "downloading": "下载中...",
+    "downloadProgress": "{{percent}}%",
+    "downloadSpeed": "{{speed}} MB/s",
+    "downloadComplete": "下载完成",
+    "downloadFailed": "下载失败",
+    "downloadCancel": "取消",
+    "downloadSize": "总大小: {{size}} MB",
+    "downloadStarting": "准备下载...",
+    "stopDownload": "停止",
+    "downloadError": "下载错误: {{message}}",
+    "repoIdPlaceholder": "输入 HuggingFace 模型 ID，如 mlx-community/Qwen2.5-3B-Instruct-4bit",
+    "customDownload": "自定义模型 ID",
+    "startDownload": "下载"
   }
 }

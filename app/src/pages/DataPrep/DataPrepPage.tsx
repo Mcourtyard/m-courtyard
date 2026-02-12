@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
-import { Upload, Trash2, Eye, ArrowRight, FolderOpen, Square, Sparkles, ChevronDown, ChevronRight, CheckCircle2, Circle, AlertTriangle, Settings } from "lucide-react";
+import { Upload, Trash2, Eye, ArrowRight, FolderOpen, Square, Wand2, ChevronDown, ChevronRight, CheckCircle2, Circle, AlertTriangle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
 import { useGenerationStore } from "@/stores/generationStore";
@@ -444,7 +444,7 @@ export function DataPrepPage() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 {step1Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 <span className="flex items-center gap-1.5">
-                  {rawFiles.length > 0 ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {rawFiles.length > 0 ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
                   1.1 {t("section.selectFiles")} ({rawFiles.length})
                 </span>
               </h3>
@@ -531,7 +531,7 @@ export function DataPrepPage() {
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   {step2Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   <span className="flex items-center gap-1.5">
-                    {methodDone ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                    {methodDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
                     1.2 {t("section.genMethod")}
                   </span>
                 </h3>
@@ -573,7 +573,7 @@ export function DataPrepPage() {
                     <div className="space-y-2">
                       {ollamaReady === false ? (
                         <div className="space-y-3">
-                          <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-400">
+                          <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-warning">
                             <AlertTriangle size={14} className="shrink-0" />
                             <span>{t("generate.noOllama")}</span>
                           </div>
@@ -606,13 +606,13 @@ export function DataPrepPage() {
                     </div>
                   )}
                   {genSource === "builtin" && (
-                    <p className="text-xs text-amber-400">{t("generate.builtinHint")}</p>
+                    <p className="text-xs text-warning">{t("generate.builtinHint")}</p>
                   )}
 
                   {/* 1.3 Generation type */}
                   <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground pt-1">
                     <span className="flex items-center gap-1.5">
-                      {typeDone ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                      {typeDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
                       1.3 {t("section.genType")}
                     </span>
                   </h3>
@@ -655,11 +655,11 @@ export function DataPrepPage() {
                         disabled={!genMode || (genSource === "ollama" && !genModel.trim()) || rawFiles.length === 0 || !taskCheck.allowed}
                         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                       >
-                        <Sparkles size={14} />
+                        <Wand2 size={14} />
                         {t("generate.button")}
                       </button>
                       {!taskCheck.allowed && (
-                        <p className="text-xs text-amber-400">{getTaskLockHint(taskCheck.reason)}</p>
+                        <p className="text-xs text-warning">{getTaskLockHint(taskCheck.reason)}</p>
                       )}
                     </>
                   )}
@@ -701,7 +701,7 @@ export function DataPrepPage() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 {step3Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 <span className="flex items-center gap-1.5">
-                  {datasetVersions.length > 0 ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {datasetVersions.length > 0 ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
                   1.4 {t("section.datasets")} ({datasetVersions.length})
                 </span>
               </h3>
@@ -727,7 +727,7 @@ export function DataPrepPage() {
                           key={v.version}
                           className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs"
                         >
-                          <CheckCircle2 size={14} className="shrink-0 text-green-400" />
+                          <CheckCircle2 size={14} className="shrink-0 text-success" />
                           <span className="shrink-0 whitespace-nowrap font-medium text-foreground">{v.version === "legacy" ? t("dataset.legacy") : v.created}</span>
                           <span className="shrink-0 whitespace-nowrap text-muted-foreground">train: {v.train_count}</span>
                           <span className="text-muted-foreground/40">·</span>
@@ -739,7 +739,7 @@ export function DataPrepPage() {
                     {/* Next Step: Go to Training */}
                     <button
                       onClick={() => navigate("/training")}
-                      className="flex w-full items-center justify-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2.5 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/20"
+                      className="flex w-full items-center justify-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2.5 text-sm font-medium text-success transition-colors hover:bg-success/20"
                     >
                       {t("datasetReady")}
                       <ArrowRight size={14} />
@@ -757,7 +757,7 @@ export function DataPrepPage() {
             {(generating || aiLogs.length > 0) ? (
               <>
                 {t("aiLog")}
-                {generating && <span className="ml-2 inline-block h-2 w-2 animate-pulse rounded-full bg-green-400" />}
+                {generating && <span className="ml-2 inline-block h-2 w-2 animate-pulse rounded-full bg-success" />}
               </>
             ) : (
               <>
@@ -780,11 +780,11 @@ export function DataPrepPage() {
                   <p
                     key={idx}
                     className={`whitespace-pre-wrap ${
-                      log.includes("✅") ? "text-green-400" :
+                      log.includes("✅") ? "text-success" :
                       log.includes("❌") ? "text-red-400" :
-                      log.includes("⚠️") ? "text-yellow-400" :
+                      log.includes("⚠️") ? "text-warning" :
                       log.includes("🤖") ? "text-blue-400" :
-                      log.includes("📡") || log.includes("💾") ? "text-cyan-400" :
+                      log.includes("📡") || log.includes("💾") ? "text-tag-trained" :
                       log.includes("──") || log.includes("══") ? "text-muted-foreground font-semibold" :
                       "text-foreground"
                     }`}

@@ -187,7 +187,7 @@ export function ExportPage() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 {step1Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 <span className="flex items-center gap-1.5">
-                  {selectedAdapter ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {selectedAdapter ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
                   4.1 {t("section.selectAdapter")}
                 </span>
               </h3>
@@ -281,7 +281,7 @@ export function ExportPage() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 {step2Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 <span className="flex items-center gap-1.5">
-                  {modelName.trim() ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {modelName.trim() ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
                   4.2 {t("section.modelName")}
                 </span>
               </h3>
@@ -311,7 +311,7 @@ export function ExportPage() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 {step3Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 <span className="flex items-center gap-1.5">
-                  {quantDone ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {quantDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
                   4.3 {t("section.quantization")}
                 </span>
               </h3>
@@ -342,9 +342,9 @@ export function ExportPage() {
           </div>
 
           {ollamaInstalled === false && (
-            <div className="flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
-              <AlertCircle size={16} className="text-yellow-500 shrink-0" />
-              <p className="text-sm text-yellow-400">
+            <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+              <AlertCircle size={16} className="text-warning shrink-0" />
+              <p className="text-sm text-warning">
                 {t("ollama.notInstalled")}
               </p>
             </div>
@@ -379,10 +379,10 @@ export function ExportPage() {
                       return (
                         <div key={s.key} className="flex items-center gap-1 flex-1">
                           <div className={`flex items-center gap-1 text-[10px] font-medium truncate ${
-                            isDone ? "text-green-400" : isActive ? "text-primary" : "text-muted-foreground/40"
+                            isDone ? "text-success" : isActive ? "text-primary" : "text-muted-foreground/40"
                           }`}>
                             {isDone ? (
-                              <CheckCircle2 size={12} className="shrink-0 text-green-400" />
+                              <CheckCircle2 size={12} className="shrink-0 text-success" />
                             ) : isActive ? (
                               <Loader2 size={12} className="shrink-0 animate-spin" />
                             ) : (
@@ -392,7 +392,7 @@ export function ExportPage() {
                           </div>
                           {i < EXPORT_STEPS.length - 1 && (
                             <div className={`h-px flex-1 ${
-                              isDone ? "bg-green-400/40" : "bg-border"
+                              isDone ? "bg-success/40" : "bg-border"
                             }`} />
                           )}
                         </div>
@@ -432,7 +432,7 @@ export function ExportPage() {
                       onClick={() => { navigator.clipboard.writeText(exportLogs.join("\n")); setCopied(true); setTimeout(() => setCopied(false), 3000); }}
                       className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
                     >
-                      {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                      {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                       {copied ? tc("copied") : tc("copyLog")}
                     </button>
                   </div>
@@ -443,7 +443,7 @@ export function ExportPage() {
                     {exportLogs.map((line, i) => (
                       <div key={i} className={
                         line.includes("!!!") || line.includes("Error") || line.includes("failed") ? "text-red-400" :
-                        line.includes("---") || line.includes("successfully") || line.includes("done") || line.includes("ready") ? "text-green-400" :
+                        line.includes("---") || line.includes("successfully") || line.includes("done") || line.includes("ready") ? "text-success" :
                         line.includes("GGUF") || line.includes("Converting") ? "text-blue-400" :
                         "text-foreground"
                       }>
@@ -463,17 +463,17 @@ export function ExportPage() {
             </div>
           )}
           {result && !isExporting && isSuccess && (
-            <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 space-y-3">
+            <div className="rounded-lg border border-success/30 bg-success/10 p-4 space-y-3">
               {/* Row 1: Success title + open folder button */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 size={18} className="text-green-400 shrink-0" />
-                  <span className="text-sm font-medium text-green-400">{t("ollama.success")}</span>
+                  <CheckCircle2 size={18} className="text-success shrink-0" />
+                  <span className="text-sm font-medium text-success">{t("ollama.success")}</span>
                 </div>
                 {outputDir && (
                   <button
                     onClick={() => invoke("open_adapter_folder", { adapterPath: outputDir })}
-                    className="flex items-center gap-1 text-[11px] text-green-300/70 hover:text-green-200 transition-colors"
+                    className="flex items-center gap-1 text-[11px] text-success/60 hover:text-success transition-colors"
                   >
                     <FolderOpen size={12} />
                     {tc("openFolder")}
@@ -481,10 +481,10 @@ export function ExportPage() {
                 )}
               </div>
               {/* Row 2: Run hint for beginners */}
-              <p className="text-xs text-green-300/70">{t("ollama.successRunHint")}</p>
+              <p className="text-xs text-success/60">{t("ollama.successRunHint")}</p>
               {/* Row 3: Command with copy button */}
-              <div className="flex items-center gap-2 rounded-md bg-black/30 border border-green-500/20 px-3 py-2">
-                <code className="flex-1 text-xs text-green-300 font-mono select-all">
+              <div className="flex items-center gap-2 rounded-md bg-background/50 border border-success/20 px-3 py-2">
+                <code className="flex-1 text-xs text-success font-mono select-all">
                   ollama run {successModelName}
                 </code>
                 <button
@@ -493,10 +493,10 @@ export function ExportPage() {
                     setCmdCopied(true);
                     setTimeout(() => setCmdCopied(false), 3000);
                   }}
-                  className="shrink-0 rounded p-1 text-green-300/60 hover:text-green-200 hover:bg-green-500/10 transition-colors"
+                  className="shrink-0 rounded p-1 text-success/50 hover:text-success hover:bg-success/10 transition-colors"
                   title={tc("copyLog")}
                 >
-                  {cmdCopied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                  {cmdCopied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
                 </button>
               </div>
             </div>

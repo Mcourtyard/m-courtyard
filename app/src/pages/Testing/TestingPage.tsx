@@ -184,7 +184,7 @@ export function TestingPage() {
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             {step1Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="flex items-center gap-1.5">
-              {adapterValid ? <CheckCircle2 size={18} className="text-green-400 drop-shadow-[0_0_3px_rgba(74,222,128,0.4)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              {adapterValid ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
               3.1 {t("section.selectAdapter")}
             </span>
           </h3>

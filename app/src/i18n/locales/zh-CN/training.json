@@ -18,13 +18,48 @@
     "learningRate": "学习率",
     "learningRateHint": "优化步长。太高 → 不稳定，太低 → 收敛慢。",
     "seed": "随机种子",
-    "seedHint": "设为 0 表示随机。固定种子可复现结果。"
+    "seedHint": "设为 0 表示随机。固定种子可复现结果。",
+    "loraScale": "LoRA 缩放",
+    "loraScaleHint": "调整幅度大小。值越大，模型的改变越明显。",
+    "loraDropout": "LoRA Dropout",
+    "loraDropoutHint": "随机丢弃比例。适当增大可防止死记硬背（过拟合）。",
+    "maxSeqLength": "最大文本长度",
+    "maxSeqLengthHint": "每条训练数据的最大长度。根据你数据的平均长度选择。",
+    "gradCheckpoint": "梯度检查点",
+    "gradCheckpointHint": "开启可节省内存但训练变慢。内存不够时再开。",
+    "stepsPerEval": "验证间隔",
+    "stepsPerEvalHint": "每训练多少轮检查一次效果。",
+    "stepsPerReport": "报告间隔",
+    "stepsPerReportHint": "每训练多少轮刷新一次界面数据。",
+    "valBatches": "验证批次",
+    "valBatchesHint": "验证时用多少批数据。越多越准但越慢。",
+    "optimizer": "优化器",
+    "optimizerHint": "权重更新算法。Adam 是最常用的默认选择。",
+    "gradAccumulationSteps": "梯度累积步数",
+    "gradAccumulationStepsHint": "累积 N 个批次后再更新权重。等效增大批次但不增加内存。",
+    "saveEvery": "定期保存间隔",
+    "saveEveryHint": "每训练 N 轮保存一次适配器检查点，防止进度丢失。",
+    "maskPrompt": "屏蔽提示词损失",
+    "maskPromptHint": "只计算回答部分的损失，忽略提示词部分。可提升 SFT 质量。",
+    "showAdvanced": "展开高级参数",
+    "hideAdvanced": "收起高级参数"
+  },
+  "method": {
+    "title": "训练方法",
+    "lora": "LoRA",
+    "loraDesc": "低秩自适应。通过训练小型适配器矩阵高效微调，推荐大多数场景使用。",
+    "dora": "DoRA",
+    "doraDesc": "权重分解低秩自适应。增强版 LoRA，效果更好，计算量略增。",
+    "full": "Full",
+    "fullDesc": "全参数微调。训练所有模型权重，需要大量内存。",
+    "hint": "请先选择模型和数据集，再选择训练方法。"
   },
   "presets": {
     "title": "快速预设",
     "quick": "快速测试（100 次迭代）",
     "standard": "标准训练（1000 次迭代）",
-    "thorough": "深度训练（2000 次迭代）"
+    "thorough": "深度训练（2000 次迭代）",
+    "extreme": "极致训练（5000 次迭代）"
   },
   "start": "开始训练",
   "stop": "停止训练",
@@ -39,6 +74,7 @@
   "section": {
     "selectModel": "选择所需训练的模型",
     "selectDataset": "选择数据集",
+    "method": "训练方法",
     "params": "训练参数"
   },
   "completedBanner": "训练已完成！模型适配器已保存。",
@@ -57,12 +93,26 @@
   "lossCurve": "Loss 曲线",
   "waitingData": "等待训练数据...",
   "invalidModelError": "所选路径下未检测到有效模型，无法开始训练",
-  "paramsSummary": "{{iters}} 次迭代 · Batch {{batch}} · LoRA {{layers}}层 Rank {{rank}}",
+  "paramsSummary": "{{iters}} 次迭代 · Batch {{batch}} · {{method}}",
   "entries": "{{count}} 条",
   "step": {
     "model": "模型",
     "data": "数据",
-    "train": "训练",
+    "method": "方法",
+    "params": "参数",
     "done": "完成"
+  },
+  "summary": {
+    "title": "训练总结",
+    "duration": "训练时长",
+    "finalTrainLoss": "最终训练损失",
+    "finalValLoss": "最终验证损失",
+    "totalIters": "总迭代次数",
+    "baseModel": "基础模型",
+    "adapterPath": "适配器保存位置",
+    "keyParams": "关键参数",
+    "lossImprove": "损失改善",
+    "goToExport": "导出模型",
+    "noData": "无数据"
   }
 }

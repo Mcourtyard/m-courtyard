@@ -1,6 +1,6 @@
 {
   "appName": "M-Courtyard",
-  "appDescription": "AI Model Training Assistant",
+  "appDescription": "Say Goodbye to Complexity, Easily Create Your AI Model",
   "loading": "Loading...",
   "save": "Save",
   "cancel": "Cancel",
@@ -142,6 +142,20 @@
     "openFolderTitle": "Open {{source}} folder",
     "openFolder": "Open Folder",
     "downloadSources": "Model Download Sources",
-    "manageDownloaded": "Manage Downloaded"
+    "manageDownloaded": "Manage Downloaded",
+    "downloadBtn": "Download",
+    "downloading": "Downloading...",
+    "downloadProgress": "{{percent}}%",
+    "downloadSpeed": "{{speed}} MB/s",
+    "downloadComplete": "Download complete",
+    "downloadFailed": "Download failed",
+    "downloadCancel": "Cancel",
+    "downloadSize": "Total size: {{size}} MB",
+    "downloadStarting": "Preparing download...",
+    "stopDownload": "Stop",
+    "downloadError": "Download error: {{message}}",
+    "repoIdPlaceholder": "Enter HuggingFace model ID, e.g. mlx-community/Qwen2.5-3B-Instruct-4bit",
+    "customDownload": "Custom Model ID",
+    "startDownload": "Download"
   }
 }

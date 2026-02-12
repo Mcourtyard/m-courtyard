@@ -166,7 +166,7 @@ export function ProjectsPage() {
                           autoFocus
                           className="rounded border border-input bg-background px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                         />
-                        <button onClick={() => handleRename(project.id)} className="rounded p-1 text-green-400 hover:bg-green-500/10"><Check size={14} /></button>
+                        <button onClick={() => handleRename(project.id)} className="rounded p-1 text-success hover:bg-success/10"><Check size={14} /></button>
                         <button onClick={() => setRenamingId(null)} className="rounded p-1 text-muted-foreground hover:bg-accent"><X size={14} /></button>
                       </div>
                     ) : (

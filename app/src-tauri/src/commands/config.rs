@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use crate::python::PythonExecutor;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {
@@ -90,13 +91,7 @@ pub struct AppConfigResponse {
 pub fn get_app_config() -> Result<AppConfigResponse, String> {
     let config = load_config();
     let resolved = resolve_model_paths();
-    let ollama_installed = std::process::Command::new("ollama")
-        .arg("--version")
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false);
+    let ollama_installed = PythonExecutor::find_ollama().is_some();
     Ok(AppConfigResponse {
         huggingface: resolved.huggingface.to_string_lossy().to_string(),
         modelscope: resolved.modelscope.to_string_lossy().to_string(),

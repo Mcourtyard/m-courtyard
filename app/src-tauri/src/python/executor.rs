@@ -20,18 +20,45 @@ impl PythonExecutor {
 
     /// Check if uv is available on the system
     pub fn find_uv() -> Option<PathBuf> {
-        // Check common locations
+        let home = std::env::var("HOME").unwrap_or_default();
+        // Check common locations (works even when .app has minimal PATH)
         let candidates = vec![
             PathBuf::from("/usr/local/bin/uv"),
             PathBuf::from("/opt/homebrew/bin/uv"),
+            PathBuf::from(format!("{}/.cargo/bin/uv", home)),
+            PathBuf::from(format!("{}/.local/bin/uv", home)),
         ];
         for c in candidates {
             if c.exists() {
                 return Some(c);
             }
         }
-        // Check PATH via `which`
+        // Check PATH via `which` (works in dev/terminal, may fail in .app bundle)
         if let Ok(output) = std::process::Command::new("which").arg("uv").output() {
+            if output.status.success() {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path.is_empty() {
+                    return Some(PathBuf::from(path));
+                }
+            }
+        }
+        None
+    }
+
+    /// Check if ollama is available on the system
+    pub fn find_ollama() -> Option<PathBuf> {
+        // Check common locations (works even when .app has minimal PATH)
+        let candidates = vec![
+            PathBuf::from("/usr/local/bin/ollama"),
+            PathBuf::from("/opt/homebrew/bin/ollama"),
+        ];
+        for c in candidates {
+            if c.exists() {
+                return Some(c);
+            }
+        }
+        // Check PATH via `which` (works in dev/terminal, may fail in .app bundle)
+        if let Ok(output) = std::process::Command::new("which").arg("ollama").output() {
             if output.status.success() {
                 let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 if !path.is_empty() {

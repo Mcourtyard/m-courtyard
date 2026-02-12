@@ -5,7 +5,7 @@
 
 # 🏡 M-Courtyard
 
-**本地 AI 模型微调助手 — 适用于 Apple Silicon**
+**告别繁琐，简单创建您的AI大模型**
 
 *从原始文档到可部署的 Ollama 模型 — 全程在你的 Mac 上完成。*
 

@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useThemeStore } from "@/stores/themeStore";
 
 interface SubStep {
   key: string;
@@ -24,6 +25,7 @@ export function StepProgress({ subSteps }: StepProgressProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useThemeStore((s) => s.theme);
   const currentPath = location.pathname;
   const currentIdx = MAIN_STEPS.findIndex((s) => s.path === currentPath);
 
@@ -75,7 +77,7 @@ export function StepProgress({ subSteps }: StepProgressProps) {
             const pct = ((lastDone) / (subSteps.length - 1)) * 100;
             return (
               <div
-                className="absolute left-0 top-1/2 z-0 h-px -translate-y-1/2 bg-green-500/40"
+                className="absolute left-0 top-1/2 z-0 h-px -translate-y-1/2 bg-success/40"
                 style={{ width: `${pct}%` }}
               />
             );
@@ -86,9 +88,13 @@ export function StepProgress({ subSteps }: StepProgressProps) {
                 key={sub.key}
                 className={`relative z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
                   sub.active
-                    ? "bg-blue-950 text-blue-400 ring-1 ring-blue-500/30"
+                    ? "bg-card text-primary ring-1 ring-primary/40"
                     : sub.done
-                      ? "bg-green-950 text-green-400 ring-1 ring-green-500/30"
+                      ? theme === "midnight"
+                        ? "bg-card text-success ring-1 ring-success/30"
+                        : theme === "ocean"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-success text-white"
                       : "bg-card text-muted-foreground/60 ring-1 ring-border/50"
                 }`}
               >

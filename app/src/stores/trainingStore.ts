@@ -13,6 +13,8 @@ interface TrainingState {
   valLossData: [number, number][];
   currentIter: number;
   adapterPath: string | null;
+  startedAt: number | null;
+  completedAt: number | null;
 
   // Persisted training params (survive page navigation)
   params: TrainingParams;
@@ -43,6 +45,8 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   valLossData: [],
   currentIter: 0,
   adapterPath: null,
+  startedAt: null,
+  completedAt: null,
   params: defaultTrainingParams(),
   modelValid: null,
 
@@ -58,6 +62,8 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       valLossData: [],
       currentIter: 0,
       adapterPath: null,
+      startedAt: Date.now(),
+      completedAt: null,
     }),
 
   stopTraining: () =>
@@ -76,6 +82,8 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       valLossData: [],
       currentIter: 0,
       adapterPath: null,
+      startedAt: null,
+      completedAt: null,
       params: defaultTrainingParams(),
       modelValid: null,
     }),
@@ -149,7 +157,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
     const u2 = await listen<{ job_id: string; success: boolean }>(
       "training-complete",
       (event) => {
-        set({ status: event.payload.success ? "completed" : "failed" });
+        set({ status: event.payload.success ? "completed" : "failed", completedAt: Date.now() });
         useTaskStore.getState().releaseTask();
       }
     );

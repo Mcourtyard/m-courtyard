@@ -5,7 +5,7 @@
 
 # 🏡 M-Courtyard
 
-**Local AI Model Fine-tuning Assistant for Apple Silicon**
+**Say Goodbye to Complexity, Easily Create Your AI Model**
 
 *From raw documents to a deployable Ollama model — entirely on your Mac.*
 

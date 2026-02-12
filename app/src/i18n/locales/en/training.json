@@ -18,13 +18,48 @@
     "learningRate": "Learning Rate",
     "learningRateHint": "Step size for optimization. Too high → unstable, too low → slow.",
     "seed": "Random Seed",
-    "seedHint": "Set to 0 for random. Use a fixed seed for reproducible results."
+    "seedHint": "Set to 0 for random. Use a fixed seed for reproducible results.",
+    "loraScale": "LoRA Scale",
+    "loraScaleHint": "Adjustment magnitude. Higher values = more obvious changes to the model.",
+    "loraDropout": "LoRA Dropout",
+    "loraDropoutHint": "Random drop ratio. Increase slightly to prevent overfitting (memorizing data).",
+    "maxSeqLength": "Max Sequence Length",
+    "maxSeqLengthHint": "Max length per training sample. Choose based on your data's average length.",
+    "gradCheckpoint": "Gradient Checkpoint",
+    "gradCheckpointHint": "Saves memory but slows training. Enable when running low on memory.",
+    "stepsPerEval": "Eval Interval",
+    "stepsPerEvalHint": "Check model performance every N iterations.",
+    "stepsPerReport": "Report Interval",
+    "stepsPerReportHint": "Update training metrics on screen every N iterations.",
+    "valBatches": "Validation Batches",
+    "valBatchesHint": "How many batches to use for validation. More = more accurate but slower.",
+    "optimizer": "Optimizer",
+    "optimizerHint": "Algorithm for weight updates. Adam is the most common default.",
+    "gradAccumulationSteps": "Gradient Accumulation",
+    "gradAccumulationStepsHint": "Accumulate N batches before updating. Effectively multiplies batch size without extra memory.",
+    "saveEvery": "Save Every N Iters",
+    "saveEveryHint": "Save adapter checkpoint every N iterations. Protects against losing progress.",
+    "maskPrompt": "Mask Prompt Loss",
+    "maskPromptHint": "Only compute loss on completions, ignore the prompt part. Improves SFT quality.",
+    "showAdvanced": "Show Advanced Parameters",
+    "hideAdvanced": "Hide Advanced Parameters"
+  },
+  "method": {
+    "title": "Training Method",
+    "lora": "LoRA",
+    "loraDesc": "Low-Rank Adaptation. Efficient fine-tuning by training small adapter matrices. Recommended for most use cases.",
+    "dora": "DoRA",
+    "doraDesc": "Weight-Decomposed Low-Rank Adaptation. Enhanced LoRA with better performance, slightly more compute.",
+    "full": "Full",
+    "fullDesc": "Full parameter fine-tuning. Trains all model weights. Requires significantly more memory.",
+    "hint": "Select a method after choosing model and dataset."
   },
   "presets": {
     "title": "Quick Presets",
     "quick": "Quick Test (100 iters)",
     "standard": "Standard (1000 iters)",
-    "thorough": "Thorough (2000 iters)"
+    "thorough": "Thorough (2000 iters)",
+    "extreme": "Extreme (5000 iters)"
   },
   "start": "Start Training",
   "stop": "Stop Training",
@@ -39,6 +74,7 @@
   "section": {
     "selectModel": "Select Training Model",
     "selectDataset": "Select Dataset",
+    "method": "Training Method",
     "params": "Training Parameters"
   },
   "completedBanner": "Training complete! Model adapter saved.",
@@ -57,12 +93,26 @@
   "lossCurve": "Loss Curve",
   "waitingData": "Waiting for training data...",
   "invalidModelError": "No valid model found at the selected path. Cannot start training.",
-  "paramsSummary": "{{iters}} iters · Batch {{batch}} · LoRA {{layers}} layers Rank {{rank}}",
+  "paramsSummary": "{{iters}} iters \u00b7 Batch {{batch}} \u00b7 {{method}}",
   "entries": "{{count}} entries",
   "step": {
     "model": "Model",
     "data": "Data",
-    "train": "Training",
+    "method": "Method",
+    "params": "Params",
     "done": "Done"
+  },
+  "summary": {
+    "title": "Training Summary",
+    "duration": "Duration",
+    "finalTrainLoss": "Final Train Loss",
+    "finalValLoss": "Final Val Loss",
+    "totalIters": "Total Iterations",
+    "baseModel": "Base Model",
+    "adapterPath": "Adapter Saved To",
+    "keyParams": "Key Parameters",
+    "lossImprove": "Loss Improvement",
+    "goToExport": "Export Model",
+    "noData": "N/A"
   }
 }

@@ -27,6 +27,19 @@
     "setupDesc": "将创建 Python 虚拟环境并安装 mlx-lm 训练框架",
     "browseModelDir": "选择 {{source}} 模型目录"
   },
+  "theme": {
+    "title": "主题",
+    "midnight": "午夜",
+    "midnightDesc": "默认深色主题",
+    "ocean": "海洋",
+    "oceanDesc": "深蓝色调",
+    "sunset": "日落",
+    "sunsetDesc": "温暖琥珀色调",
+    "nebula": "星云",
+    "nebulaDesc": "宇宙紫罗兰色调",
+    "light": "浅色",
+    "lightDesc": "清爽浅色主题"
+  },
   "language": {
     "title": "语言",
     "current": "当前语言",
@@ -36,7 +49,7 @@
   "about": {
     "title": "关于",
     "version": "版本",
-    "description": "Apple Silicon AI 模型训练助手",
+    "description": "告别繁琐，简单创建您的AI大模型",
     "github": "GitHub 仓库"
   },
   "downloadSource": {

@@ -54,7 +54,7 @@ pub async fn check_environment() -> Result<EnvironmentStatus, String> {
         }
     }
 
-    let ollama_installed = check_ollama_bin();
+    let ollama_installed = PythonExecutor::find_ollama().is_some();
 
     Ok(EnvironmentStatus {
         python_ready: executor.is_ready(),
@@ -131,11 +131,12 @@ pub async fn setup_environment(app: tauri::AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn check_ollama_status() -> Result<OllamaStatus, String> {
-    let installed = check_ollama_bin();
+    let ollama_bin = PythonExecutor::find_ollama();
+    let installed = ollama_bin.is_some();
     let mut running = false;
 
-    if installed {
-        if let Ok(output) = std::process::Command::new("ollama")
+    if let Some(ref bin) = ollama_bin {
+        if let Ok(output) = std::process::Command::new(bin)
             .arg("list")
             .output()
         {
@@ -144,14 +145,6 @@ pub async fn check_ollama_status() -> Result<OllamaStatus, String> {
     }
 
     Ok(OllamaStatus { installed, running })
-}
-
-fn check_ollama_bin() -> bool {
-    std::process::Command::new("which")
-        .arg("ollama")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
 }
 
 fn get_chip_name() -> String {
@@ -208,11 +201,12 @@ fn get_os_version() -> String {
 
 #[tauri::command]
 pub async fn list_ollama_models() -> Result<Vec<OllamaModel>, String> {
-    if !check_ollama_bin() {
-        return Ok(vec![]);
-    }
+    let ollama_bin = match PythonExecutor::find_ollama() {
+        Some(bin) => bin,
+        None => return Ok(vec![]),
+    };
 
-    let output = std::process::Command::new("ollama")
+    let output = std::process::Command::new(&ollama_bin)
         .arg("list")
         .output()
         .map_err(|e| format!("Failed to run ollama list: {}", e))?;

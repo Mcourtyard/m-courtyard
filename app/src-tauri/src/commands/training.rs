@@ -40,11 +40,23 @@ pub async fn start_training(
         _ => project_path.join("dataset"),
     };
     let adapter_path = project_path.join("adapters").join(&job_id);
+    let fine_tune_type = training_params["fine_tune_type"].as_str().unwrap_or("lora").to_string();
+    let optimizer = training_params["optimizer"].as_str().unwrap_or("adam").to_string();
     let iters = training_params["iters"].as_u64().unwrap_or(1000);
     let batch_size = training_params["batch_size"].as_u64().unwrap_or(4);
     let lora_layers = training_params["lora_layers"].as_u64().unwrap_or(16);
     let lora_rank = training_params["lora_rank"].as_u64().unwrap_or(8);
+    let lora_scale = training_params["lora_scale"].as_f64().unwrap_or(20.0);
+    let lora_dropout = training_params["lora_dropout"].as_f64().unwrap_or(0.0);
     let learning_rate = training_params["learning_rate"].as_f64().unwrap_or(1e-5);
+    let max_seq_length = training_params["max_seq_length"].as_u64().unwrap_or(2048);
+    let grad_checkpoint = training_params["grad_checkpoint"].as_bool().unwrap_or(false);
+    let grad_accumulation_steps = training_params["grad_accumulation_steps"].as_u64().unwrap_or(1);
+    let save_every = training_params["save_every"].as_u64().unwrap_or(100);
+    let mask_prompt = training_params["mask_prompt"].as_bool().unwrap_or(false);
+    let steps_per_eval = training_params["steps_per_eval"].as_u64().unwrap_or(200);
+    let steps_per_report = training_params["steps_per_report"].as_u64().unwrap_or(10);
+    let val_batches = training_params["val_batches"].as_u64().unwrap_or(25);
     let seed = training_params["seed"].as_u64().unwrap_or(0);
 
     // Verify dataset exists
@@ -61,11 +73,23 @@ pub async fn start_training(
     // Save training metadata for export page to read base model
     let meta = serde_json::json!({
         "base_model": &model,
+        "fine_tune_type": &fine_tune_type,
+        "optimizer": &optimizer,
         "iters": iters,
         "batch_size": batch_size,
         "lora_layers": lora_layers,
         "lora_rank": lora_rank,
+        "lora_scale": lora_scale,
+        "lora_dropout": lora_dropout,
         "learning_rate": learning_rate,
+        "max_seq_length": max_seq_length,
+        "grad_checkpoint": grad_checkpoint,
+        "grad_accumulation_steps": grad_accumulation_steps,
+        "save_every": save_every,
+        "mask_prompt": mask_prompt,
+        "steps_per_eval": steps_per_eval,
+        "steps_per_report": steps_per_report,
+        "val_batches": val_batches,
         "created_at": chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
     });
     let _ = std::fs::write(
@@ -73,13 +97,20 @@ pub async fn start_training(
         serde_json::to_string_pretty(&meta).unwrap_or_default(),
     );
 
-    // Generate a YAML config for lora parameters (--lora-rank is NOT a valid CLI arg)
+    // Generate a YAML config for lora/dora parameters (--lora-rank is NOT a valid CLI arg)
     let config_path = adapter_path.join("lora_config.yaml");
-    let config_content = format!(
-        "lora_parameters:\n  rank: {}\n  alpha: {}\n  dropout: 0.0\n  scale: 10.0\n",
-        lora_rank,
-        lora_rank * 2,
-    );
+    let config_content = if fine_tune_type == "full" {
+        // Full fine-tuning does not use lora_parameters
+        String::new()
+    } else {
+        format!(
+            "lora_parameters:\n  rank: {}\n  alpha: {}\n  dropout: {}\n  scale: {}\n",
+            lora_rank,
+            lora_rank * 2,
+            lora_dropout,
+            lora_scale,
+        )
+    };
     std::fs::write(&config_path, &config_content)
         .map_err(|e| format!("Failed to write lora config: {}", e))?;
 
@@ -92,8 +123,7 @@ pub async fn start_training(
 
     tokio::spawn(async move {
         // Build args: python -m mlx_lm lora --train ...
-        // Note: lora_rank is passed via -c config YAML, NOT as CLI arg
-        let py_args = vec![
+        let mut py_args = vec![
             "-m".to_string(),
             "mlx_lm".to_string(),
             "lora".to_string(),
@@ -102,21 +132,48 @@ pub async fn start_training(
             model,
             "--data".to_string(),
             data_dir.to_string_lossy().to_string(),
+            "--fine-tune-type".to_string(),
+            fine_tune_type,
+            "--optimizer".to_string(),
+            optimizer,
             "--adapter-path".to_string(),
             adapter_path.to_string_lossy().to_string(),
             "--iters".to_string(),
             iters.to_string(),
             "--batch-size".to_string(),
             batch_size.to_string(),
-            "--num-layers".to_string(),
-            lora_layers.to_string(),
-            "-c".to_string(),
-            config_path.to_string_lossy().to_string(),
             "--learning-rate".to_string(),
             format!("{:.2e}", learning_rate),
+            "--max-seq-length".to_string(),
+            max_seq_length.to_string(),
+            "--steps-per-eval".to_string(),
+            steps_per_eval.to_string(),
+            "--steps-per-report".to_string(),
+            steps_per_report.to_string(),
+            "--val-batches".to_string(),
+            val_batches.to_string(),
+            "--save-every".to_string(),
+            save_every.to_string(),
             "--seed".to_string(),
             seed.to_string(),
         ];
+        // Only pass -c config YAML and --num-layers for lora/dora
+        if config_content.len() > 0 {
+            py_args.push("-c".to_string());
+            py_args.push(config_path.to_string_lossy().to_string());
+            py_args.push("--num-layers".to_string());
+            py_args.push(lora_layers.to_string());
+        }
+        if grad_checkpoint {
+            py_args.push("--grad-checkpoint".to_string());
+        }
+        if mask_prompt {
+            py_args.push("--mask-prompt".to_string());
+        }
+        if grad_accumulation_steps > 1 {
+            py_args.push("--grad-accumulation-steps".to_string());
+            py_args.push(grad_accumulation_steps.to_string());
+        }
 
         // Wrap with caffeinate -i to prevent idle sleep during training
         let mut caffeinate_args: Vec<String> = vec![

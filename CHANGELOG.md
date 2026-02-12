@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-12
+
+### Added
+- **Training Method Selection**: Choose between LoRA, DoRA, and Full fine-tuning methods with descriptive hints
+- **Advanced Training Parameters**: lora_scale, lora_dropout, max_seq_length, gradient checkpointing, gradient accumulation, save interval, mask prompt loss, validation batches, steps per eval/report
+- **Optimizer Selection**: Adam, AdamW, SGD, Adafactor
+- **Training Summary Panel**: Post-training dashboard showing duration, final train/val loss, loss improvement percentage, key parameters, and adapter path
+- **Training Duration Tracking**: Automatic timing from start to completion
+- **Extreme Preset**: New 5000-iteration training preset for intensive fine-tuning
+- **Theme System**: 5 built-in themes — Midnight, Ocean, Sunset, Nebula, Light — with persistent selection
+- **Semantic Color Tokens**: Unified `success`, `warning`, `tag-hf`, `tag-ms`, `tag-mlx`, `tag-trained` color variables across all themes
+- **Model Download Script**: New `download_model.py` with real-time progress reporting (JSON event stream)
+- **Model Download Command**: Rust backend support for downloading HuggingFace models with progress tracking
+- **Ollama Path Detection**: `find_ollama()` in executor for reliable Ollama binary discovery in .app bundles
+- **Expanded uv Detection**: Added `~/.cargo/bin/uv` and `~/.local/bin/uv` search paths
+
+### Changed
+- Updated slogan to "Say Goodbye to Complexity, Easily Create Your AI Model"
+- Training step progress now shows Method and Params steps instead of single Training step
+- Parameter summary format updated to show training method type
+- Replaced hardcoded Tailwind color classes with semantic design tokens throughout UI
+- Conditional LoRA config and `--num-layers` args — only passed for LoRA/DoRA, not Full fine-tuning
+- Conditional `--grad-checkpoint` and `--mask-prompt` flags
+
+### Improved
+- Training page UX with collapsible advanced parameters section
+- Settings page with theme picker and cleaner semantic styling
+
 ## [0.1.0] - 2026-02-12
 
 ### Added
@@ -21,4 +49,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub Actions CI**: Automated .dmg build and release on tag push
 - **Discord Integration**: Automated release notifications via webhook
 
+[0.2.0]: https://github.com/tuwenbo0120/m-courtyard/releases/tag/v0.2.0
 [0.1.0]: https://github.com/tuwenbo0120/m-courtyard/releases/tag/v0.1.0

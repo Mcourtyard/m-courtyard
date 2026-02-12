@@ -51,7 +51,7 @@ export function Sidebar() {
         {/* Dashboard - top level */}
         <button
           onClick={() => navigate("/")}
-          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-lg font-medium transition-colors ${
             location.pathname === "/"
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
               : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -65,7 +65,7 @@ export function Sidebar() {
         <div>
           <button
             onClick={() => navigate("/projects")}
-            className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+            className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-lg font-medium transition-colors ${
               isInProjectSection
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -98,7 +98,7 @@ export function Sidebar() {
                     key={item.key}
                     onClick={() => { if (!isDisabled) navigate(item.path); }}
                     disabled={isDisabled}
-                    className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-xs transition-colors ${
+                    className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-base transition-colors ${
                       isDisabled
                         ? "cursor-not-allowed text-muted-foreground/30"
                         : isActive

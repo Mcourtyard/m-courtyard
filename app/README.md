@@ -1,4 +1,4 @@
-# M-Courtyard – AI Model Training Assistant
+# M-Courtyard – Say Goodbye to Complexity, Easily Create Your AI Model
 
 From raw text to fine-tuned local models. Zero code, zero cloud, zero hassle.
 
