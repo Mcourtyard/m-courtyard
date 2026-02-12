@@ -1,0 +1,9 @@
+{
+  "dashboard": "控制台",
+  "projects": "项目",
+  "dataPrep": "数据准备",
+  "training": "训练模型",
+  "testing": "测试模型",
+  "export": "导出模型",
+  "settings": "设置"
+}

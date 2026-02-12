@@ -1,0 +1,31 @@
+{
+  "title": "Model Testing",
+  "pageTitle": "3. Test Model",
+  "selectProject": "Select a project with a trained model to test",
+  "noModel": "No trained model found for this project. Complete training first.",
+  "chat": {
+    "placeholder": "Type a message to test the model...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "clear": "Clear Chat",
+    "empty": "Start a conversation to test your fine-tuned model."
+  },
+  "config": {
+    "title": "Generation Config",
+    "maxTokens": "Max Tokens",
+    "temperature": "Temperature",
+    "topP": "Top-p",
+    "repetitionPenalty": "Repetition Penalty"
+  },
+  "section": {
+    "selectAdapter": "Select Adapter (Training Result)"
+  },
+  "noAdapter": "No trained adapters available. Complete training first.",
+  "noAdapterOption": "No adapter (base model only)",
+  "baseModel": "Base model: ",
+  "adapterLoaded": "Adapter loaded. Send a message to test your fine-tuned model.",
+  "step": {
+    "adapter": "Adapter",
+    "test": "Test"
+  }
+}

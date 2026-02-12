@@ -1,0 +1,54 @@
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Node / Frontend ──
+app/node_modules/
+app/dist/
+app/dist-ssr/
+app/*.local
+app/pnpm-debug.log*
+
+# ── Rust / Tauri ──
+app/src-tauri/target/
+
+# ── Editor ──
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# ── Build artifacts ──
+*.dmg
+*.app
+*.deb
+*.AppImage
+*.msi
+
+# ── User data (runtime) ──
+# ~/Courtyard/ is the runtime data dir, not in repo
+
+# ── Old git history backup ──
+.git-backup/
+app/.git-backup/
+
+# ── Internal docs & history (not for public repo) ──
+docs/
+历史资料/
+产品需求规格说明书.md
+测试文档.md
+开源待办清单.md
+
+# ── Misc ──
+*.log
+logs/

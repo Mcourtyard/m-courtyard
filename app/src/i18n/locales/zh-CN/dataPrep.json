@@ -1,0 +1,96 @@
+{
+  "title": "数据准备",
+  "pageTitle": "1. 数据准备",
+  "selectProject": "选择项目以管理数据",
+  "import": {
+    "title": "导入文件",
+    "hint": "导入 .txt、.jsonl 或 .json 文件作为训练数据源。",
+    "button": "选择文件",
+    "success": "成功导入 {{count}} 个文件"
+  },
+  "files": {
+    "raw": "原始文件",
+    "cleaned": "清洗后文件",
+    "dataset": "训练数据集",
+    "empty": "暂无文件",
+    "emptyHint": "导入文本文件以开始"
+  },
+  "clean": {
+    "title": "一键清洗",
+    "button": "清洗数据",
+    "running": "清洗中...",
+    "hint": "去除噪音、修复编码、去重、规范化你的文本文件。"
+  },
+  "generate": {
+    "title": "生成数据集",
+    "button": "开始生成",
+    "running": "正在生成数据集...",
+    "hint": "从清洗后的文本自动生成训练数据集。",
+    "format": "输出格式",
+    "alpaca": "Alpaca（instruction/input/output）",
+    "sharegpt": "ShareGPT（对话格式）",
+    "mode_qa": "知识问答",
+    "mode_style": "风格模仿",
+    "mode_chat": "多轮对话",
+    "mode_instruct": "指令训练",
+    "mode_qa_desc": "从文本中提取知识点，生成问答对。适合构建知识库、FAQ 类训练数据。",
+    "mode_style_desc": "分析原文写作风格，让 AI 模仿该风格创作全新内容。适合训练模型学习特定作者的文风。",
+    "mode_chat_desc": "基于文本内容生成多轮对话数据。适合训练模型的对话能力和上下文理解。",
+    "mode_instruct_desc": "将文本转化为指令-输出对，涵盖总结、分析、推理等任务类型。适合通用指令微调。",
+    "progressLabel": "已完成 {{step}}/{{total}} 条（{{percent}}%）",
+    "sourceLabel": "生成方式",
+    "source_ollama": "AI 生成（Ollama 本地模型）",
+    "source_builtin": "内置规则生成（无需 AI）",
+    "modelLabel": "选择模型",
+    "modelPlaceholder": "请选择一个 Ollama 模型",
+    "noModels": "未检测到本地模型",
+    "noOllama": "未安装 Ollama",
+    "installOllamaHint": "安装 Ollama 后可使用 AI 生成更高质量的数据集",
+    "downloadHint": "推荐下载以下模型用于数据集生成：",
+    "downloadBtn": "去下载",
+    "addModelPath": "手动添加模型路径",
+    "addModelPlaceholder": "输入本地模型路径（如 /Users/.../model）",
+    "addModelBtn": "添加",
+    "refreshModels": "刷新模型列表",
+    "builtinHint": "使用规则提取自动生成训练数据，无需 AI 模型，速度快但质量有限。",
+    "ollamaHint": "使用本地 Ollama 大模型生成高质量训练数据，推荐使用 7B 以上模型。",
+    "stopGeneration": "停止生成",
+    "cleaningStatus": "清洗中...",
+    "envCheck": "运行环境检测"
+  },
+  "preview": {
+    "title": "预览",
+    "lines": "{{count}} 行",
+    "noContent": "选择文件以预览内容"
+  },
+  "section": {
+    "selectFiles": "选择数据原始文件",
+    "genMethod": "生成方式",
+    "genType": "生成类型",
+    "datasets": "已生成数据集"
+  },
+  "dataset": {
+    "versionCount": "{{count}} 个数据集版本",
+    "trainCount": "{{count}} 条",
+    "noVersions": "暂无数据集，请先生成",
+    "legacy": "旧版数据集"
+  },
+  "addFile": "添加文件",
+  "addFolder": "添加文件夹",
+  "selectFolder": "选择文件夹",
+  "datasetReady": "数据集已就绪 — 去训练模型",
+  "aiLog": "AI 生成日志",
+  "connectingAI": "正在连接 AI 模型...",
+  "step": {
+    "import": "导入",
+    "add": "添加",
+    "clean": "清洗",
+    "method": "方式",
+    "type": "类型",
+    "generating": "生成中",
+    "done": "完成",
+    "generate": "生成",
+    "train": "训练",
+    "goToTrain": "数据集已就绪 — 去训练"
+  }
+}

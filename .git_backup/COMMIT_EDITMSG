@@ -1,0 +1,6 @@
+chore: rename product to M-Courtyard, add GitHub Actions CI workflow
+
+- chore: update productName to M-Courtyard in tauri.conf.json
+- docs: rename Courtyard to M-Courtyard in README.md, README_zh-CN.md, app/README.md
+- chore: update LICENSE branding to M-Courtyard
+- ci: add .github/workflows/release.yml for automated macOS aarch64 build on tag push

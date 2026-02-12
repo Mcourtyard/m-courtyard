@@ -1,0 +1,25 @@
+{
+  "title": "项目",
+  "create": "新建项目",
+  "createTitle": "创建新项目",
+  "nameLabel": "项目名称",
+  "namePlaceholder": "输入项目名称",
+  "deleteConfirm": "确定要删除这个项目吗？",
+  "deleteWarning": "此操作不可撤销，所有项目数据将被永久删除。",
+  "empty": "暂无项目",
+  "emptyDescription": "创建你的第一个项目，开始微调模型。",
+  "status": {
+    "created": "已创建",
+    "cleaning": "清洗中",
+    "generating": "生成中",
+    "training": "训练中",
+    "completed": "已完成"
+  },
+  "taskBadge": {
+    "generating": "数据生成中",
+    "training": "模型训练中"
+  },
+  "deleteConfirmTitle": "确认删除项目",
+  "deleteConfirmMsg": "确定要删除项目 {{name}}？此操作将删除所有项目数据且不可恢复。",
+  "deleteBtnConfirm": "确认删除"
+}

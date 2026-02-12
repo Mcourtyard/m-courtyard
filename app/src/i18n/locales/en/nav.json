@@ -1,0 +1,9 @@
+{
+  "dashboard": "Dashboard",
+  "projects": "Projects",
+  "dataPrep": "Data Preparation",
+  "training": "Train Model",
+  "testing": "Test Model",
+  "export": "Export Model",
+  "settings": "Settings"
+}

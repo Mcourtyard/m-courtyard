@@ -1,0 +1,31 @@
+{
+  "title": "模型测试",
+  "pageTitle": "3. 测试模型",
+  "selectProject": "选择一个已训练的项目进行测试",
+  "noModel": "该项目暂无已训练模型。请先完成训练。",
+  "chat": {
+    "placeholder": "输入消息来测试模型...",
+    "send": "发送",
+    "thinking": "思考中...",
+    "clear": "清空对话",
+    "empty": "开始对话以测试你的微调模型。"
+  },
+  "config": {
+    "title": "生成配置",
+    "maxTokens": "最大 Token 数",
+    "temperature": "温度",
+    "topP": "Top-p",
+    "repetitionPenalty": "重复惩罚"
+  },
+  "section": {
+    "selectAdapter": "选择适配器（训练成果）"
+  },
+  "noAdapter": "暂无训练好的适配器，请先完成训练",
+  "noAdapterOption": "不使用适配器（原始模型）",
+  "baseModel": "基础模型：",
+  "adapterLoaded": "已加载适配器，发送消息开始测试微调效果",
+  "step": {
+    "adapter": "适配器",
+    "test": "测试"
+  }
+}

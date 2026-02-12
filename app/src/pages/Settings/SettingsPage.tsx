@@ -1,0 +1,405 @@
+import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
+import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
+import { Monitor, Languages, Info, FolderOpen, RefreshCw, Download, RotateCcw, Globe } from "lucide-react";
+import { checkEnvironment, setupEnvironment, type EnvironmentStatus } from "@/services/environment";
+
+interface AppConfigResponse {
+  huggingface: string;
+  modelscope: string;
+  ollama: string;
+  huggingface_custom: boolean;
+  modelscope_custom: boolean;
+  ollama_custom: boolean;
+  export_path: string | null;
+  ollama_installed: boolean;
+  hf_source: string;
+}
+
+export function SettingsPage() {
+  const { t, i18n } = useTranslation("settings");
+  const [env, setEnv] = useState<EnvironmentStatus | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [setupMsg, setSetupMsg] = useState<string | null>(null);
+  const [config, setConfig] = useState<AppConfigResponse | null>(null);
+
+  const loadConfig = useCallback(async () => {
+    try {
+      const cfg = await invoke<AppConfigResponse>("get_app_config");
+      setConfig(cfg);
+    } catch { /* ignore */ }
+  }, []);
+
+  const browseAndSetPath = async (source: string) => {
+    const selected = await dialogOpen({ directory: true, multiple: false, title: t("environment.browseModelDir", { source }) });
+    if (selected && typeof selected === "string") {
+      if (source === "export") {
+        await invoke("set_export_path", { path: selected });
+      } else {
+        await invoke("set_model_source_path", { source, path: selected });
+      }
+      await loadConfig();
+    }
+  };
+
+  const resetPath = async (source: string) => {
+    if (source === "export") {
+      await invoke("set_export_path", { path: null });
+    } else {
+      await invoke("set_model_source_path", { source, path: null });
+    }
+    await loadConfig();
+  };
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const status = await checkEnvironment();
+      setEnv(status);
+    } catch (e) {
+      console.error("Failed to check environment:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+    loadConfig();
+  }, [loadConfig]);
+
+  const handleSetup = async () => {
+    setSetupLoading(true);
+    setSetupMsg(null);
+    try {
+      await setupEnvironment();
+      setSetupMsg(t("environment.setupSuccess"));
+      await refresh();
+    } catch (e) {
+      setSetupMsg(t("environment.setupError", { error: String(e) }));
+    } finally {
+      setSetupLoading(false);
+    }
+  };
+
+  const setLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+  };
+
+  return (
+    <div className="space-y-8 max-w-2xl">
+      <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+
+      {/* Environment Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Monitor size={18} className="text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            {t("environment.title")}
+          </h2>
+          <button
+            onClick={refresh}
+            disabled={loading}
+            className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+            {t("environment.refreshButton")}
+          </button>
+        </div>
+        <div className="rounded-lg border border-border divide-y divide-border">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("environment.chip")}</span>
+            <span className="text-sm font-medium text-foreground">{env?.chip || "..."}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("environment.memory")}</span>
+            <span className="text-sm font-medium text-foreground">
+              {env ? `${env.memory_gb.toFixed(0)} GB` : "..."}
+            </span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("environment.os")}</span>
+            <span className="text-sm font-medium text-foreground">{env?.os_version || "..."}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("environment.python")}</span>
+            <span className={`text-sm font-medium ${env?.python_ready ? "text-green-500" : "text-yellow-500"}`}>
+              {env ? (env.python_ready ? t("environment.pythonReady") : t("environment.pythonNotReady")) : "..."}
+            </span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("environment.mlxLm")}</span>
+            <span className={`text-sm font-medium ${env?.mlx_lm_ready ? "text-green-500" : "text-yellow-500"}`}>
+              {env ? (env.mlx_lm_ready ? t("environment.mlxLmReady", { version: env.mlx_lm_version || "?" }) : t("environment.mlxLmNotReady")) : "..."}
+            </span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("environment.uv")}</span>
+            <span className={`text-sm font-medium ${env?.uv_available ? "text-green-500" : "text-yellow-500"}`}>
+              {env ? (env.uv_available ? t("environment.uvReady") : t("environment.uvNotReady")) : "..."}
+            </span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("environment.ollama")}</span>
+            <span className={`text-sm font-medium ${env?.ollama_installed ? "text-green-500" : "text-muted-foreground"}`}>
+              {env ? (env.ollama_installed ? t("environment.ollamaReady") : t("environment.ollamaNotReady")) : "..."}
+            </span>
+          </div>
+        </div>
+
+        {/* Setup Button */}
+        {env && (!env.python_ready || !env.mlx_lm_ready) && env.uv_available && (
+          <div className="space-y-2">
+            <button
+              onClick={handleSetup}
+              disabled={setupLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Download size={16} />
+              {setupLoading
+                ? t("environment.setupRunning")
+                : env.python_ready && !env.mlx_lm_ready
+                  ? t("environment.installMlxLm")
+                  : t("environment.setupButton")}
+            </button>
+            <p className="text-xs text-muted-foreground text-center">
+              {env.python_ready && !env.mlx_lm_ready
+                ? t("environment.installMlxLmDesc")
+                : t("environment.setupDesc")}
+            </p>
+          </div>
+        )}
+        {setupMsg && (
+          <p className={`text-sm ${setupMsg.includes("failed") || setupMsg.includes("error") ? "text-red-400" : "text-green-400"}`}>
+            {setupMsg}
+          </p>
+        )}
+      </section>
+
+      {/* Language Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Languages size={18} className="text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            {t("language.title")}
+          </h2>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setLanguage("en")}
+            className={`flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+              i18n.language === "en"
+                ? "border-primary bg-primary/10 text-foreground"
+                : "border-border text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            {t("language.en")}
+          </button>
+          <button
+            onClick={() => setLanguage("zh-CN")}
+            className={`flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+              i18n.language === "zh-CN"
+                ? "border-primary bg-primary/10 text-foreground"
+                : "border-border text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            {t("language.zhCN")}
+          </button>
+        </div>
+      </section>
+
+      {/* Download Source Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Globe size={18} className="text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            {t("downloadSource.title")}
+          </h2>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t("downloadSource.desc")}
+        </p>
+        <div className="flex gap-3">
+          {[
+            { key: "huggingface", label: t("downloadSource.huggingface"), desc: t("downloadSource.huggingfaceDesc") },
+            { key: "hf-mirror", label: t("downloadSource.hfMirror"), desc: t("downloadSource.hfMirrorDesc") },
+            { key: "modelscope", label: t("downloadSource.modelscope"), desc: t("downloadSource.modelscopeDesc") },
+          ].map((src) => (
+            <button
+              key={src.key}
+              onClick={async () => {
+                await invoke("set_hf_source", { source: src.key });
+                await loadConfig();
+              }}
+              className={`flex-1 rounded-lg border px-3 py-3 text-left transition-colors ${
+                config?.hf_source === src.key
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:bg-accent"
+              }`}
+            >
+              <span className={`block text-sm font-medium ${
+                config?.hf_source === src.key ? "text-foreground" : "text-muted-foreground"
+              }`}>{src.label}</span>
+              <span className="block text-[10px] text-muted-foreground/70 mt-0.5">{src.desc}</span>
+            </button>
+          ))}
+        </div>
+        {config?.hf_source === "modelscope" && (
+          <p className="text-xs text-yellow-400/80">
+            ⚠ {t("downloadSource.modelscopeWarn")}
+          </p>
+        )}
+      </section>
+
+      {/* Storage Section */}
+      <section id="storage" className="space-y-4">
+        <div className="flex items-center gap-2">
+          <FolderOpen size={18} className="text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            {t("storage.title")}
+          </h2>
+        </div>
+
+        <div className="rounded-lg border border-border divide-y divide-border">
+          {/* Data Directory (read-only) */}
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("storage.dataDir")}</span>
+            <span className="text-xs font-mono text-muted-foreground">~/Courtyard</span>
+          </div>
+        </div>
+
+        {/* Model Storage Locations */}
+        <div className="space-y-2">
+          <div>
+            <p className="text-xs font-medium text-foreground">{t("storage.modelPaths")}</p>
+            <p className="text-xs text-muted-foreground/70">{t("storage.modelPathsDesc")}</p>
+          </div>
+          <div className="rounded-lg border border-border divide-y divide-border">
+            {/* HuggingFace */}
+            <div className="px-4 py-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t("storage.hfPath")}</span>
+                <div className="flex items-center gap-2">
+                  {config?.huggingface_custom && (
+                    <button onClick={() => resetPath("huggingface")} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
+                      <RotateCcw size={10} />
+                      {t("storage.resetDefault")}
+                    </button>
+                  )}
+                  <button onClick={() => browseAndSetPath("huggingface")} className="text-xs text-primary hover:underline">
+                    {t("storage.browse")}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="truncate text-xs font-mono text-muted-foreground/70">{config?.huggingface || "..."}</span>
+                {config && (
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.huggingface_custom ? "bg-cyan-500/15 text-cyan-400" : "bg-muted text-muted-foreground"}`}>
+                    {config.huggingface_custom ? t("storage.custom") : t("storage.default")}
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* ModelScope */}
+            <div className="px-4 py-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t("storage.msPath")}</span>
+                <div className="flex items-center gap-2">
+                  {config?.modelscope_custom && (
+                    <button onClick={() => resetPath("modelscope")} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
+                      <RotateCcw size={10} />
+                      {t("storage.resetDefault")}
+                    </button>
+                  )}
+                  <button onClick={() => browseAndSetPath("modelscope")} className="text-xs text-primary hover:underline">
+                    {t("storage.browse")}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="truncate text-xs font-mono text-muted-foreground/70">{config?.modelscope || "..."}</span>
+                {config && (
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.modelscope_custom ? "bg-cyan-500/15 text-cyan-400" : "bg-muted text-muted-foreground"}`}>
+                    {config.modelscope_custom ? t("storage.custom") : t("storage.default")}
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* Ollama */}
+            <div className="px-4 py-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t("storage.ollamaPath")}</span>
+                <div className="flex items-center gap-2">
+                  {config?.ollama_custom && (
+                    <button onClick={() => resetPath("ollama")} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
+                      <RotateCcw size={10} />
+                      {t("storage.resetDefault")}
+                    </button>
+                  )}
+                  <button onClick={() => browseAndSetPath("ollama")} className="text-xs text-primary hover:underline">
+                    {t("storage.browse")}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="truncate text-xs font-mono text-muted-foreground/70">{config?.ollama || "..."}</span>
+                {config && (
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${config.ollama_custom ? "bg-cyan-500/15 text-cyan-400" : "bg-muted text-muted-foreground"}`}>
+                    {config.ollama_custom ? t("storage.custom") : t("storage.default")}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Export Storage Location */}
+        <div className="space-y-2">
+          <div>
+            <p className="text-xs font-medium text-foreground">{t("storage.exportPath")}</p>
+            <p className="text-xs text-muted-foreground/70">{t("storage.exportPathDesc")}</p>
+          </div>
+          <div className="rounded-lg border border-border px-4 py-3 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="truncate text-xs font-mono text-muted-foreground/70">
+                {config?.export_path || (config?.ollama_installed ? config?.ollama : "~/Courtyard/projects/<project>/export")}
+              </span>
+              <div className="flex items-center gap-2">
+                {config?.export_path && (
+                  <button onClick={() => resetPath("export")} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
+                    <RotateCcw size={10} />
+                    {t("storage.resetDefault")}
+                  </button>
+                )}
+                <button onClick={() => browseAndSetPath("export")} className="text-xs text-primary hover:underline">
+                  {t("storage.browse")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Info size={18} className="text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            {t("about.title")}
+          </h2>
+        </div>
+        <div className="rounded-lg border border-border divide-y divide-border">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("about.version")}</span>
+            <span className="text-sm font-medium text-foreground">0.1.0 MVP</span>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-sm text-muted-foreground">{t("about.description")}</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

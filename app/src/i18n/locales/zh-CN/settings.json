@@ -1,0 +1,69 @@
+{
+  "title": "设置",
+  "environment": {
+    "title": "运行环境",
+    "chip": "芯片",
+    "memory": "内存",
+    "os": "操作系统",
+    "python": "Python 环境",
+    "pythonReady": "就绪",
+    "pythonNotReady": "未配置",
+    "mlxLm": "mlx-lm",
+    "mlxLmReady": "v{{version}}",
+    "mlxLmNotReady": "未安装",
+    "uv": "uv（包管理器）",
+    "uvReady": "可用",
+    "uvNotReady": "未找到",
+    "ollama": "Ollama",
+    "ollamaReady": "已安装",
+    "ollamaNotReady": "未安装",
+    "setupButton": "配置 Python 环境",
+    "setupRunning": "正在配置...",
+    "setupSuccess": "环境配置成功！",
+    "setupError": "配置失败：{{error}}",
+    "refreshButton": "刷新",
+    "installMlxLm": "安装 mlx-lm 训练框架",
+    "installMlxLmDesc": "将使用 uv 在虚拟环境中安装 mlx-lm（Apple Silicon 训练框架）",
+    "setupDesc": "将创建 Python 虚拟环境并安装 mlx-lm 训练框架",
+    "browseModelDir": "选择 {{source}} 模型目录"
+  },
+  "language": {
+    "title": "语言",
+    "current": "当前语言",
+    "en": "English",
+    "zhCN": "简体中文"
+  },
+  "about": {
+    "title": "关于",
+    "version": "版本",
+    "description": "Apple Silicon AI 模型训练助手",
+    "github": "GitHub 仓库"
+  },
+  "downloadSource": {
+    "title": "模型下载源",
+    "desc": "选择在线模型的默认下载来源。训练页选择在线模型后，系统将从此来源自动下载。",
+    "huggingface": "HuggingFace 官方",
+    "huggingfaceDesc": "默认，需科学上网",
+    "hfMirror": "HF 镜像源",
+    "hfMirrorDesc": "国内加速，推荐",
+    "modelscope": "魔塔 ModelScope",
+    "modelscopeDesc": "国内直连，模型较少",
+    "modelscopeWarn": "ModelScope 暂不支持 MLX 模型自动下载。推荐选择「HF 镜像源」获得国内加速 + 完整模型支持。"
+  },
+  "storage": {
+    "title": "存储",
+    "dataDir": "数据目录",
+    "openInFinder": "在 Finder 中打开",
+    "modelPaths": "本地模型存放位置",
+    "modelPathsDesc": "自定义各来源模型的扫描加载路径，留空则使用系统默认路径",
+    "hfPath": "HuggingFace 模型目录",
+    "msPath": "ModelScope 模型目录",
+    "ollamaPath": "Ollama 模型目录",
+    "exportPath": "导出存储位置",
+    "exportPathDesc": "Ollama 模型导出的输出目录，留空则使用项目目录",
+    "browse": "更改",
+    "resetDefault": "恢复默认",
+    "default": "默认",
+    "custom": "自定义"
+  }
+}

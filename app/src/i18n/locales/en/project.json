@@ -1,0 +1,25 @@
+{
+  "title": "Projects",
+  "create": "New Project",
+  "createTitle": "Create New Project",
+  "nameLabel": "Project Name",
+  "namePlaceholder": "Enter project name",
+  "deleteConfirm": "Are you sure you want to delete this project?",
+  "deleteWarning": "This action cannot be undone. All project data will be permanently deleted.",
+  "empty": "No projects yet",
+  "emptyDescription": "Create your first project to start fine-tuning a model.",
+  "status": {
+    "created": "Created",
+    "cleaning": "Cleaning",
+    "generating": "Generating",
+    "training": "Training",
+    "completed": "Completed"
+  },
+  "taskBadge": {
+    "generating": "Generating Data",
+    "training": "Training Model"
+  },
+  "deleteConfirmTitle": "Confirm Delete Project",
+  "deleteConfirmMsg": "Are you sure you want to delete project {{name}}? All project data will be permanently deleted.",
+  "deleteBtnConfirm": "Confirm Delete"
+}

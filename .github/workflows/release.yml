@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: pnpm install
+
+      - name: Build and release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tagName: v__VERSION__
+          releaseName: 'M-Courtyard v__VERSION__'
+          releaseBody: |
+            ## M-Courtyard v__VERSION__
+
+            ### Download
+            | Platform | Chip | File |
+            |----------|------|------|
+            | macOS 14+ | Apple Silicon (M1/M2/M3/M4) | `M-Courtyard_<version>_aarch64.dmg` |
+
+            ### What's New
+            See [CHANGELOG](https://github.com/tuwenbo0120/m-courtyard/blob/main/CHANGELOG.md) for details.
+
+            ### Requirements
+            - macOS 14+ (Sonoma or later)
+            - Apple Silicon (M1/M2/M3/M4)
+            - [Ollama](https://ollama.com) installed
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Notify Discord
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK" ]; then
+            curl -H "Content-Type: application/json" \
+              -d "{\"content\": \"🎉 **M-Courtyard ${GITHUB_REF_NAME}** has been built successfully!\\n\\nDownload: https://github.com/tuwenbo0120/m-courtyard/releases\\n\\nSee what's new in the release notes.\"}" \
+              "$DISCORD_WEBHOOK"
+          fi

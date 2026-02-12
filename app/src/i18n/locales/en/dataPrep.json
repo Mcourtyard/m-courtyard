@@ -1,0 +1,96 @@
+{
+  "title": "Data Preparation",
+  "pageTitle": "1. Data Preparation",
+  "selectProject": "Select a project to manage data",
+  "import": {
+    "title": "Import Files",
+    "hint": "Import .txt, .jsonl, or .json files as training data source.",
+    "button": "Select Files",
+    "success": "{{count}} file(s) imported successfully"
+  },
+  "files": {
+    "raw": "Raw Files",
+    "cleaned": "Cleaned Files",
+    "dataset": "Training Dataset",
+    "empty": "No files yet",
+    "emptyHint": "Import text files to get started"
+  },
+  "clean": {
+    "title": "One-Click Clean",
+    "button": "Clean Data",
+    "running": "Cleaning in progress...",
+    "hint": "Remove noise, fix encoding, deduplicate, and normalize your text files."
+  },
+  "generate": {
+    "title": "Generate Dataset",
+    "button": "Start Generation",
+    "running": "Generating dataset...",
+    "hint": "Generate training dataset from cleaned text automatically.",
+    "format": "Output Format",
+    "alpaca": "Alpaca (instruction/input/output)",
+    "sharegpt": "ShareGPT (conversations)",
+    "mode_qa": "Knowledge Q&A",
+    "mode_style": "Style Imitation",
+    "mode_chat": "Multi-turn Chat",
+    "mode_instruct": "Instruction",
+    "mode_qa_desc": "Extract knowledge from text to generate Q&A pairs. Ideal for building knowledge bases and FAQ training data.",
+    "mode_style_desc": "Analyze the writing style and generate new content imitating it. Ideal for training models to learn a specific author's style.",
+    "mode_chat_desc": "Generate multi-turn conversations based on text content. Ideal for training dialogue and context understanding.",
+    "mode_instruct_desc": "Convert text into instruction-output pairs covering summarization, analysis, reasoning, etc. Ideal for general instruction fine-tuning.",
+    "progressLabel": "Completed {{step}}/{{total}} ({{percent}}%)",
+    "sourceLabel": "Generation Method",
+    "source_ollama": "AI Generation (Ollama Local Model)",
+    "source_builtin": "Built-in Rules (No AI Required)",
+    "modelLabel": "Select Model",
+    "modelPlaceholder": "Select an Ollama model",
+    "noModels": "No local models detected",
+    "noOllama": "Ollama not installed",
+    "installOllamaHint": "Install Ollama to use AI for higher quality dataset generation",
+    "downloadHint": "Recommended models for dataset generation:",
+    "downloadBtn": "Download",
+    "addModelPath": "Add model path manually",
+    "addModelPlaceholder": "Enter local model path (e.g. /Users/.../model)",
+    "addModelBtn": "Add",
+    "refreshModels": "Refresh model list",
+    "builtinHint": "Uses rule-based extraction to generate training data. No AI model needed, fast but limited quality.",
+    "ollamaHint": "Uses local Ollama LLM for high-quality training data generation. 7B+ models recommended.",
+    "stopGeneration": "Stop Generation",
+    "cleaningStatus": "Cleaning...",
+    "envCheck": "Environment Check"
+  },
+  "preview": {
+    "title": "Preview",
+    "lines": "{{count}} lines",
+    "noContent": "Select a file to preview its content"
+  },
+  "section": {
+    "selectFiles": "Select Raw Data Files",
+    "genMethod": "Generation Method",
+    "genType": "Generation Type",
+    "datasets": "Generated Datasets"
+  },
+  "dataset": {
+    "versionCount": "{{count}} dataset version(s)",
+    "trainCount": "{{count}} samples",
+    "noVersions": "No datasets yet, generate one first",
+    "legacy": "Legacy Dataset"
+  },
+  "addFile": "Add Files",
+  "addFolder": "Add Folder",
+  "selectFolder": "Select Folder",
+  "datasetReady": "Dataset Ready — Go to Training",
+  "aiLog": "AI Generation Log",
+  "connectingAI": "Connecting to AI model...",
+  "step": {
+    "import": "Import",
+    "add": "Add",
+    "clean": "Clean",
+    "method": "Method",
+    "type": "Type",
+    "generating": "Generating",
+    "done": "Done",
+    "generate": "Generate",
+    "train": "Train",
+    "goToTrain": "Dataset Ready — Go to Training"
+  }
+}

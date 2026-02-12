@@ -1,0 +1,68 @@
+{
+  "title": "训练",
+  "pageTitle": "2. 训练模型",
+  "selectProject": "选择一个项目来配置训练",
+  "noProjects": "暂无项目。请先创建一个项目。",
+  "params": {
+    "title": "训练参数",
+    "model": "基础模型",
+    "modelHint": "HuggingFace 仓库 ID 或本地路径（如 mlx-community/Llama-3.2-3B-Instruct-4bit）",
+    "iters": "训练迭代次数",
+    "itersHint": "训练迭代的总次数。更多次数 = 训练更久但效果可能更好。",
+    "batchSize": "批次大小",
+    "batchSizeHint": "每批次的样本数。如果显存不够请降低此值。",
+    "loraLayers": "LoRA 层数",
+    "loraLayersHint": "应用 LoRA 的层数。更多层 = 更多可训练参数。",
+    "loraRank": "LoRA 秩",
+    "loraRankHint": "LoRA 矩阵的秩。更高的秩 = 更强的表达能力但占用更多内存。",
+    "learningRate": "学习率",
+    "learningRateHint": "优化步长。太高 → 不稳定，太低 → 收敛慢。",
+    "seed": "随机种子",
+    "seedHint": "设为 0 表示随机。固定种子可复现结果。"
+  },
+  "presets": {
+    "title": "快速预设",
+    "quick": "快速测试（100 次迭代）",
+    "standard": "标准训练（1000 次迭代）",
+    "thorough": "深度训练（2000 次迭代）"
+  },
+  "start": "开始训练",
+  "stop": "停止训练",
+  "log": "训练日志",
+  "noLog": "训练日志将在开始训练后显示。",
+  "status": {
+    "idle": "准备就绪",
+    "running": "训练进行中...",
+    "completed": "训练完成！",
+    "failed": "训练失败"
+  },
+  "section": {
+    "selectModel": "选择所需训练的模型",
+    "selectDataset": "选择数据集",
+    "params": "训练参数"
+  },
+  "completedBanner": "训练已完成！模型适配器已保存。",
+  "savedAt": "保存位置：",
+  "goToTest": "去测试模型",
+  "selectModelHint": "请选择一个模型开始训练",
+  "localModelPath": "本地模型路径",
+  "invalidModelPath": "该路径下未检测到有效的 MLX 模型文件",
+  "hfModelHint": "HuggingFace 模型（训练时自动下载到 ~/.cache/huggingface/hub/）",
+  "noDataset": "未检测到训练数据集，请先在「数据准备」页面生成",
+  "selectDatasetVersion": "选择数据集版本",
+  "datasetLegacy": "旧版数据集",
+  "trainProgress": "训练进度",
+  "initializing": "初始化中...",
+  "latestTrainLoss": "最新 Train Loss:",
+  "lossCurve": "Loss 曲线",
+  "waitingData": "等待训练数据...",
+  "invalidModelError": "所选路径下未检测到有效模型，无法开始训练",
+  "paramsSummary": "{{iters}} 次迭代 · Batch {{batch}} · LoRA {{layers}}层 Rank {{rank}}",
+  "entries": "{{count}} 条",
+  "step": {
+    "model": "模型",
+    "data": "数据",
+    "train": "训练",
+    "done": "完成"
+  }
+}

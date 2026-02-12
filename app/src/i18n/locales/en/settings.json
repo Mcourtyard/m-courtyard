@@ -1,0 +1,69 @@
+{
+  "title": "Settings",
+  "environment": {
+    "title": "Environment",
+    "chip": "Chip",
+    "memory": "Memory",
+    "os": "Operating System",
+    "python": "Python Environment",
+    "pythonReady": "Ready",
+    "pythonNotReady": "Not configured",
+    "mlxLm": "mlx-lm",
+    "mlxLmReady": "v{{version}}",
+    "mlxLmNotReady": "Not installed",
+    "uv": "uv (Package Manager)",
+    "uvReady": "Available",
+    "uvNotReady": "Not found",
+    "ollama": "Ollama",
+    "ollamaReady": "Installed",
+    "ollamaNotReady": "Not installed",
+    "setupButton": "Set Up Python Environment",
+    "setupRunning": "Setting up...",
+    "setupSuccess": "Environment configured successfully!",
+    "setupError": "Setup failed: {{error}}",
+    "refreshButton": "Refresh",
+    "installMlxLm": "Install mlx-lm Training Framework",
+    "installMlxLmDesc": "Will install mlx-lm (Apple Silicon training framework) in virtual environment using uv",
+    "setupDesc": "Will create a Python virtual environment and install mlx-lm training framework",
+    "browseModelDir": "Select {{source}} model directory"
+  },
+  "language": {
+    "title": "Language",
+    "current": "Current Language",
+    "en": "English",
+    "zhCN": "简体中文"
+  },
+  "about": {
+    "title": "About",
+    "version": "Version",
+    "description": "AI Model Training Assistant for Apple Silicon",
+    "github": "GitHub Repository"
+  },
+  "downloadSource": {
+    "title": "Model Download Source",
+    "desc": "Choose the default source for online model downloads. Models will be automatically fetched from this source during training.",
+    "huggingface": "HuggingFace Official",
+    "huggingfaceDesc": "Default, may need VPN in China",
+    "hfMirror": "HF Mirror",
+    "hfMirrorDesc": "China acceleration, recommended",
+    "modelscope": "ModelScope",
+    "modelscopeDesc": "Direct access in China, fewer models",
+    "modelscopeWarn": "ModelScope does not support MLX model auto-download. We recommend switching to \"HF Mirror\" for China acceleration + full model support."
+  },
+  "storage": {
+    "title": "Storage",
+    "dataDir": "Data Directory",
+    "openInFinder": "Open in Finder",
+    "modelPaths": "Model Storage Locations",
+    "modelPathsDesc": "Custom scan paths for each model source. Leave empty to use system defaults.",
+    "hfPath": "HuggingFace Models",
+    "msPath": "ModelScope Models",
+    "ollamaPath": "Ollama Models",
+    "exportPath": "Export Location",
+    "exportPathDesc": "Output directory for Ollama model exports. Leave empty to use project directory.",
+    "browse": "Change",
+    "resetDefault": "Reset",
+    "default": "Default",
+    "custom": "Custom"
+  }
+}

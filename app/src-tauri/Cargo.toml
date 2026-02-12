@@ -1,0 +1,29 @@
+[package]
+name = "courtyard"
+version = "0.1.0"
+description = "AI Model Training Assistant - From raw text to fine-tuned local models"
+authors = ["tuwenbo"]
+edition = "2021"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1", features = ["full"] }
+tauri-plugin-dialog = "2.6.0"
+libc = "0.2"
+once_cell = "1"
+dirs = "5"
+

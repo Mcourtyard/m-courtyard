@@ -1,0 +1,52 @@
+{
+  "title": "导出模型",
+  "pageTitle": "4. 导出模型",
+  "selectProject": "选择一个已训练的项目进行导出",
+  "noModel": "暂无已训练模型。请先完成训练。",
+  "ollama": {
+    "title": "导出到 Ollama",
+    "description": "将微调后的 LoRA 适配器转换为独立的 Ollama 模型，方便本地使用。",
+    "modelName": "Ollama 模型名称",
+    "modelNameHint": "在 Ollama 中的模型名称（如 my-custom-model）",
+    "baseModel": "基础模型",
+    "baseModelHint": "训练时使用的基础模型路径或 HuggingFace ID",
+    "adapter": "选择适配器（微调结果）",
+    "adapterHint": "选择要导出的训练适配器，将自动关联对应的基础模型",
+    "noAdapter": "暂无训练好的适配器，请先完成训练",
+    "quantization": "量化",
+    "q4": "4-bit（最小、最快）",
+    "q8": "8-bit（均衡）",
+    "f16": "16-bit（最高质量）",
+    "exportButton": "导出到 Ollama",
+    "exporting": "导出中...",
+    "success": "模型导出成功！",
+    "successRunHint": "打开终端，输入以下命令运行模型：",
+    "notInstalled": "Ollama 未安装。请先从 ollama.com 安装。"
+  },
+  "gguf": {
+    "title": "导出为 GGUF",
+    "description": "将模型导出为 GGUF 格式，可用于 llama.cpp 和其他工具。",
+    "exportButton": "导出 GGUF",
+    "comingSoon": "将在后续版本推出"
+  },
+  "section": {
+    "selectAdapter": "选择适配器（训练成果）",
+    "modelName": "保存模型名称",
+    "quantization": "量化"
+  },
+  "selectAdapterPlaceholder": "请选择适配器",
+  "baseModel": "基础模型：",
+  "exportLog": "导出日志",
+  "pipeline": {
+    "check": "检查 Ollama",
+    "resolve": "解析模型",
+    "fuse": "融合适配器",
+    "convert": "兼容处理",
+    "ollama": "创建模型"
+  },
+  "step": {
+    "export": "导出",
+    "name": "命名",
+    "size": "大小"
+  }
+}

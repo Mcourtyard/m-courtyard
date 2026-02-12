@@ -1,0 +1,52 @@
+{
+  "title": "Export Model",
+  "pageTitle": "4. Export Model",
+  "selectProject": "Select a project with a trained model to export",
+  "noModel": "No trained model found. Complete training first.",
+  "ollama": {
+    "title": "Export to Ollama",
+    "description": "Convert your fine-tuned LoRA adapters into a standalone Ollama model for easy local use.",
+    "modelName": "Ollama Model Name",
+    "modelNameHint": "Name for the model in Ollama (e.g. my-custom-model)",
+    "baseModel": "Base Model",
+    "baseModelHint": "Base model path or HuggingFace ID used during training",
+    "adapter": "Select Adapter (fine-tuned result)",
+    "adapterHint": "Select the training adapter to export, base model will be auto-filled",
+    "noAdapter": "No trained adapter found. Complete training first.",
+    "quantization": "Quantization",
+    "q4": "4-bit (smallest, fastest)",
+    "q8": "8-bit (balanced)",
+    "f16": "16-bit (highest quality)",
+    "exportButton": "Export to Ollama",
+    "exporting": "Exporting...",
+    "success": "Model exported successfully!",
+    "successRunHint": "Open your terminal and run the following command:",
+    "notInstalled": "Ollama is not installed. Install from ollama.com first."
+  },
+  "gguf": {
+    "title": "Export as GGUF",
+    "description": "Export model in GGUF format for use with llama.cpp and other tools.",
+    "exportButton": "Export GGUF",
+    "comingSoon": "Coming in a future update"
+  },
+  "section": {
+    "selectAdapter": "Select Adapter (Training Result)",
+    "modelName": "Model Name",
+    "quantization": "Quantization"
+  },
+  "selectAdapterPlaceholder": "Select an adapter",
+  "baseModel": "Base model: ",
+  "exportLog": "Export Log",
+  "pipeline": {
+    "check": "Check Ollama",
+    "resolve": "Resolve Model",
+    "fuse": "Fuse Adapter",
+    "convert": "Compatibility",
+    "ollama": "Create Model"
+  },
+  "step": {
+    "export": "Export",
+    "name": "Name",
+    "size": "Size"
+  }
+}

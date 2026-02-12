@@ -1,0 +1,68 @@
+{
+  "title": "Training",
+  "pageTitle": "2. Train Model",
+  "selectProject": "Select a project to configure training",
+  "noProjects": "No projects available. Create a project first.",
+  "params": {
+    "title": "Training Parameters",
+    "model": "Base Model",
+    "modelHint": "HuggingFace repo ID or local path (e.g. mlx-community/Llama-3.2-3B-Instruct-4bit)",
+    "iters": "Training Iterations",
+    "itersHint": "Number of training iterations. More iterations = longer training but potentially better results.",
+    "batchSize": "Batch Size",
+    "batchSizeHint": "Samples per batch. Lower if you run out of memory.",
+    "loraLayers": "LoRA Layers",
+    "loraLayersHint": "Number of layers to apply LoRA. More layers = more parameters to train.",
+    "loraRank": "LoRA Rank",
+    "loraRankHint": "Rank of LoRA matrices. Higher rank = more expressive but more memory.",
+    "learningRate": "Learning Rate",
+    "learningRateHint": "Step size for optimization. Too high → unstable, too low → slow.",
+    "seed": "Random Seed",
+    "seedHint": "Set to 0 for random. Use a fixed seed for reproducible results."
+  },
+  "presets": {
+    "title": "Quick Presets",
+    "quick": "Quick Test (100 iters)",
+    "standard": "Standard (1000 iters)",
+    "thorough": "Thorough (2000 iters)"
+  },
+  "start": "Start Training",
+  "stop": "Stop Training",
+  "log": "Training Log",
+  "noLog": "Training log will appear here once started.",
+  "status": {
+    "idle": "Ready to train",
+    "running": "Training in progress...",
+    "completed": "Training completed!",
+    "failed": "Training failed"
+  },
+  "section": {
+    "selectModel": "Select Training Model",
+    "selectDataset": "Select Dataset",
+    "params": "Training Parameters"
+  },
+  "completedBanner": "Training complete! Model adapter saved.",
+  "savedAt": "Saved at: ",
+  "goToTest": "Go to Test Model",
+  "selectModelHint": "Select a model to start training",
+  "localModelPath": "Local model path",
+  "invalidModelPath": "No valid MLX model files found at this path",
+  "hfModelHint": "HuggingFace model (auto-downloaded during training to ~/.cache/huggingface/hub/)",
+  "noDataset": "No training dataset found. Generate one in Data Preparation first.",
+  "selectDatasetVersion": "Select dataset version",
+  "datasetLegacy": "Legacy Dataset",
+  "trainProgress": "Training Progress",
+  "initializing": "Initializing...",
+  "latestTrainLoss": "Latest Train Loss:",
+  "lossCurve": "Loss Curve",
+  "waitingData": "Waiting for training data...",
+  "invalidModelError": "No valid model found at the selected path. Cannot start training.",
+  "paramsSummary": "{{iters}} iters · Batch {{batch}} · LoRA {{layers}} layers Rank {{rank}}",
+  "entries": "{{count}} entries",
+  "step": {
+    "model": "Model",
+    "data": "Data",
+    "train": "Training",
+    "done": "Done"
+  }
+}
