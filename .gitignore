@@ -39,19 +39,16 @@ __pycache__/
 # ~/Courtyard/ is the runtime data dir, not in repo
 
 # ── Old git history backup ──
+.git_backup/
 .git-backup/
+app/.git_backup/
 app/.git-backup/
 
 # ── Internal docs & history (not for public repo) ──
 docs/*
 !docs/screenshots/
-宣传截图/
-历史资料/
-产品需求规格说明书.md
-测试文档.md
-开源待办清单.md
-推广进度.md
-推广方案.md
+userimg/
+history/
 
 # ── Misc ──
 *.log
