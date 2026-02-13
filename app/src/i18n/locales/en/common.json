@@ -76,11 +76,22 @@
     "openModelCache": "Open model cache directory",
     "downloaded": "Downloaded",
     "pulled": "Downloaded",
+    "more": "More",
     "unavailableSource": "(unavailable from this source)",
     "downloadFrom": "Models will be auto-downloaded from {{source}} and cached locally.",
     "sourceHuggingface": "HuggingFace",
     "sourceHfMirror": "HF Mirror",
     "sourceModelscope": "ModelScope",
+    "onlineBrands": {
+      "qwen": "Qwen",
+      "deepseek": "DeepSeek",
+      "glm": "GLM",
+      "llama": "Llama",
+      "gptoss": "GPT-OSS",
+      "kimi": "Kimi",
+      "mistral": "Mistral",
+      "phi": "Phi"
+    },
     "modelscopeWarnInline": "Current source is ModelScope, which does not support MLX model auto-download. Go to",
     "settingsLink": "Settings",
     "modelscopeWarnSuffix": "to switch to \"HF Mirror\" for China acceleration + full support.",
@@ -89,15 +100,15 @@
     "modelDesc": {
       "balanced": "Recommended, balanced",
       "lightweight": "Lightweight & fast",
-      "chineseGood": "Strong Chinese ability",
-      "chineseBetter": "Better Chinese quality",
+      "versatile": "Versatile all-rounder",
       "reasoning": "Strong reasoning",
       "reasoningGeneral": "Reasoning + general",
       "reasoningLight": "Lightweight reasoning",
-      "codeStrong": "Microsoft, strong at code",
-      "euOpen": "European open-source",
-      "google": "Made by Google",
-      "higherQuality": "Higher quality"
+      "codeStrong": "Strong coding capability",
+      "higherQuality": "Higher quality",
+      "topRated": "Top-rated popular model",
+      "popularGeneral": "Popular for general tasks",
+      "openaiFamily": "OpenAI open-source model"
     },
     "ollamaLinks": {
       "website": "Ollama Website",
@@ -109,6 +120,7 @@
       "official": "HuggingFace Official",
       "mirror": "HF Mirror",
       "modelscope": "ModelScope",
+      "allModels": "All MLX Models",
       "officialDesc": "May need VPN in China",
       "mirrorDesc": "Direct access in China",
       "modelscopeDesc": "Direct access in China"
@@ -154,7 +166,7 @@
     "downloadStarting": "Preparing download...",
     "stopDownload": "Stop",
     "downloadError": "Download error: {{message}}",
-    "repoIdPlaceholder": "Enter HuggingFace model ID, e.g. mlx-community/Qwen2.5-3B-Instruct-4bit",
+    "repoIdPlaceholder": "Enter HuggingFace model ID, e.g. mlx-community/Qwen3-4B-Instruct-2507-4bit",
     "customDownload": "Custom Model ID",
     "startDownload": "Download"
   }

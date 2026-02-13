@@ -14,6 +14,8 @@ import re
 import sys
 import random
 
+from i18n import t, init_i18n, add_lang_arg
+
 
 def emit(event_type, **kwargs):
     payload = {"type": event_type, **kwargs}
@@ -48,7 +50,7 @@ def extract_heading_qa(text: str) -> list[dict]:
 
             if body_lines and len("".join(body_lines)) >= 20:
                 answer = "\n".join(body_lines)
-                question = f"请介绍一下{heading.strip('# ').strip()}"
+                question = t("builtin.heading_question", heading=heading.strip('# ').strip())
                 results.append({
                     "messages": [
                         {"role": "user", "content": question},
@@ -65,18 +67,11 @@ def extract_sentence_qa(text: str) -> list[dict]:
     sentences = re.split(r'[。！？\n]+', text)
     sentences = [s.strip() for s in sentences if len(s.strip()) >= 15]
 
-    templates_zh = [
-        ("请解释：{topic}", "{content}"),
-        ("关于{topic}，你能详细说明吗？", "{content}"),
-        ("{topic}是什么？", "{content}"),
-        ("请描述{topic}的相关内容。", "{content}"),
-    ]
-
-    templates_en = [
-        ("Explain: {topic}", "{content}"),
-        ("What is {topic}?", "{content}"),
-        ("Describe {topic}.", "{content}"),
-        ("Tell me about {topic}.", "{content}"),
+    templates = [
+        (t("builtin.explain", topic="{topic}"), "{content}"),
+        (t("builtin.what_is", topic="{topic}"), "{content}"),
+        (t("builtin.describe", topic="{topic}"), "{content}"),
+        (t("builtin.tell_me", topic="{topic}"), "{content}"),
     ]
 
     for sent in sentences:
@@ -84,7 +79,6 @@ def extract_sentence_qa(text: str) -> list[dict]:
             continue
         # Detect language
         has_cjk = bool(re.search(r'[\u4e00-\u9fff]', sent))
-        templates = templates_zh if has_cjk else templates_en
 
         # Extract topic (first noun phrase or first clause)
         if has_cjk:
@@ -120,29 +114,18 @@ def paragraph_to_style(text: str) -> list[dict]:
     paragraphs = text.split("\n\n")
     paragraphs = [p.strip() for p in paragraphs if len(p.strip()) >= 30]
 
-    style_templates_zh = [
-        "请模仿上述写作风格，撰写一段描述性文字。",
-        "请以相同的写作风格，创作一段新的内容。",
-        "请保持这种文字风格，续写一段相关内容。",
-        "请用同样的语言风格和表达方式，写一段文字。",
-        "请模仿这种叙事风格，创作一段新的段落。",
-        "请用相同的修辞手法和语气，撰写一段文字。",
-    ]
-
-    style_templates_en = [
-        "Write a descriptive passage in the same writing style.",
-        "Create new content maintaining the same writing style.",
-        "Continue writing in the same literary style and tone.",
-        "Compose a new paragraph using the same narrative voice.",
-        "Write a passage mimicking this author's style and rhetoric.",
+    style_templates = [
+        t("builtin.style_1"),
+        t("builtin.style_2"),
+        t("builtin.style_3"),
+        t("builtin.style_4"),
+        t("builtin.style_5"),
     ]
 
     for para in paragraphs:
         if len(para) > 2000:
             para = para[:2000]
-        has_cjk = bool(re.search(r'[\u4e00-\u9fff]', para))
-        templates = style_templates_zh if has_cjk else style_templates_en
-        instruction = random.choice(templates)
+        instruction = random.choice(style_templates)
 
         results.append({
             "messages": [
@@ -160,30 +143,19 @@ def paragraph_to_instruct(text: str) -> list[dict]:
     paragraphs = text.split("\n\n")
     paragraphs = [p.strip() for p in paragraphs if len(p.strip()) >= 30]
 
-    instruct_templates_zh = [
-        "请总结以下内容的要点：",
-        "请用简洁的语言概括以下文字：",
-        "请分析以下文本的主要观点：",
-        "请对以下内容进行解读：",
-        "请解释以下文字的深层含义：",
-        "请从不同角度分析以下内容：",
-    ]
-
-    instruct_templates_en = [
-        "Summarize the key points of the following:",
-        "Briefly describe the following text:",
-        "Analyze the main ideas in the following:",
-        "Interpret the following content:",
-        "Explain the deeper meaning of the following:",
-        "Analyze the following from different perspectives:",
+    instruct_templates = [
+        t("builtin.instruct_1"),
+        t("builtin.instruct_2"),
+        t("builtin.instruct_3"),
+        t("builtin.instruct_4"),
+        t("builtin.instruct_5"),
+        t("builtin.instruct_6"),
     ]
 
     for para in paragraphs:
         if len(para) > 2000:
             para = para[:2000]
-        has_cjk = bool(re.search(r'[\u4e00-\u9fff]', para))
-        templates = instruct_templates_zh if has_cjk else instruct_templates_en
-        instruction = random.choice(templates)
+        instruction = random.choice(instruct_templates)
 
         # For instruct mode, use the paragraph as context and generate a structured response
         results.append({
@@ -227,11 +199,14 @@ def main():
     parser.add_argument("--project-dir", required=True)
     parser.add_argument("--output-dir", default=None, help="Output directory for dataset files")
     parser.add_argument("--mode", default="qa", choices=["qa", "style", "chat", "instruct"])
+    add_lang_arg(parser)
     args = parser.parse_args()
+
+    init_i18n(args.lang)
 
     segments_path = os.path.join(args.project_dir, "cleaned", "segments.jsonl")
     if not os.path.exists(segments_path):
-        emit("error", message="No segments.jsonl found. Run cleaning first.")
+        emit("error", message=t("builtin.no_segments"))
         sys.exit(1)
 
     segments = []
@@ -248,21 +223,21 @@ def main():
                     continue
 
     if not segments:
-        emit("error", message="No valid segments found.")
+        emit("error", message=t("builtin.no_valid_segments"))
         sys.exit(1)
 
     total = len(segments)
-    emit("progress", step=0, total=total, desc="Starting built-in rule-based generation...")
+    emit("progress", step=0, total=total, desc=t("builtin.starting", count=total, mode=args.mode))
 
     results = []
     for i, text in enumerate(segments):
         items = generate_builtin([text], args.mode)
         results.extend(items)
         emit("progress", step=i + 1, total=total,
-             desc=f"Generated {len(results)} samples")
+             desc=t("builtin.complete", count=len(results)))
 
     if not results:
-        emit("error", message="No valid samples generated from the text.")
+        emit("error", message=t("builtin.no_valid_segments"))
         sys.exit(1)
 
     # Shuffle and deduplicate

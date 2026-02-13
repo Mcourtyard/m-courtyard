@@ -12,6 +12,8 @@ import os
 import random
 import sys
 
+from i18n import init_i18n, add_lang_arg
+
 
 def emit(event_type, **kwargs):
     payload = {"type": event_type, **kwargs}
@@ -117,7 +119,10 @@ def main():
     parser.add_argument("--mode", default="qa", choices=["qa", "style", "chat", "instruct"])
     parser.add_argument("--max-samples", type=int, default=0, help="Max samples (0=all)")
     parser.add_argument("--split-ratio", type=float, default=0.9, help="Train/valid split")
+    add_lang_arg(parser)
     args = parser.parse_args()
+
+    init_i18n(args.lang)
 
     cleaned_dir = os.path.join(args.project_dir, "cleaned")
     dataset_dir = args.output_dir if args.output_dir else os.path.join(args.project_dir, "dataset")

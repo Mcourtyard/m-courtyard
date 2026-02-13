@@ -12,6 +12,7 @@ static DOWNLOAD_PROCESSES: Lazy<Mutex<HashMap<String, u32>>> =
 pub async fn download_model(
     app: tauri::AppHandle,
     repo_id: String,
+    lang: Option<String>,
 ) -> Result<String, String> {
     let executor = PythonExecutor::default();
 
@@ -44,6 +45,8 @@ pub async fn download_model(
             args.push("--cache-dir".to_string());
             args.push(dir.clone());
         }
+        args.push("--lang".to_string());
+        args.push(lang.unwrap_or_else(|| "en".to_string()));
 
         let mut cmd = tokio::process::Command::new(&python_bin);
         cmd.args(&args)

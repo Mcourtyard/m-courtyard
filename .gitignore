@@ -43,12 +43,15 @@ __pycache__/
 app/.git-backup/
 
 # ── Internal docs & history (not for public repo) ──
-docs/
+docs/*
+!docs/screenshots/
+宣传截图/
 历史资料/
 产品需求规格说明书.md
 测试文档.md
 开源待办清单.md
 推广进度.md
+推广方案.md
 
 # ── Misc ──
 *.log

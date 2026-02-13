@@ -76,11 +76,22 @@
     "openModelCache": "打开模型缓存目录",
     "downloaded": "已下载",
     "pulled": "已下载",
+    "more": "更多",
     "unavailableSource": "(此源不可用)",
     "downloadFrom": "选择后点击「开始训练」，系统会自动从 {{source}} 下载模型并缓存到本地。",
     "sourceHuggingface": "HuggingFace",
     "sourceHfMirror": "HF 镜像源",
     "sourceModelscope": "ModelScope",
+    "onlineBrands": {
+      "qwen": "Qwen",
+      "deepseek": "DeepSeek",
+      "glm": "GLM",
+      "llama": "Llama",
+      "gptoss": "GPT-OSS",
+      "kimi": "Kimi",
+      "mistral": "Mistral",
+      "phi": "Phi"
+    },
     "modelscopeWarnInline": "当前下载源为 ModelScope，不支持以下 MLX 模型自动下载。请到",
     "settingsLink": "设置",
     "modelscopeWarnSuffix": "切换为「HF 镜像源」获得国内加速 + 完整支持。",
@@ -89,15 +100,15 @@
     "modelDesc": {
       "balanced": "推荐，性能均衡",
       "lightweight": "轻量快速",
-      "chineseGood": "中文能力强",
-      "chineseBetter": "中文质量更高",
+      "versatile": "多功能全能型",
       "reasoning": "推理能力强",
       "reasoningGeneral": "推理+通用",
       "reasoningLight": "轻量推理",
-      "codeStrong": "微软出品，代码强",
-      "euOpen": "欧洲开源强模型",
-      "google": "Google 出品",
-      "higherQuality": "质量更高"
+      "codeStrong": "代码能力强",
+      "higherQuality": "质量更高",
+      "topRated": "高热度高评分",
+      "popularGeneral": "主流通用能力强",
+      "openaiFamily": "OpenAI 开源系列"
     },
     "ollamaLinks": {
       "website": "Ollama 官网",
@@ -109,6 +120,7 @@
       "official": "HuggingFace 官方",
       "mirror": "HF 镜像站",
       "modelscope": "魔塔 ModelScope",
+      "allModels": "全部 MLX 模型",
       "officialDesc": "需要科学上网",
       "mirrorDesc": "国内可直接访问",
       "modelscopeDesc": "国内直接访问"
@@ -154,7 +166,7 @@
     "downloadStarting": "准备下载...",
     "stopDownload": "停止",
     "downloadError": "下载错误: {{message}}",
-    "repoIdPlaceholder": "输入 HuggingFace 模型 ID，如 mlx-community/Qwen2.5-3B-Instruct-4bit",
+    "repoIdPlaceholder": "输入 HuggingFace 模型 ID，如 mlx-community/Qwen3-4B-Instruct-2507-4bit",
     "customDownload": "自定义模型 ID",
     "startDownload": "下载"
   }

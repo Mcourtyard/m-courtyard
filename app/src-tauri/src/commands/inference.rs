@@ -11,6 +11,7 @@ pub async fn start_inference(
     adapter_path: Option<String>,
     max_tokens: Option<u32>,
     temperature: Option<f64>,
+    lang: Option<String>,
 ) -> Result<(), String> {
     let executor = PythonExecutor::default();
     if !executor.is_ready() {
@@ -67,6 +68,8 @@ pub async fn start_inference(
             args.push("--adapter-path".to_string());
             args.push(adapter);
         }
+        args.push("--lang".to_string());
+        args.push(lang.unwrap_or_else(|| "en".to_string()));
 
         let result = tokio::process::Command::new(&python_bin)
             .args(&args)

@@ -24,6 +24,7 @@ pub async fn stop_generation() -> Result<(), String> {
 pub async fn start_cleaning(
     app: tauri::AppHandle,
     project_id: String,
+    lang: Option<String>,
 ) -> Result<(), String> {
     let executor = PythonExecutor::default();
     if !executor.is_ready() {
@@ -54,6 +55,8 @@ pub async fn start_cleaning(
                 &script.to_string_lossy(),
                 "--project-dir",
                 &project_path.to_string_lossy(),
+                "--lang",
+                &lang.unwrap_or_else(|| "en".to_string()),
             ])
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
@@ -111,6 +114,7 @@ pub async fn generate_dataset(
     mode: String,
     source: String,
     resume: Option<bool>,
+    lang: Option<String>,
 ) -> Result<String, String> {
     let executor = PythonExecutor::default();
     if !executor.is_ready() {
@@ -167,6 +171,8 @@ pub async fn generate_dataset(
         if should_resume {
             py_args.push("--resume".to_string());
         }
+        py_args.push("--lang".to_string());
+        py_args.push(lang.unwrap_or_else(|| "en".to_string()));
 
         // Wrap with caffeinate -i to prevent idle sleep during generation
         let mut caffeinate_args: Vec<String> = vec![

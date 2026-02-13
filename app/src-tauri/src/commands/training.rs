@@ -67,6 +67,21 @@ pub async fn start_training(
         return Err("Dataset valid.jsonl not found. Please generate a dataset first.".into());
     }
 
+    // Auto-clamp batch_size so it never exceeds the smallest dataset split
+    let count_lines = |path: &std::path::Path| -> usize {
+        std::fs::read_to_string(path)
+            .map(|s| s.lines().filter(|l| !l.trim().is_empty()).count())
+            .unwrap_or(0)
+    };
+    let train_count = count_lines(&data_dir.join("train.jsonl"));
+    let valid_count = count_lines(&data_dir.join("valid.jsonl"));
+    let min_dataset = std::cmp::min(train_count, valid_count) as u64;
+    let batch_size = if min_dataset > 0 && batch_size > min_dataset {
+        min_dataset
+    } else {
+        batch_size
+    };
+
     std::fs::create_dir_all(&adapter_path)
         .map_err(|e| format!("Failed to create adapter directory: {}", e))?;
 

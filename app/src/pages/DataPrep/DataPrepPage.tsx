@@ -28,7 +28,7 @@ interface DatasetVersionInfo {
 }
 
 export function DataPrepPage() {
-  const { t } = useTranslation("dataPrep");
+  const { t, i18n } = useTranslation("dataPrep");
   const { t: tc } = useTranslation("common");
   const navigate = useNavigate();
   const { projects, fetchProjects, currentProject, setCurrentProject } =
@@ -209,7 +209,7 @@ export function DataPrepPage() {
       setCleanProgress("Cleaning...");
       autoGenAfterClean.current = true;
       try {
-        await invoke("start_cleaning", { projectId: currentProject.id });
+        await invoke("start_cleaning", { projectId: currentProject.id, lang: i18n.language });
       } catch (e) {
         setCleaning(false);
         setPipelineStage("idle");
@@ -236,6 +236,7 @@ export function DataPrepPage() {
         mode: genMode,
         source: genSource,
         resume: false,
+        lang: i18n.language,
       });
     } catch (e) {
       useGenerationStore.setState({

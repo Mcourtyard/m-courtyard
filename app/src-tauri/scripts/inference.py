@@ -9,6 +9,8 @@ import argparse
 import json
 import sys
 
+from i18n import t, init_i18n, add_lang_arg
+
 
 def emit(event_type, **kwargs):
     payload = {"type": event_type, **kwargs}
@@ -23,9 +25,12 @@ def main():
     parser.add_argument("--max-tokens", type=int, default=512)
     parser.add_argument("--temp", type=float, default=0.7)
     parser.add_argument("--top-p", type=float, default=0.9)
+    add_lang_arg(parser)
     args = parser.parse_args()
 
-    emit("status", message="Loading model...")
+    init_i18n(args.lang)
+
+    emit("status", message=t("inference.loading"))
 
     try:
         import os
@@ -38,11 +43,11 @@ def main():
             # Absolute or relative local path — verify it exists
             expanded = os.path.expanduser(model_path)
             if not os.path.isdir(expanded):
-                emit("error", message=f"Model directory not found: {model_path}")
+                emit("error", message=t("inference.model_not_found", path=model_path))
                 sys.exit(1)
             config_path = os.path.join(expanded, "config.json")
             if not os.path.isfile(config_path):
-                emit("error", message=f"Model config.json not found at: {expanded}. This may not be a valid MLX model directory.")
+                emit("error", message=t("inference.config_not_found", path=expanded))
                 sys.exit(1)
         else:
             # HuggingFace model ID (e.g. "mlx-community/Qwen2.5-3B-Instruct-4bit")
@@ -50,19 +55,19 @@ def main():
             hf_cache = os.path.expanduser("~/.cache/huggingface/hub")
             cache_dir = os.path.join(hf_cache, f"models--{model_path.replace('/', '--')}")
             if not os.path.isdir(cache_dir):
-                emit("status", message=f"Model {model_path} not in local cache, mlx_lm will attempt to download...")
+                emit("status", message=t("inference.not_cached", model=model_path))
 
         load_kwargs = {}
         if args.adapter_path and args.adapter_path.strip():
             adapter_dir = args.adapter_path
             if not os.path.isdir(adapter_dir):
-                emit("error", message=f"Adapter directory not found: {adapter_dir}")
+                emit("error", message=t("inference.adapter_not_found", path=adapter_dir))
                 sys.exit(1)
             load_kwargs["adapter_path"] = adapter_dir
 
         model, tokenizer = load(args.model, **load_kwargs)
 
-        emit("status", message="Generating...")
+        emit("status", message=t("inference.generating"))
 
         # Build chat prompt using tokenizer's chat template if available
         if hasattr(tokenizer, "apply_chat_template"):

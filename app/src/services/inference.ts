@@ -6,7 +6,8 @@ export async function startInference(
   model: string,
   adapterPath?: string,
   maxTokens?: number,
-  temperature?: number
+  temperature?: number,
+  lang?: string
 ): Promise<void> {
   return invoke("start_inference", {
     projectId,
@@ -15,5 +16,6 @@ export async function startInference(
     adapterPath: adapterPath || null,
     maxTokens: maxTokens || 512,
     temperature: temperature || 0.7,
+    lang,
   });
 }

@@ -11,6 +11,7 @@ pub async fn export_to_ollama(
     model: String,
     adapter_path: Option<String>,
     quantization: Option<String>,
+    lang: Option<String>,
 ) -> Result<(), String> {
     let executor = PythonExecutor::default();
     if !executor.is_ready() {
@@ -74,6 +75,8 @@ pub async fn export_to_ollama(
                 &output_dir.to_string_lossy(),
                 "--quantization",
                 &quant,
+                "--lang",
+                &lang.unwrap_or_else(|| "en".to_string()),
             ])
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())

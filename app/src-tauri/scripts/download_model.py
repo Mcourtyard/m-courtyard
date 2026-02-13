@@ -18,6 +18,8 @@ import time
 import os
 import argparse
 
+from i18n import t, init_i18n, add_lang_arg
+
 
 def emit(event_data: dict):
     """Print a JSON event line for Rust to parse."""
@@ -28,7 +30,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("repo_id", help="HuggingFace repo ID, e.g. mlx-community/Qwen2.5-3B-Instruct-4bit")
     parser.add_argument("--cache-dir", default=None, help="Custom cache directory")
+    add_lang_arg(parser)
     args = parser.parse_args()
+
+    init_i18n(args.lang)
 
     repo_id = args.repo_id
     cache_dir = args.cache_dir
@@ -43,7 +48,7 @@ def main():
             EntryNotFoundError,
         )
     except ImportError:
-        emit({"event": "error", "message": "huggingface_hub not installed. Run: pip install huggingface_hub"})
+        emit({"event": "error", "message": t("download.not_installed")})
         sys.exit(1)
 
     # Validate repo exists before downloading
@@ -52,13 +57,13 @@ def main():
         info = api.model_info(repo_id)
         emit({"event": "info", "model_id": repo_id, "sha": info.sha or ""})
     except RepositoryNotFoundError:
-        emit({"event": "error", "message": f"Model not found: {repo_id}"})
+        emit({"event": "error", "message": t("download.not_found", repo=repo_id)})
         sys.exit(1)
     except GatedRepoError:
-        emit({"event": "error", "message": f"Gated model requires authentication: {repo_id}"})
+        emit({"event": "error", "message": t("download.gated", repo=repo_id)})
         sys.exit(1)
     except Exception as e:
-        emit({"event": "error", "message": f"Failed to get model info: {e}"})
+        emit({"event": "error", "message": t("download.info_fail", error=str(e))})
         sys.exit(1)
 
     # Track download progress via tqdm callback

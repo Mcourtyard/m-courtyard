@@ -18,83 +18,32 @@ import sys
 import urllib.request
 import urllib.error
 
+from i18n import t, init_i18n, add_lang_arg
+
 
 def emit(event_type, **kwargs):
     payload = {"type": event_type, **kwargs}
     print(json.dumps(payload, ensure_ascii=False), flush=True)
 
 
-# ── System prompts per mode ───────────
+def get_system_prompts():
+    """Return system prompts per mode using current i18n language."""
+    return {
+        "qa": t("gen.prompt.qa.system"),
+        "style": t("gen.prompt.style.system"),
+        "chat": t("gen.prompt.chat.system"),
+        "instruct": t("gen.prompt.instruct.system"),
+    }
 
-SYSTEM_PROMPTS = {
-    "qa": (
-        "你是一个专业的训练数据生成专家。你的任务是根据给定文本，生成一个高质量的问答对。\n"
-        "要求：\n"
-        "1. 问题应该有深度，不要简单的事实提取，要考验理解力和分析力\n"
-        "2. 问题类型要多样：可以是理解型、分析型、推理型、应用型\n"
-        "3. 答案要完整、有条理，包含足够的细节和解释\n"
-        "4. 答案应基于文本内容但用自己的语言组织，不要直接复制原文\n"
-        "5. 直接输出JSON，格式：{\"question\": \"...\", \"answer\": \"...\"}"
-    ),
-    "style": (
-        "你是一个写作风格分析与模仿专家。你的任务是：\n"
-        "1. 深入分析给定写作样本的风格特征（包括：用词习惯、句式结构、修辞手法、叙事视角、情感基调、节奏韵律等）\n"
-        "2. 基于分析出的风格，创建一条\"写作指令\"和\"风格化回复\"：\n"
-        "   - instruction（写作指令）：一个创意写作提示，要求撰写一段全新内容（新场景、新人物、新情节），但要求保持与原文一致的写作风格\n"
-        "   - output（风格化回复）：根据指令创作的全新文本，完美体现原文的写作风格特征\n\n"
-        "极其重要的规则：\n"
-        "- output 必须是你全新创作的内容，绝对不能复制、改写或总结原文\n"
-        "- output 的场景、人物、情节必须与原文完全不同\n"
-        "- output 的写作风格（用词、句式、修辞、语气）必须与原文高度一致\n"
-        "- instruction 不要包含原文内容，只描述写作任务\n"
-        "直接输出JSON，格式：{\"instruction\": \"...\", \"output\": \"...\"}"
-    ),
-    "chat": (
-        "你是一个专业的对话数据生成专家。你的任务是将给定文本转换为自然、有深度的多轮对话（至少3轮）。\n"
-        "要求：\n"
-        "1. 对话应该自然流畅，像真实的师生问答或朋友讨论\n"
-        "2. 用户的问题应层层递进，从基础问题到深入探讨\n"
-        "3. 助手的回答应专业、详细，引导对话深入\n"
-        "4. 包含追问、澄清、举例等自然对话元素\n"
-        "5. 不要简单地把文本拆分成对话，而是围绕文本主题展开讨论\n"
-        "直接输出JSON，格式：{\"conversations\": [{\"role\": \"user\", \"content\": \"...\"}, {\"role\": \"assistant\", \"content\": \"...\"}]}"
-    ),
-    "instruct": (
-        "你是一个专业的指令数据生成专家。你的任务是根据给定文本生成一个高质量的指令-输出对。\n"
-        "要求：\n"
-        "1. 指令类型要多样化，可以是：总结、分析、比较、推理、解释、改写、扩展、评价等\n"
-        "2. 指令应该明确、具体，让模型知道需要做什么\n"
-        "3. 输出应该高质量、有条理，展示良好的理解和表达能力\n"
-        "4. 输出不要直接复制原文，而是基于理解后用自己的语言重新组织\n"
-        "直接输出JSON，格式：{\"instruction\": \"...\", \"output\": \"...\"}"
-    ),
-}
 
-USER_TEMPLATES = {
-    "qa": (
-        "请根据以下文本生成一个有深度的问答对。问题应考验理解和分析能力，"
-        "答案要完整有条理。只输出JSON。\n\n"
-        "【文本内容】\n{text}"
-    ),
-    "style": (
-        "请仔细分析以下写作样本的风格特征（用词、句式、修辞、语气、节奏等），"
-        "然后创建一条全新的写作指令和对应的风格化回复。\n"
-        "注意：output必须是全新创作，场景和内容与原文完全不同，但写作风格高度一致。"
-        "只输出JSON。\n\n"
-        "【写作样本】\n{text}"
-    ),
-    "chat": (
-        "请将以下文本的内容转化为一段自然的多轮对话（至少3轮往返）。"
-        "对话应层层递进，包含追问和深入探讨。只输出JSON。\n\n"
-        "【文本内容】\n{text}"
-    ),
-    "instruct": (
-        "请根据以下文本生成一个高质量的指令-输出对。"
-        "指令类型请从以下中选择：总结要点、深入分析、对比说明、因果推理、概念解释、观点评价。"
-        "只输出JSON。\n\n"
-        "【文本内容】\n{text}"
-    ),
-}
+def get_user_templates():
+    """Return user message templates per mode using current i18n language."""
+    return {
+        "qa": t("gen.prompt.qa.user"),
+        "style": t("gen.prompt.style.user"),
+        "chat": t("gen.prompt.chat.user"),
+        "instruct": t("gen.prompt.instruct.user"),
+    }
 
 
 def call_ollama(model: str, system_prompt: str, user_message: str,
@@ -336,11 +285,14 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--mode", default="qa", choices=["qa", "style", "chat", "instruct"])
     parser.add_argument("--resume", action="store_true", help="Resume from previous progress")
+    add_lang_arg(parser)
     args = parser.parse_args()
+
+    init_i18n(args.lang)
 
     segments_path = os.path.join(args.project_dir, "cleaned", "segments.jsonl")
     if not os.path.exists(segments_path):
-        emit("error", message="未找到 segments.jsonl，请先执行清洗。")
+        emit("error", message=t("gen.no_segments"))
         sys.exit(1)
 
     # Load all segments
@@ -358,7 +310,7 @@ def main():
                     continue
 
     if not segments:
-        emit("error", message="未找到有效的文本段落。")
+        emit("error", message=t("gen.no_valid_segments"))
         sys.exit(1)
 
     dataset_dir = args.output_dir if args.output_dir else os.path.join(args.project_dir, "dataset")
@@ -371,26 +323,26 @@ def main():
     if args.resume:
         skip_count = load_existing_progress(dataset_dir)
         if skip_count > 0:
-            emit("log", message=f"🔄 检测到已有 {skip_count} 条数据，从第 {skip_count + 1} 段继续...")
+            emit("log", message=t("gen.resume_found", skip=skip_count, next=skip_count + 1))
 
     total = len(segments)
     emit("progress", step=skip_count, total=total,
-         desc=f"使用 [{args.model}] 生成数据集...")
-    emit("log", message=f"📡 连接 Ollama...\n   模型: {args.model}\n   模式: {args.mode}\n   文本段数: {total}\n   跳过已完成: {skip_count}")
+         desc=t("gen.starting", model=args.model))
+    emit("log", message=t("gen.connecting", model=args.model, mode=args.mode, total=total, skip=skip_count))
 
     # Verify connection with a simple test
     try:
-        test_result = call_ollama(args.model, "你好", "回复OK", )
+        test_result = call_ollama(args.model, t("gen.test_hello"), t("gen.test_reply"))
         test_content = extract_text_from_response(test_result)
         done_reason = test_result.get("done_reason", "unknown")
-        emit("log", message=f"✅ Ollama 连接成功\n   模型响应: {test_content[:80]}\n   完成原因: {done_reason}")
+        emit("log", message=t("gen.connect_ok", response=test_content[:80], reason=done_reason))
     except Exception as e:
-        emit("log", message=f"❌ Ollama 连接失败: {e}")
-        emit("error", message=f"无法连接 Ollama: {e}")
+        emit("log", message=t("gen.connect_fail", error=str(e)))
+        emit("error", message=t("gen.connect_error", error=str(e)))
         sys.exit(1)
 
-    system_prompt = SYSTEM_PROMPTS[args.mode]
-    user_template = USER_TEMPLATES[args.mode]
+    system_prompt = get_system_prompts()[args.mode]
+    user_template = get_user_templates()[args.mode]
     # Use higher temperature for style mode to encourage creativity
     temp = 0.9 if args.mode == "style" else 0.7
     success_count = skip_count
@@ -405,7 +357,7 @@ def main():
         for i in range(skip_count, total):
             text = segments[i]
             segment_preview = text[:80].replace("\n", " ")
-            emit("log", message=f"\n── 第 {i+1}/{total} 段 ──\n📄 文本: {segment_preview}...")
+            emit("log", message=t("gen.segment_header", current=i+1, total=total, preview=segment_preview))
 
             try:
                 user_msg = user_template.format(text=text[:2000])
@@ -421,14 +373,14 @@ def main():
                     failed += 1
                     # Dump the raw API response keys for debugging
                     msg_keys = list(api_result.get("message", {}).keys())
-                    emit("log", message=f"❌ AI返回空内容\n   响应字段: {msg_keys}\n   done_reason: {done_reason}")
+                    emit("log", message=t("gen.empty_response", fields=str(msg_keys), reason=done_reason))
                     emit("progress", step=i + 1, total=total,
-                         desc=f"已生成 {success_count} 条（{failed} 失败）")
+                         desc=t("gen.progress_status", success=success_count, failed=failed))
                     continue
 
                 # Show AI response
                 resp_display = response_text[:300].replace("\n", " ")
-                emit("log", message=f"🤖 AI返回({len(response_text)}字): {resp_display}")
+                emit("log", message=t("gen.ai_response", length=len(response_text), preview=resp_display))
 
                 # Parse JSON
                 data = parse_json_response(response_text, mode=args.mode)
@@ -440,9 +392,9 @@ def main():
                         if sim > 0.6:
                             failed += 1
                             similarity_rejected += 1
-                            emit("log", message=f"⚠️ 风格模式质量检测：output与原文相似度过高({sim:.0%})，已跳过")
+                            emit("log", message=t("gen.style_rejected", similarity=f"{sim:.0%}"))
                             emit("progress", step=i + 1, total=total,
-                                 desc=f"已生成 {success_count} 条（{failed} 失败，{similarity_rejected} 相似度过高）")
+                                 desc=t("gen.progress_style", success=success_count, failed=failed, rejected=similarity_rejected))
                             continue
 
                     chat_data = to_chat_format(data, args.mode)
@@ -451,31 +403,31 @@ def main():
                         # Incremental write
                         train_file.write(json.dumps(chat_data, ensure_ascii=False) + "\n")
                         train_file.flush()
-                        emit("log", message=f"✅ 成功! 已累计 {success_count} 条\n   Q: {str(list(data.values())[0])[:60]}...")
+                        emit("log", message=t("gen.success", count=success_count, preview=str(list(data.values())[0])[:60]))
                     else:
                         failed += 1
-                        emit("log", message=f"⚠️ JSON字段不匹配: {list(data.keys())}")
+                        emit("log", message=t("gen.json_mismatch", keys=str(list(data.keys()))))
                 else:
                     failed += 1
-                    emit("log", message=f"❌ JSON解析失败\n   AI原文: {response_text[:400]}")
+                    emit("log", message=t("gen.json_parse_fail", text=response_text[:400]))
 
             except urllib.error.URLError as e:
                 failed += 1
-                emit("log", message=f"❌ 网络错误: {e}")
+                emit("log", message=t("gen.network_error", error=str(e)))
             except Exception as e:
                 failed += 1
-                emit("log", message=f"❌ 异常: {type(e).__name__}: {e}")
+                emit("log", message=t("gen.exception", type=type(e).__name__, error=str(e)))
 
             emit("progress", step=i + 1, total=total,
-                 desc=f"已生成 {success_count} 条（{failed} 失败）")
+                 desc=t("gen.progress_status", success=success_count, failed=failed))
 
     finally:
         train_file.close()
 
-    emit("log", message=f"\n══ 生成完毕 ══\n   ✅ 成功: {success_count}\n   ❌ 失败: {failed}\n   📊 总计: {total}")
+    emit("log", message=t("gen.summary", success=success_count, failed=failed, total=total))
 
     if success_count == 0:
-        emit("error", message=f"未生成有效数据（{total}段全部失败）。请查看AI日志排查原因。")
+        emit("error", message=t("gen.no_valid_data", total=total))
         sys.exit(1)
 
     # Write valid.jsonl from the last 10% of train data
@@ -497,13 +449,13 @@ def main():
             for line in valid_lines:
                 f.write(line + "\n")
 
-        emit("log", message=f"💾 已保存: train.jsonl ({len(train_lines)}条), valid.jsonl ({len(valid_lines)}条)")
+        emit("log", message=t("gen.saved", train=len(train_lines), valid=len(valid_lines)))
     else:
         # Only one result, copy to both
         with open(valid_path, "w", encoding="utf-8") as f:
             for line in all_results:
                 f.write(line + "\n")
-        emit("log", message=f"💾 已保存: train.jsonl ({len(all_results)}条), valid.jsonl ({len(all_results)}条)")
+        emit("log", message=t("gen.saved", train=len(all_results), valid=len(all_results)))
 
     emit("complete",
          train_count=success_count,

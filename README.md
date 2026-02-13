@@ -35,10 +35,41 @@ Most fine-tuning tools are CLI-heavy, cloud-dependent, or require juggling multi
 
 > **100% local. No cloud. No API keys. No data leaves your Mac.**
 
-<!-- TODO: Add product screenshots or demo GIF here -->
-<!-- <div align="center">
-  <img src="docs/images/screenshot-overview.png" alt="M-Courtyard Screenshot" width="80%" />
-</div> -->
+<div align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="80%" />
+  <p><em>Dashboard — Environment status, quick actions, and project overview</em></p>
+</div>
+
+<details>
+<summary><strong>📸 More Screenshots (click to expand)</strong></summary>
+<br/>
+
+<div align="center">
+  <img src="docs/screenshots/data-preparation.png" alt="Data Preparation" width="80%" />
+  <p><em>Data Preparation — AI-powered dataset generation with real-time log</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/training-progress.png" alt="Training Progress" width="80%" />
+  <p><em>Training — Live loss curve and iteration progress</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/training-summary.png" alt="Training Summary" width="80%" />
+  <p><em>Training Summary — Duration, loss metrics, and 99.7% improvement</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/test-model.png" alt="Test Model" width="80%" />
+  <p><em>Test Model — Chat with your fine-tuned model</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/export-ollama.png" alt="Export to Ollama" width="80%" />
+  <p><em>Export — One-click export to Ollama with quantization</em></p>
+</div>
+
+</details>
 
 ## Download
 
@@ -78,7 +109,7 @@ Most fine-tuning tools are CLI-heavy, cloud-dependent, or require juggling multi
 
 ### Export & Deployment
 - **One-click Ollama export** — Export fine-tuned models directly to Ollama with Q4/Q8/F16 quantization
-- **Universal model support** — Llama, Qwen, DeepSeek, Phi, Mistral, Gemma and more
+- **Universal model support** — Qwen, DeepSeek, GLM, Llama, GPT-OSS, Kimi, Mistral, Phi and more
 - **Adapter management** — Manage and test multiple fine-tuned adapters
 
 ### User Experience

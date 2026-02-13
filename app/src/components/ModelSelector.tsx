@@ -15,6 +15,32 @@ export interface LocalModelInfo {
   source: string;
 }
 
+interface OnlineModelOption {
+  id: string;
+  label: string;
+  size: string;
+  descKey: string;
+  releasedAt: string;
+}
+
+interface OnlineModelBrandGroup {
+  brand: string;
+  labelKey: string;
+  versions: OnlineModelOption[];
+  moreUrl?: string;
+}
+
+function sortOnlineGroupsByRelease(groups: OnlineModelBrandGroup[]): OnlineModelBrandGroup[] {
+  return groups.map((group) => ({
+    ...group,
+    versions: [...group.versions].sort((a, b) => {
+      const ta = Date.parse(a.releasedAt || "1970-01-01");
+      const tb = Date.parse(b.releasedAt || "1970-01-01");
+      return tb - ta;
+    }),
+  }));
+}
+
 export interface AdapterInfo {
   name: string;
   path: string;
@@ -45,31 +71,171 @@ const SOURCE_COLORS: Record<string, string> = {
   ollama: "text-success bg-success/15",
   trained: "text-tag-trained bg-tag-trained/15",
 };
-const RECOMMENDED_HF_MODELS = [
-  { id: "mlx-community/Llama-3.2-3B-Instruct-4bit", label: "Llama 3.2 3B", size: "~2GB", descKey: "balanced" },
-  { id: "mlx-community/Llama-3.2-1B-Instruct-4bit", label: "Llama 3.2 1B", size: "~0.8GB", descKey: "lightweight" },
-  { id: "mlx-community/Qwen2.5-3B-Instruct-4bit", label: "Qwen 2.5 3B", size: "~2GB", descKey: "chineseGood" },
-  { id: "mlx-community/Qwen2.5-7B-Instruct-4bit", label: "Qwen 2.5 7B", size: "~4.7GB", descKey: "chineseBetter" },
-  { id: "mlx-community/DeepSeek-R1-Distill-Qwen-7B-4bit", label: "DeepSeek R1 7B", size: "~4.7GB", descKey: "reasoning" },
-  { id: "mlx-community/DeepSeek-R1-Distill-Llama-8B-4bit-mlx", label: "DeepSeek R1 8B", size: "~5GB", descKey: "reasoningGeneral" },
-  { id: "mlx-community/DeepSeek-R1-Distill-Qwen-1.5B-4bit", label: "DeepSeek R1 1.5B", size: "~1GB", descKey: "reasoningLight" },
-  { id: "mlx-community/Phi-3.5-mini-instruct-4bit", label: "Phi 3.5 Mini", size: "~2.4GB", descKey: "codeStrong" },
-  { id: "mlx-community/Mistral-7B-Instruct-v0.3-4bit", label: "Mistral 7B", size: "~4GB", descKey: "euOpen" },
-  { id: "mlx-community/gemma-2-2b-it-4bit", label: "Gemma 2 2B", size: "~1.5GB", descKey: "google" },
-];
+const HF_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
+  {
+    brand: "qwen",
+    labelKey: "onlineBrands.qwen",
+    versions: [
+      { id: "mlx-community/Qwen3-Coder-Next-4bit", label: "Qwen3 Coder Next", size: "~6GB", descKey: "codeStrong", releasedAt: "2026-02-03" },
+      { id: "mlx-community/Qwen3-4B-Instruct-2507-4bit", label: "Qwen 3 4B", size: "~2.6GB", descKey: "versatile", releasedAt: "2025-08-06" },
+      { id: "mlx-community/Qwen3-14B-4bit-DWQ-053125", label: "Qwen 3 14B", size: "~9GB", descKey: "topRated", releasedAt: "2025-06-02" },
+      { id: "mlx-community/Qwen3-0.6B-4bit", label: "Qwen 3 0.6B", size: "~0.6GB", descKey: "lightweight", releasedAt: "2025-04-28" },
+    ],
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2FQwen3",
+  },
+  {
+    brand: "deepseek",
+    labelKey: "onlineBrands.deepseek",
+    versions: [
+      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-14B-4bit", label: "DeepSeek R1 14B", size: "~9GB", descKey: "topRated", releasedAt: "2025-01-20" },
+      { id: "mlx-community/DeepSeek-R1-Distill-Llama-8B-4bit-mlx", label: "DeepSeek R1 8B", size: "~5GB", descKey: "reasoningGeneral", releasedAt: "2025-01-20" },
+      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-7B-4bit", label: "DeepSeek R1 7B", size: "~4.7GB", descKey: "reasoning", releasedAt: "2025-01-20" },
+      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-1.5B-4bit", label: "DeepSeek R1 1.5B", size: "~1GB", descKey: "reasoningLight", releasedAt: "2025-01-20" },
+    ],
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2FDeepSeek",
+  },
+  {
+    brand: "glm",
+    labelKey: "onlineBrands.glm",
+    versions: [
+      { id: "mlx-community/GLM-5-4bit", label: "GLM 5", size: "~24GB", descKey: "topRated", releasedAt: "2026-02-12" },
+      { id: "mlx-community/GLM-4.5-Air-4bit", label: "GLM 4.5 Air", size: "~8GB", descKey: "higherQuality", releasedAt: "2025-07-28" },
+      { id: "mlx-community/GLM-4.7-Flash-4bit", label: "GLM 4.7 Flash", size: "~5GB", descKey: "lightweight", releasedAt: "2026-01-19" },
+    ],
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2FGLM",
+  },
+  {
+    brand: "llama",
+    labelKey: "onlineBrands.llama",
+    versions: [
+      { id: "mlx-community/Llama-3.2-1B-Instruct-4bit", label: "Llama 3.2 1B", size: "~0.8GB", descKey: "lightweight", releasedAt: "2024-09-25" },
+      { id: "mlx-community/Llama-3.2-3B-Instruct-4bit", label: "Llama 3.2 3B", size: "~2GB", descKey: "balanced", releasedAt: "2024-09-25" },
+      { id: "mlx-community/Llama-3.1-8B-Instruct-4bit", label: "Llama 3.1 8B", size: "~5GB", descKey: "popularGeneral", releasedAt: "2024-07-23" },
+    ],
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2FLlama",
+  },
+  {
+    brand: "gptoss",
+    labelKey: "onlineBrands.gptoss",
+    versions: [
+      { id: "mlx-community/gpt-oss-20b-MXFP4-Q8", label: "gpt-oss 20B Q8", size: "~22GB", descKey: "topRated", releasedAt: "2025-08-10" },
+      { id: "mlx-community/gpt-oss-20b-MXFP4-Q4", label: "gpt-oss 20B Q4", size: "~13GB", descKey: "openaiFamily", releasedAt: "2025-08-10" },
+    ],
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2Fgpt-oss",
+  },
+  {
+    brand: "kimi",
+    labelKey: "onlineBrands.kimi",
+    versions: [
+      { id: "mlx-community/Kimi-K2.5", label: "Kimi K2.5", size: "~16GB", descKey: "topRated", releasedAt: "2026-01-27" },
+      { id: "mlx-community/Kimi-K2-Thinking", label: "Kimi K2 Thinking", size: "~16GB", descKey: "reasoning", releasedAt: "2025-11-07" },
+      { id: "mlx-community/Kimi-K2-Instruct-4bit", label: "Kimi K2 Instruct", size: "~16GB", descKey: "popularGeneral", releasedAt: "2025-07-11" },
+    ],
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2FKimi",
+  },
+  {
+    brand: "mistral",
+    labelKey: "onlineBrands.mistral",
+    versions: [
+      { id: "mlx-community/mistralai_Ministral-3-14B-Instruct-2512-MLX-MXFP4", label: "Ministral 3 14B", size: "~8GB", descKey: "higherQuality", releasedAt: "2025-12-30" },
+      { id: "mlx-community/mistralai_Devstral-Small-2-24B-Instruct-2512-MLX-8Bit", label: "Devstral Small 24B", size: "~24GB", descKey: "codeStrong", releasedAt: "2025-12-14" },
+      { id: "mlx-community/Mistral-7B-Instruct-v0.2-4-bit", label: "Mistral 7B Instruct", size: "~4.1GB", descKey: "popularGeneral", releasedAt: "2023-12-22" },
+    ],
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2FMistral",
+  },
+  {
+    brand: "phi",
+    labelKey: "onlineBrands.phi",
+    versions: [
+      { id: "mlx-community/Phi-3.5-mini-instruct-4bit", label: "Phi 3.5 Mini", size: "~2.6GB", descKey: "lightweight", releasedAt: "2024-08-20" },
+      { id: "mlx-community/Phi-3-medium-128k-instruct-4bit", label: "Phi 3 Medium 128K", size: "~7.8GB", descKey: "higherQuality", releasedAt: "2024-05-21" },
+      { id: "mlx-community/Phi-3-mini-4k-instruct-4bit", label: "Phi 3 Mini 4K", size: "~2.2GB", descKey: "lightweight", releasedAt: "2024-04-23" },
+    ],
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2FPhi-3",
+  },
+]);
 
-const RECOMMENDED_OLLAMA_MODELS = [
-  { id: "llama3.2:3b", label: "Llama 3.2 3B", size: "~2GB", descKey: "balanced" },
-  { id: "llama3.2:1b", label: "Llama 3.2 1B", size: "~1.3GB", descKey: "lightweight" },
-  { id: "qwen2.5:3b", label: "Qwen 2.5 3B", size: "~2GB", descKey: "chineseGood" },
-  { id: "qwen2.5:7b", label: "Qwen 2.5 7B", size: "~4.7GB", descKey: "higherQuality" },
-  { id: "deepseek-r1:1.5b", label: "DeepSeek R1 1.5B", size: "~1.1GB", descKey: "reasoningLight" },
-  { id: "deepseek-r1:7b", label: "DeepSeek R1 7B", size: "~4.7GB", descKey: "reasoning" },
-  { id: "deepseek-r1:8b", label: "DeepSeek R1 8B", size: "~5GB", descKey: "reasoningGeneral" },
-  { id: "phi3.5:latest", label: "Phi 3.5 Mini", size: "~2.2GB", descKey: "codeStrong" },
-  { id: "mistral:7b", label: "Mistral 7B", size: "~4.1GB", descKey: "euOpen" },
-  { id: "gemma2:2b", label: "Gemma 2 2B", size: "~1.6GB", descKey: "google" },
-];
+const OLLAMA_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
+  {
+    brand: "qwen",
+    labelKey: "onlineBrands.qwen",
+    versions: [
+      { id: "qwen3:14b", label: "Qwen 3 14B", size: "~9GB", descKey: "topRated", releasedAt: "2025-04-29" },
+      { id: "qwen3:8b", label: "Qwen 3 8B", size: "~4.7GB", descKey: "higherQuality", releasedAt: "2025-04-29" },
+      { id: "qwen3:4b", label: "Qwen 3 4B", size: "~2.6GB", descKey: "versatile", releasedAt: "2025-04-29" },
+      { id: "qwen3:0.6b", label: "Qwen 3 0.6B", size: "~0.6GB", descKey: "lightweight", releasedAt: "2025-04-29" },
+    ],
+    moreUrl: "https://ollama.com/search?q=qwen3",
+  },
+  {
+    brand: "deepseek",
+    labelKey: "onlineBrands.deepseek",
+    versions: [
+      { id: "deepseek-r1:14b", label: "DeepSeek R1 14B", size: "~9GB", descKey: "topRated", releasedAt: "2025-01-20" },
+      { id: "deepseek-r1:8b", label: "DeepSeek R1 8B", size: "~5GB", descKey: "reasoningGeneral", releasedAt: "2025-01-20" },
+      { id: "deepseek-r1:7b", label: "DeepSeek R1 7B", size: "~4.7GB", descKey: "reasoning", releasedAt: "2025-01-20" },
+      { id: "deepseek-r1:1.5b", label: "DeepSeek R1 1.5B", size: "~1.1GB", descKey: "reasoningLight", releasedAt: "2025-01-20" },
+    ],
+    moreUrl: "https://ollama.com/search?q=deepseek",
+  },
+  {
+    brand: "glm",
+    labelKey: "onlineBrands.glm",
+    versions: [
+      { id: "glm-5:latest", label: "GLM 5", size: "~24GB", descKey: "topRated", releasedAt: "2026-02-12" },
+      { id: "glm-4.7-flash", label: "GLM 4.7 Flash", size: "~5GB", descKey: "lightweight", releasedAt: "2026-01-19" },
+      { id: "glm-4.7", label: "GLM 4.7", size: "~9GB", descKey: "higherQuality", releasedAt: "2025-07-28" },
+    ],
+    moreUrl: "https://ollama.com/search?q=glm5",
+  },
+  {
+    brand: "llama",
+    labelKey: "onlineBrands.llama",
+    versions: [
+      { id: "llama3.2:1b", label: "Llama 3.2 1B", size: "~1.3GB", descKey: "lightweight", releasedAt: "2024-09-25" },
+      { id: "llama3.2:3b", label: "Llama 3.2 3B", size: "~2GB", descKey: "balanced", releasedAt: "2024-09-25" },
+      { id: "llama3.1:8b", label: "Llama 3.1 8B", size: "~4.9GB", descKey: "popularGeneral", releasedAt: "2024-07-23" },
+    ],
+    moreUrl: "https://ollama.com/search?q=llama",
+  },
+  {
+    brand: "gptoss",
+    labelKey: "onlineBrands.gptoss",
+    versions: [
+      { id: "gpt-oss:latest", label: "gpt-oss Latest", size: "~14GB", descKey: "topRated", releasedAt: "2025-10-01" },
+      { id: "gpt-oss:20b", label: "gpt-oss 20B", size: "~14GB", descKey: "openaiFamily", releasedAt: "2025-10-01" },
+    ],
+    moreUrl: "https://ollama.com/library/gpt-oss",
+  },
+  {
+    brand: "kimi",
+    labelKey: "onlineBrands.kimi",
+    versions: [
+      { id: "kimi-k2.5:latest", label: "Kimi K2.5", size: "~16GB", descKey: "topRated", releasedAt: "2026-01-27" },
+    ],
+    moreUrl: "https://ollama.com/search?q=kimi",
+  },
+  {
+    brand: "mistral",
+    labelKey: "onlineBrands.mistral",
+    versions: [
+      { id: "mistral-small3.2:latest", label: "Mistral Small 3.2", size: "~24GB", descKey: "higherQuality", releasedAt: "2025-07-10" },
+      { id: "mistral-nemo:latest", label: "Mistral Nemo 12B", size: "~7GB", descKey: "balanced", releasedAt: "2024-07-18" },
+      { id: "mistral:latest", label: "Mistral 7B", size: "~4.1GB", descKey: "popularGeneral", releasedAt: "2023-12-10" },
+    ],
+    moreUrl: "https://ollama.com/search?q=mistral",
+  },
+  {
+    brand: "phi",
+    labelKey: "onlineBrands.phi",
+    versions: [
+      { id: "phi4-reasoning:14b", label: "Phi-4 Reasoning 14B", size: "~9GB", descKey: "reasoning", releasedAt: "2025-05-01" },
+      { id: "phi4:14b", label: "Phi-4 14B", size: "~9GB", descKey: "higherQuality", releasedAt: "2024-12-01" },
+      { id: "phi4-mini:3.8b", label: "Phi-4 Mini 3.8B", size: "~2.4GB", descKey: "lightweight", releasedAt: "2024-12-01" },
+    ],
+    moreUrl: "https://ollama.com/search?q=phi",
+  },
+]);
 
 interface OllamaModelInfo {
   name: string;
@@ -80,6 +246,7 @@ const HF_DOWNLOAD_LINKS = [
   { labelKey: "hfLinks.official", url: "https://huggingface.co/mlx-community" },
   { labelKey: "hfLinks.mirror", url: "https://hf-mirror.com/mlx-community" },
   { labelKey: "hfLinks.modelscope", url: "https://modelscope.cn/models?nameContains=mlx" },
+  { labelKey: "hfLinks.allModels", url: "https://huggingface.co/mlx-community/models" },
 ];
 
 const OLLAMA_LINKS = [
@@ -119,6 +286,8 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
   const [hfSource, setHfSource] = useState<string>("huggingface");
   const [loading, setLoading] = useState(false);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
+  const [expandedHfBrands, setExpandedHfBrands] = useState<Set<string>>(new Set());
+  const [expandedOllamaBrands, setExpandedOllamaBrands] = useState<Set<string>>(new Set());
   const [showOnline, setShowOnline] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
 
@@ -145,7 +314,9 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
   const loadHfSource = useCallback(async () => {
     try {
       const cfg = await invoke<{ hf_source: string }>("get_app_config");
-      setHfSource(cfg.hf_source || "huggingface");
+      const src = cfg.hf_source;
+      const valid = src === "huggingface" || src === "hf-mirror" || src === "modelscope";
+      setHfSource(valid ? src : "huggingface");
     } catch { /* ignore */ }
   }, []);
 
@@ -159,7 +330,11 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
     }
   }, [projectId]);
 
-  useEffect(() => { loadModels(); loadOllamaModels(); loadHfSource(); }, [loadModels, loadOllamaModels, loadHfSource]);
+  useEffect(() => {
+    loadModels();
+    loadOllamaModels();
+    if (mode === "training") loadHfSource();
+  }, [loadModels, loadOllamaModels, loadHfSource, mode]);
   useEffect(() => { loadAdapters(); }, [loadAdapters]);
 
   // Combine scanned models with adapter pseudo-models
@@ -205,6 +380,24 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
     });
   };
 
+  const toggleHfBrand = (brand: string) => {
+    setExpandedHfBrands((prev) => {
+      const next = new Set(prev);
+      if (next.has(brand)) next.delete(brand);
+      else next.add(brand);
+      return next;
+    });
+  };
+
+  const toggleOllamaBrand = (brand: string) => {
+    setExpandedOllamaBrands((prev) => {
+      const next = new Set(prev);
+      if (next.has(brand)) next.delete(brand);
+      else next.add(brand);
+      return next;
+    });
+  };
+
   // Auto-expand the source with most usable models on first load
   useEffect(() => {
     if (combinedModels.length > 0 && expandedSources.size === 0) {
@@ -214,8 +407,7 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
   }, [combinedModels.length]);
 
   const navigateToSettings = () => {
-    navigate("/settings");
-    // Settings page has #storage section with model path config
+    navigate("/settings?focus=download-source");
   };
 
   const openUrl = (url: string) => {
@@ -272,14 +464,16 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
           <Download size={12} />
           {t("modelSelector.onlineModels")}
         </button>
-        <button
-          onClick={navigateToSettings}
-          disabled={disabled}
-          className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
-        >
-          <Settings size={12} />
-          {t("modelSelector.adjustSource")}
-        </button>
+        {mode === "training" && (
+          <button
+            onClick={navigateToSettings}
+            disabled={disabled}
+            className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+          >
+            <Settings size={12} />
+            {t("modelSelector.adjustSource")}
+          </button>
+        )}
       </div>
 
       {/* Panel */}
@@ -431,7 +625,7 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {HF_DOWNLOAD_LINKS.map((link) => (
+                    {(mode === "dataprep" ? OLLAMA_LINKS : HF_DOWNLOAD_LINKS).map((link) => (
                       <button
                         key={link.url}
                         onClick={() => openUrl(link.url)}
@@ -456,45 +650,75 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                       </p>
                     </div>
                     <div className="space-y-1">
-                      {RECOMMENDED_OLLAMA_MODELS.map((m) => {
-                        const downloaded = isOllamaInstalled(m.id);
-                        const isSelected = selectedModel === m.id;
+                      {OLLAMA_ONLINE_GROUPS.map((group) => {
+                        const expanded = expandedOllamaBrands.has(group.brand);
                         return (
-                          <button
-                            key={m.id}
-                            onClick={() => onSelect(m.id)}
-                            disabled={disabled}
-                            className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-xs transition-colors disabled:opacity-50 ${
-                              isSelected
-                                ? "border-primary bg-primary/10 text-foreground"
-                                : "border-border text-muted-foreground hover:bg-accent"
-                            }`}
-                          >
-                            {isSelected ? (
-                              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span>
-                            ) : (
-                              <span className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/30" />
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <span className="font-medium text-foreground">{m.label}</span>
-                              <span className="ml-1.5 text-muted-foreground/50">{t(`modelSelector.modelDesc.${m.descKey}`)}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {downloaded && (
-                                <span className="flex items-center gap-0.5 rounded bg-success/15 px-1.5 py-0.5 text-[10px] text-success">
-                                  <CheckCircle2 size={10} />
-                                  {t("modelSelector.downloaded")}
-                                </span>
+                          <div key={group.brand} className="rounded-md border border-border/60">
+                            <div
+                              onClick={() => toggleOllamaBrand(group.brand)}
+                              className="flex cursor-pointer items-center justify-between px-2 py-1.5 transition-colors hover:bg-accent/50 rounded-t-md"
+                            >
+                              <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                                {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                <span>{t(`modelSelector.${group.labelKey}`)}</span>
+                                <span className="text-[10px] text-muted-foreground">{group.versions.length}</span>
+                              </div>
+                              {group.moreUrl && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openUrl(group.moreUrl!); }}
+                                  className="text-[10px] text-primary hover:underline"
+                                >
+                                  {t("modelSelector.more")}
+                                </button>
                               )}
-                              <span className="font-mono text-muted-foreground/70">{m.size}</span>
                             </div>
-                          </button>
+
+                            {expanded && (
+                              <div className="space-y-1 border-t border-border/50 p-2">
+                                {group.versions.map((m) => {
+                                  const downloaded = isOllamaInstalled(m.id);
+                                  const isSelected = selectedModel === m.id;
+                                  return (
+                                    <button
+                                      key={m.id}
+                                      onClick={() => onSelect(m.id)}
+                                      disabled={disabled}
+                                      className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-xs transition-colors disabled:opacity-50 ${
+                                        isSelected
+                                          ? "border-primary bg-primary/10 text-foreground"
+                                          : "border-border text-muted-foreground hover:bg-accent"
+                                      }`}
+                                    >
+                                      {isSelected ? (
+                                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span>
+                                      ) : (
+                                        <span className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/30" />
+                                      )}
+                                      <div className="min-w-0 flex-1">
+                                        <span className="font-medium text-foreground">{m.label}</span>
+                                        <span className="ml-1.5 text-muted-foreground/50">{t(`modelSelector.modelDesc.${m.descKey}`)}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {downloaded && (
+                                          <span className="flex items-center gap-0.5 rounded bg-success/15 px-1.5 py-0.5 text-[10px] text-success">
+                                            <CheckCircle2 size={10} />
+                                            {t("modelSelector.downloaded")}
+                                          </span>
+                                        )}
+                                        <span className="font-mono text-muted-foreground/70">{m.size}</span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
                     <div className="space-y-2 border-t border-border pt-2">
                       <p className="text-xs text-muted-foreground/60">
-                        <span className="font-mono text-foreground/70">ollama pull qwen2.5:3b</span>
+                        <span className="font-mono text-foreground/70">ollama pull qwen3:4b</span>
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {OLLAMA_LINKS.map((link) => (
@@ -535,44 +759,74 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                     )}
 
                     <div className="space-y-1">
-                      {RECOMMENDED_HF_MODELS.map((m) => {
-                        const downloaded = isDownloaded(m.id);
-                        const isSelected = selectedModel === m.id;
+                      {HF_ONLINE_GROUPS.map((group) => {
+                        const expanded = expandedHfBrands.has(group.brand);
                         const unavailable = hfSource === "modelscope";
                         return (
-                          <button
-                            key={m.id}
-                            onClick={() => !unavailable && onSelect(m.id)}
-                            disabled={disabled || unavailable}
-                            className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-xs transition-colors disabled:opacity-50 ${
-                              unavailable
-                                ? "border-border/50 text-muted-foreground/40 cursor-not-allowed"
-                                : isSelected
-                                ? "border-primary bg-primary/10 text-foreground"
-                                : "border-border text-muted-foreground hover:bg-accent"
-                            }`}
-                          >
-                            {isSelected && !unavailable ? (
-                              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span>
-                            ) : (
-                              <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${unavailable ? "border-muted-foreground/15" : "border-muted-foreground/30"}`} />
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <span className={`font-medium ${unavailable ? "text-muted-foreground/40" : "text-foreground"}`}>{m.label}</span>
-                              <span className={`ml-1.5 rounded px-1 py-0.5 text-[10px] ${unavailable ? "bg-tag-mlx/5 text-tag-mlx/40" : "bg-tag-mlx/15 text-tag-mlx"}`}>MLX</span>
-                              <span className="ml-1 text-muted-foreground/50">{t(`modelSelector.modelDesc.${m.descKey}`)}</span>
-                              {unavailable && <span className="ml-1 text-[10px] text-muted-foreground/40">{t("modelSelector.unavailableSource")}</span>}
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {downloaded && (
-                                <span className="flex items-center gap-0.5 rounded bg-success/15 px-1.5 py-0.5 text-[10px] text-success">
-                                  <CheckCircle2 size={10} />
-                                  {t("modelSelector.downloaded")}
-                                </span>
+                          <div key={group.brand} className="rounded-md border border-border/60">
+                            <div
+                              onClick={() => toggleHfBrand(group.brand)}
+                              className="flex cursor-pointer items-center justify-between px-2 py-1.5 transition-colors hover:bg-accent/50 rounded-t-md"
+                            >
+                              <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                                {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                <span>{t(`modelSelector.${group.labelKey}`)}</span>
+                                <span className="text-[10px] text-muted-foreground">{group.versions.length}</span>
+                              </div>
+                              {group.moreUrl && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openUrl(group.moreUrl!); }}
+                                  className="text-[10px] text-primary hover:underline"
+                                >
+                                  {t("modelSelector.more")}
+                                </button>
                               )}
-                              <span className="font-mono text-muted-foreground/70">{m.size}</span>
                             </div>
-                          </button>
+
+                            {expanded && (
+                              <div className="space-y-1 border-t border-border/50 p-2">
+                                {group.versions.map((m) => {
+                                  const downloaded = isDownloaded(m.id);
+                                  const isSelected = selectedModel === m.id;
+                                  return (
+                                    <button
+                                      key={m.id}
+                                      onClick={() => !unavailable && onSelect(m.id)}
+                                      disabled={disabled || unavailable}
+                                      className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-xs transition-colors disabled:opacity-50 ${
+                                        unavailable
+                                          ? "border-border/50 text-muted-foreground/40 cursor-not-allowed"
+                                          : isSelected
+                                          ? "border-primary bg-primary/10 text-foreground"
+                                          : "border-border text-muted-foreground hover:bg-accent"
+                                      }`}
+                                    >
+                                      {isSelected && !unavailable ? (
+                                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span>
+                                      ) : (
+                                        <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${unavailable ? "border-muted-foreground/15" : "border-muted-foreground/30"}`} />
+                                      )}
+                                      <div className="min-w-0 flex-1">
+                                        <span className={`font-medium ${unavailable ? "text-muted-foreground/40" : "text-foreground"}`}>{m.label}</span>
+                                        <span className={`ml-1.5 rounded px-1 py-0.5 text-[10px] ${unavailable ? "bg-tag-mlx/5 text-tag-mlx/40" : "bg-tag-mlx/15 text-tag-mlx"}`}>MLX</span>
+                                        <span className="ml-1 text-muted-foreground/50">{t(`modelSelector.modelDesc.${m.descKey}`)}</span>
+                                        {unavailable && <span className="ml-1 text-[10px] text-muted-foreground/40">{t("modelSelector.unavailableSource")}</span>}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {downloaded && (
+                                          <span className="flex items-center gap-0.5 rounded bg-success/15 px-1.5 py-0.5 text-[10px] text-success">
+                                            <CheckCircle2 size={10} />
+                                            {t("modelSelector.downloaded")}
+                                          </span>
+                                        )}
+                                        <span className="font-mono text-muted-foreground/70">{m.size}</span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>

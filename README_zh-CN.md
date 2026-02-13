@@ -35,10 +35,41 @@
 
 > **100% 本地运行。无需云服务。无需 API Key。数据不出本机。**
 
-<!-- TODO: 添加产品截图或演示 GIF -->
-<!-- <div align="center">
-  <img src="docs/images/screenshot-overview.png" alt="M-Courtyard 截图" width="80%" />
-</div> -->
+<div align="center">
+  <img src="docs/screenshots/dashboard.png" alt="仪表盘" width="80%" />
+  <p><em>仪表盘 — 环境状态、快捷操作、项目概览</em></p>
+</div>
+
+<details>
+<summary><strong>📸 更多截图（点击展开）</strong></summary>
+<br/>
+
+<div align="center">
+  <img src="docs/screenshots/data-preparation.png" alt="数据准备" width="80%" />
+  <p><em>数据准备 — AI 自动生成训练数据，实时日志</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/training-progress.png" alt="训练进度" width="80%" />
+  <p><em>模型训练 — 实时 Loss 曲线和迭代进度</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/training-summary.png" alt="训练总结" width="80%" />
+  <p><em>训练总结 — 耗时、Loss 指标、99.7% 改善率</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/test-model.png" alt="测试模型" width="80%" />
+  <p><em>测试模型 — 与微调后的模型对话</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/export-ollama.png" alt="导出到 Ollama" width="80%" />
+  <p><em>导出模型 — 一键导出到 Ollama，支持量化</em></p>
+</div>
+
+</details>
 
 ## 下载安装
 
@@ -78,7 +109,7 @@
 
 ### 导出与部署
 - **一键导出到 Ollama** — 支持 Q4/Q8/F16 量化格式
-- **通用模型支持** — Llama、Qwen、DeepSeek、Phi、Mistral、Gemma 等
+- **通用模型支持** — Qwen、DeepSeek、GLM、Llama、GPT-OSS、Kimi、Mistral、Phi 等
 - **适配器管理** — 管理和测试多个微调后的适配器
 
 ### 用户体验

@@ -16,7 +16,7 @@ interface AdapterInfo {
 }
 
 export function TestingPage() {
-  const { t } = useTranslation("testing");
+  const { t, i18n } = useTranslation("testing");
   const { t: tc } = useTranslation("common");
   const { currentProject } =
     useProjectStore();
@@ -114,6 +114,7 @@ export function TestingPage() {
         adapterPath: selectedAdapter || null,
         maxTokens,
         temperature,
+        lang: i18n.language,
       });
     } catch (e) {
       addMessage({ role: "assistant", content: `Error: ${String(e)}` });

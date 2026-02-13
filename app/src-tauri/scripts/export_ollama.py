@@ -24,6 +24,8 @@ import subprocess
 import sys
 import tempfile
 
+from i18n import t, init_i18n, add_lang_arg
+
 # Ollama-compatible safetensors dtypes (from reader_safetensors.go)
 OLLAMA_OK_DTYPES = {"F32", "F16", "BF16", "U8"}
 
@@ -98,7 +100,7 @@ def fuse_and_dequantize_direct(model_path, adapter_path, output_path):
     from mlx.utils import tree_unflatten
     from mlx_lm.utils import dequantize_model, load, save
 
-    emit("progress", step="fuse", desc="Loading model + adapter via MLX API...")
+    emit("progress", step="fuse", desc=t("export.loading_mlx"))
 
     # Handle both old and new mlx_lm API (return_config added in newer versions)
     try:
@@ -111,7 +113,7 @@ def fuse_and_dequantize_direct(model_path, adapter_path, output_path):
             config = json.load(f)
 
     # Fuse LoRA layers (with per-layer dequantize)
-    emit("progress", step="fuse", desc="Fusing LoRA layers...")
+    emit("progress", step="fuse", desc=t("export.fusing_lora"))
     fused_linears = [
         (n, m.fuse(dequantize=True))
         for n, m in model.named_modules()
@@ -119,10 +121,10 @@ def fuse_and_dequantize_direct(model_path, adapter_path, output_path):
     ]
     if fused_linears:
         model.update_modules(tree_unflatten(fused_linears))
-        emit("progress", step="fuse", desc=f"Fused {len(fused_linears)} LoRA layers")
+        emit("progress", step="fuse", desc=t("export.fused_count", count=len(fused_linears)))
 
     # Dequantize ALL remaining quantized layers
-    emit("progress", step="fuse", desc="Dequantizing all quantized weights...")
+    emit("progress", step="fuse", desc=t("export.dequantizing"))
     model = dequantize_model(model)
     config.pop("quantization", None)
     config.pop("quantization_config", None)
@@ -141,11 +143,11 @@ def fuse_and_dequantize_direct(model_path, adapter_path, output_path):
         mt = config.get("model_type", "")
         if mt in arch_map:
             config["architectures"] = [arch_map[mt]]
-            emit("progress", step="fuse", desc=f"Added architectures: [{arch_map[mt]}]")
+            emit("progress", step="fuse", desc=t("export.added_arch", arch=arch_map[mt]))
 
     # Save using mlx_lm's save (handles tokenizer, config, weights)
     save_path = Path(output_path)
-    emit("progress", step="fuse", desc="Saving dequantized model...")
+    emit("progress", step="fuse", desc=t("export.saving"))
     save(save_path, model_path, model, tokenizer, config, donate_model=False)
 
     return output_path, "safetensors"
@@ -256,12 +258,12 @@ def try_gguf_export(model_path, adapter_path, output_path):
         "--adapter-path", adapter_path,
         "--save-path", output_path,
     ]
-    emit("progress", step="fuse", desc="Trying GGUF export (Llama/Mistral only)...")
+    emit("progress", step="fuse", desc=t("export.gguf_try"))
     ok, _, _ = run_cli(base_cmd + ["--export-gguf", "--dequantize"])
     if ok:
         gguf = _find_gguf(output_path)
         if gguf:
-            emit("progress", step="fuse", desc=f"GGUF exported: {os.path.basename(gguf)}")
+            emit("progress", step="fuse", desc=t("export.gguf_ok", filename=os.path.basename(gguf)))
             return gguf, "gguf"
     return None, None
 
@@ -276,7 +278,7 @@ def create_ollama_model(model_name, model_path, model_format, quantization="q4")
 
     fmt = "GGUF" if model_format == "gguf" else "safetensors"
     emit("progress", step="ollama",
-         desc=f"Creating Ollama model '{model_name}' from {fmt} (quantize: {ollama_quant})...")
+         desc=t("export.creating", name=model_name, format=fmt, quant=ollama_quant))
 
     # Remove any stale/broken model with the same name first
     run_cli(["ollama", "rm", model_name], timeout=30)
@@ -291,14 +293,14 @@ def create_ollama_model(model_name, model_path, model_format, quantization="q4")
         if ollama_quant != "f16":
             cmd.extend(["--quantize", ollama_quant])
 
-        emit("progress", step="ollama", desc=f"Running: {' '.join(cmd)}")
+        emit("progress", step="ollama", desc=t("export.running_cmd", cmd=' '.join(cmd)))
         ok, stdout, stderr = run_cli(cmd, timeout=600)
         if ok:
             return True
 
         # If --quantize flag caused error, retry without it
         if "--quantize" in " ".join(cmd):
-            emit("progress", step="ollama", desc="Retrying without --quantize...")
+            emit("progress", step="ollama", desc=t("export.retry_no_quant"))
             cmd_no_q = ["ollama", "create", model_name, "-f", modelfile_path]
             ok2, _, stderr2 = run_cli(cmd_no_q, timeout=600)
             if ok2:
@@ -325,30 +327,33 @@ def main():
     parser.add_argument("--model-name", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--quantization", default="q4", choices=["q4", "q8", "f16"])
+    add_lang_arg(parser)
     args = parser.parse_args()
+
+    init_i18n(args.lang)
 
     # Step 1: Check Ollama
     if not check_ollama():
-        emit("error", message="Ollama is not installed or not running.")
+        emit("error", message=t("export.ollama_not_found"))
         sys.exit(1)
     emit("progress", step="check", desc="Ollama detected")
 
     # Step 2: Resolve paths
     resolved = resolve_model_path(args.model)
     if resolved is None:
-        emit("error", message=f"Cannot resolve model: {args.model}")
+        emit("error", message=t("export.model_not_found", model=args.model))
         sys.exit(1)
     emit("progress", step="resolve", desc=f"Model: {resolved}")
 
     if not os.path.isdir(args.adapter_path):
-        emit("error", message=f"Adapter not found: {args.adapter_path}")
+        emit("error", message=t("export.adapter_not_found", path=args.adapter_path))
         sys.exit(1)
     adapter_files = [
         f for f in os.listdir(args.adapter_path)
         if f.endswith(".safetensors") or f.endswith(".npz")
     ]
     if not adapter_files:
-        emit("error", message=f"No adapter weights in: {args.adapter_path}")
+        emit("error", message=t("export.no_adapter_weights", path=args.adapter_path))
         sys.exit(1)
     emit("progress", step="resolve",
          desc=f"Adapter: {args.adapter_path} ({len(adapter_files)} weight files)")
@@ -358,43 +363,43 @@ def main():
 
     # Step 3: Try GGUF export first (fast path for Llama/Mistral/Mixtral)
     emit("progress", step="fuse",
-         desc=f"Fusing adapter with base model...\n  Model: {resolved}\n  Adapter: {args.adapter_path}")
+         desc=t("export.fuse_start", model=resolved, adapter=args.adapter_path))
 
     model_output, model_format = try_gguf_export(resolved, args.adapter_path, fused_dir)
 
     # Step 3b: If GGUF failed, use direct MLX API (works for ALL architectures)
     if model_output is None:
         emit("progress", step="fuse",
-             desc="GGUF not supported for this model. Using MLX API dequantize...")
+             desc=t("export.gguf_fallback"))
         try:
             model_output, model_format = fuse_and_dequantize_direct(
                 resolved, args.adapter_path, fused_dir
             )
         except Exception as e:
-            emit("error", message=f"Fuse + dequantize failed:\n{str(e)[-600:]}")
+            emit("error", message=t("export.fuse_fail", error=str(e)[-600:]))
             sys.exit(1)
 
     # Step 3.5: Binary safety net — remove any non-float tensors from safetensors
     # Even after proper dequantization, some edge cases may leave U32/I32 artifacts.
     if model_format == "safetensors":
         emit("progress", step="convert",
-             desc="Verifying safetensors compatibility (F32/F16/BF16 only)...")
+             desc=t("export.verify_start"))
         try:
             kept, removed = clean_safetensors_for_ollama(model_output)
             config_cleaned = clean_config_for_ollama(model_output)
             parts = []
             if removed:
-                parts.append(f"removed {removed} incompatible tensors")
-            parts.append(f"{kept} tensors ready")
+                parts.append(t("export.removed_tensors", count=removed))
+            parts.append(t("export.tensors_ready", count=kept))
             if config_cleaned:
-                parts.append("cleaned config")
-            emit("progress", step="convert", desc=f"Verified: {'; '.join(parts)}")
+                parts.append(t("export.config_cleaned"))
+            emit("progress", step="convert", desc=t("export.verify_done", details='; '.join(parts)))
         except Exception as e:
             emit("progress", step="convert",
-                 desc=f"Verify warning: {e} (will try anyway)")
+                 desc=t("export.verify_warn", error=str(e)))
 
     emit("progress", step="fuse_done",
-         desc=f"Model ready ({model_format}): {os.path.basename(model_output)}")
+         desc=t("export.model_ready", format=model_format, filename=os.path.basename(model_output)))
 
     # Step 4: Create Ollama model
     result = create_ollama_model(
@@ -408,10 +413,10 @@ def main():
     elif isinstance(result, tuple):
         _, stderr = result
         emit("error",
-             message=f"Ollama create failed:\n{(stderr or '')[-600:] or 'Unknown error'}")
+             message=t("export.create_fail", error=(stderr or '')[-600:] or 'Unknown error'))
         sys.exit(1)
     else:
-        emit("error", message="Ollama create failed")
+        emit("error", message=t("export.create_fail_unknown"))
         sys.exit(1)
 
 

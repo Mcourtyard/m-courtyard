@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
+import { useLocation } from "react-router-dom";
 import { Monitor, Languages, Info, FolderOpen, RefreshCw, Download, RotateCcw, Globe, Palette } from "lucide-react";
 import { checkEnvironment, setupEnvironment, installUv, type EnvironmentStatus } from "@/services/environment";
 import { useThemeStore, type ThemeId } from "@/stores/themeStore";
@@ -20,6 +21,8 @@ interface AppConfigResponse {
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation("settings");
+  const location = useLocation();
+  const downloadSourceRef = useRef<HTMLElement | null>(null);
   const [env, setEnv] = useState<EnvironmentStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
@@ -70,6 +73,16 @@ export function SettingsPage() {
     refresh();
     loadConfig();
   }, [loadConfig]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("focus") !== "download-source") return;
+    const el = downloadSourceRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [location.search]);
 
   const handleSetup = async () => {
     setSetupLoading(true);
@@ -289,7 +302,7 @@ export function SettingsPage() {
       </section>
 
       {/* Download Source Section */}
-      <section className="space-y-4">
+      <section id="download-source" ref={downloadSourceRef} className="space-y-4 scroll-mt-24">
         <div className="flex items-center gap-2">
           <Globe size={18} className="text-muted-foreground" />
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">

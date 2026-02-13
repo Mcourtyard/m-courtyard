@@ -18,7 +18,7 @@ interface AdapterInfo {
 }
 
 export function ExportPage() {
-  const { t } = useTranslation("export");
+  const { t, i18n } = useTranslation("export");
   const { t: tc } = useTranslation("common");
   const { currentProject } = useProjectStore();
 
@@ -121,6 +121,7 @@ export function ExportPage() {
         model: baseModel,
         adapterPath: selectedAdapter || null,
         quantization,
+        lang: i18n.language,
       });
     } catch (e) {
       useExportStore.getState().setResult(`Error: ${String(e)}`);

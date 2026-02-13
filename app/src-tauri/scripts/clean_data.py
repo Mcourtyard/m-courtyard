@@ -13,6 +13,8 @@ import re
 import hashlib
 import sys
 
+from i18n import t, init_i18n, add_lang_arg
+
 
 def emit(event_type, **kwargs):
     """Emit a JSON event line to stdout for Rust to parse."""
@@ -88,7 +90,7 @@ def read_docx(path):
         doc = Document(path)
         return "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
     except ImportError:
-        emit("warning", message="python-docx not installed, skipping .docx file. Install with: pip install python-docx")
+        emit("warning", message=t("clean.docx_not_installed", filename=os.path.basename(path)))
         return None
     except Exception as e:
         emit("warning", message=f"Failed to read docx {path}: {e}")
@@ -108,7 +110,7 @@ def read_pdf(path):
                     text_parts.append(page_text)
         return "\n\n".join(text_parts) if text_parts else None
     except ImportError:
-        emit("warning", message="PyPDF2 not installed, skipping .pdf file. Install with: pip install PyPDF2")
+        emit("warning", message=t("clean.pdf_not_installed", filename=os.path.basename(path)))
         return None
     except Exception as e:
         emit("warning", message=f"Failed to read pdf {path}: {e}")
@@ -162,19 +164,22 @@ def clean_file(input_path):
 def main():
     parser = argparse.ArgumentParser(description="Courtyard data cleaning")
     parser.add_argument("--project-dir", required=True, help="Project directory path")
+    add_lang_arg(parser)
     args = parser.parse_args()
+
+    init_i18n(args.lang)
 
     raw_dir = os.path.join(args.project_dir, "raw")
     cleaned_dir = os.path.join(args.project_dir, "cleaned")
     os.makedirs(cleaned_dir, exist_ok=True)
 
     if not os.path.exists(raw_dir):
-        emit("error", message="Raw directory not found")
+        emit("error", message=t("clean.raw_not_found", path=raw_dir))
         sys.exit(1)
 
     files = [f for f in os.listdir(raw_dir) if os.path.isfile(os.path.join(raw_dir, f))]
     if not files:
-        emit("error", message="No files found in raw directory")
+        emit("error", message=t("clean.no_files"))
         sys.exit(1)
 
     total_files = len(files)
@@ -184,7 +189,7 @@ def main():
     removed_dupes = 0
     removed_short = 0
 
-    emit("progress", step=0, total=total_files, desc="Starting cleaning...")
+    emit("progress", step=0, total=total_files, desc=t("clean.starting", count=total_files))
 
     all_segments = []
 
@@ -209,10 +214,10 @@ def main():
             all_segments.extend(segments)
 
         except Exception as e:
-            emit("warning", message=f"Failed to clean {filename}: {e}")
+            emit("warning", message=t("clean.error_file", filename=filename, error=str(e)))
             continue
 
-        emit("progress", step=i + 1, total=total_files, desc=f"Cleaned {filename}")
+        emit("progress", step=i + 1, total=total_files, desc=t("clean.cleaned", filename=filename, segments=len(segments)))
 
     # Write cleaned output as single file
     output_path = os.path.join(cleaned_dir, "cleaned_all.txt")
