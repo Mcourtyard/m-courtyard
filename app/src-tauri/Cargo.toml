@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "AI Model Training Assistant - From raw text to fine-tuned local models"
 authors = ["tuwenbo"]
 edition = "2021"
+license = "AGPL-3.0"
+repository = "https://github.com/Mcourtyard/m-courtyard"
+homepage = "https://github.com/Mcourtyard/m-courtyard"
 
 [lib]
 name = "app_lib"

@@ -2,6 +2,12 @@
   "name": "app",
   "private": true,
   "version": "0.3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mcourtyard/m-courtyard.git"
+  },
+  "license": "AGPL-3.0",
+  "homepage": "https://github.com/Mcourtyard/m-courtyard",
   "type": "module",
   "scripts": {
     "dev": "vite",
