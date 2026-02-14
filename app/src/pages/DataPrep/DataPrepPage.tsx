@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
-import { Upload, Trash2, Eye, ArrowRight, FolderOpen, Square, Wand2, ChevronDown, ChevronRight, CheckCircle2, Circle, AlertTriangle, Settings } from "lucide-react";
+import { Upload, Trash2, Eye, ArrowRight, FolderOpen, Square, Wand2, ChevronDown, ChevronRight, CheckCircle2, Circle, AlertTriangle, Settings, Check, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
 import { useGenerationStore } from "@/stores/generationStore";
@@ -25,6 +25,116 @@ interface DatasetVersionInfo {
   train_size: number;
   valid_size: number;
   created: string;
+}
+
+interface RawFileSample {
+  name: string;
+  ext: string;
+  size: number;
+  snippet: string;
+}
+
+type ModeStatus = "recommended" | "available" | "cautious";
+type ModeStatusMap = Record<"qa" | "style" | "chat" | "instruct", ModeStatus>;
+
+function analyzeContentForModes(samples: RawFileSample[]): { status: ModeStatusMap; hintKey: string } {
+  if (samples.length === 0) {
+    return {
+      status: { qa: "available", style: "available", chat: "available", instruct: "available" },
+      hintKey: "generate.modeCheckNoFiles",
+    };
+  }
+
+  const structuredExts = new Set(["json", "jsonl", "csv", "tsv", "xml", "yaml", "yml"]);
+  const proseExts = new Set(["txt", "md", "markdown", "doc", "docx", "pdf", "rtf"]);
+
+  let proseScore = 0;
+  let structuredScore = 0;
+  let dialogueScore = 0;
+  let headingScore = 0;
+  let totalSnippetLen = 0;
+
+  for (const s of samples) {
+    // Extension-based signals
+    if (structuredExts.has(s.ext)) structuredScore += 2;
+    if (proseExts.has(s.ext)) proseScore += 2;
+
+    const text = s.snippet;
+    if (!text) continue;
+    totalSnippetLen += text.length;
+
+    // Content heuristics
+    const lines = text.split("\n").filter((l) => l.trim());
+    const avgLineLen = lines.length > 0 ? text.length / lines.length : 0;
+
+    // Long paragraphs → prose/narrative
+    if (avgLineLen > 80) proseScore += 2;
+    // Short lines with many line breaks → structured/list
+    if (avgLineLen < 30 && lines.length > 5) structuredScore += 1;
+
+    // JSON-like content
+    if (/^\s*[\[{]/.test(text) && /[\]}]\s*$/.test(text.trim())) structuredScore += 3;
+    // Key-value patterns
+    if ((text.match(/[""]\s*:\s*/g) || []).length > 3) structuredScore += 2;
+
+    // Dialogue markers → good for chat mode
+    const dialogueMarkers = (text.match(/["「『"]/g) || []).length;
+    if (dialogueMarkers > 2) dialogueScore += 2;
+    // Quotation patterns like "xxx说" or "xxx道"
+    if ((text.match(/[说道问答叫喊笑哭]：/g) || []).length > 0) dialogueScore += 2;
+    // English dialogue: "said", "asked"
+    if ((text.match(/\b(said|asked|replied|exclaimed)\b/gi) || []).length > 0) dialogueScore += 2;
+
+    // Headings → good for QA extraction
+    if ((text.match(/^#{1,6}\s+/gm) || []).length > 0) headingScore += 2;
+    if ((text.match(/^第[一二三四五六七八九十\d]+[章节部分]/gm) || []).length > 0) headingScore += 2;
+
+    // Narrative continuity (paragraph connectors)
+    const narrativeWords = (text.match(/[然而但是因此所以接着随后于是不过]/g) || []).length;
+    if (narrativeWords > 2) proseScore += 1;
+  }
+
+  // Normalize: is the content primarily structured or prose?
+  const isMainlyStructured = structuredScore > proseScore * 2 && proseScore < 3;
+  const isMainlyProse = proseScore > structuredScore * 2;
+  const hasDialogue = dialogueScore >= 2;
+  const hasHeadings = headingScore >= 2;
+
+  const status: ModeStatusMap = {
+    qa: "recommended",
+    style: "available",
+    chat: "available",
+    instruct: "recommended",
+  };
+
+  // QA: best when there are headings or structured knowledge
+  if (hasHeadings) status.qa = "recommended";
+  if (isMainlyStructured && !hasHeadings) status.qa = "available";
+
+  // Style: best for rich narrative prose
+  if (isMainlyProse) {
+    status.style = "recommended";
+  } else if (isMainlyStructured) {
+    status.style = "cautious";
+  }
+
+  // Chat: best with dialogue-like content
+  if (hasDialogue) {
+    status.chat = "recommended";
+  } else if (isMainlyStructured) {
+    status.chat = "cautious";
+  }
+
+  // Instruct: versatile, works with most content
+  status.instruct = "recommended";
+  if (totalSnippetLen < 100) status.instruct = "available";
+
+  let hintKey = "generate.modeCheckGeneralHint";
+  if (isMainlyStructured) hintKey = "generate.modeCheckStructuredHint";
+  else if (isMainlyProse && hasDialogue) hintKey = "generate.modeCheckDialogueHint";
+  else if (isMainlyProse) hintKey = "generate.modeCheckProseHint";
+
+  return { status, hintKey };
 }
 
 export function DataPrepPage() {
@@ -54,6 +164,7 @@ export function DataPrepPage() {
   const setGenModel = (v: string) => setFormField("formGenModel", v);
   const logEndRef = useRef<HTMLDivElement>(null);
   const logScrollRef = useRef<HTMLDivElement>(null);
+  const previewPanelRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pipelineStage, setPipelineStage] = useState<"idle" | "cleaning" | "generating">("idle");
   const autoGenAfterClean = useRef(false);
@@ -84,6 +195,12 @@ export function DataPrepPage() {
     chat: t("generate.mode_chat"),
     instruct: t("generate.mode_instruct"),
   };
+
+  const [modeCapability, setModeCapability] = useState<{ status: ModeStatusMap; hintKey: string }>({
+    status: { qa: "available", style: "available", chat: "available", instruct: "available" },
+    hintKey: "generate.modeCheckNoFiles",
+  });
+  const modeCapabilityReady = useRef(false);
 
 
   // Check Ollama availability on mount
@@ -166,6 +283,35 @@ export function DataPrepPage() {
       setRawFiles(raw);
       setCleanedFiles(cleaned);
       setDatasetVersions(versions);
+
+      // Sample file content for mode detection
+      if (raw.length > 0) {
+        try {
+          const samples: RawFileSample[] = await invoke("sample_raw_files", {
+            projectId: currentProject.id,
+          });
+          const result = analyzeContentForModes(samples);
+          setModeCapability(result);
+          // Smart default: auto-select first recommended mode if user hasn't chosen one yet
+          const { formGenMode } = useGenerationStore.getState();
+          if (!formGenMode) {
+            const preferredOrder: ("qa" | "style" | "chat" | "instruct")[] = ["qa", "instruct", "style", "chat"];
+            const firstRecommended = preferredOrder.find((m) => result.status[m] === "recommended");
+            if (firstRecommended) {
+              setGenMode(firstRecommended);
+            }
+          }
+          modeCapabilityReady.current = true;
+        } catch (e) {
+          console.error("Failed to sample files:", e);
+        }
+      } else {
+        setModeCapability({
+          status: { qa: "available", style: "available", chat: "available", instruct: "available" },
+          hintKey: "generate.modeCheckNoFiles",
+        });
+        modeCapabilityReady.current = false;
+      }
     } catch (e) {
       console.error("Failed to load files:", e);
     }
@@ -187,7 +333,17 @@ export function DataPrepPage() {
     return tc(`taskLock.${reason}`);
   };
 
-  // Start the generation pipeline: clean (if needed) → generate
+  const scrollToPreviewTop = () => {
+    const mainEl = document.querySelector("main");
+    if (mainEl instanceof HTMLElement) {
+      mainEl.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    previewPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Start the generation pipeline: always clean current raw files → generate
   const handleStartPipeline = async () => {
     if (!currentProject) return;
     if (genSource === "ollama" && !genModel.trim()) return;
@@ -197,33 +353,31 @@ export function DataPrepPage() {
     if (!acquireTask(currentProject.id, currentProject.name, "generating")) return;
     const store = useGenerationStore.getState();
     store.clearLogs();
-    // Check if cleaning is needed
-    const cleaned = await invoke<FileInfo[]>("list_project_files", {
-      projectId: currentProject.id,
-      subdir: "cleaned",
-    }).catch(() => [] as FileInfo[]);
-    if (cleaned.length === 0) {
-      // Stage 1: Clean first, then auto-generate
-      setPipelineStage("cleaning");
-      setCleaning(true);
-      setCleanProgress("Cleaning...");
-      autoGenAfterClean.current = true;
-      try {
-        await invoke("start_cleaning", { projectId: currentProject.id, lang: i18n.language });
-      } catch (e) {
-        setCleaning(false);
-        setPipelineStage("idle");
-        setCleanProgress(String(e));
-        autoGenAfterClean.current = false;
-      }
-    } else {
-      // Skip cleaning, go directly to generation
-      startGenerationStep();
+    scrollToPreviewTop();
+    // Stage 1: always clean first so generated dataset strictly matches current raw files
+    setPipelineStage("cleaning");
+    setCleaning(true);
+    setCleanProgress(t("generate.cleaningStatus"));
+    autoGenAfterClean.current = true;
+    try {
+      await invoke("start_cleaning", { projectId: currentProject.id, lang: i18n.language });
+    } catch (e) {
+      setCleaning(false);
+      setPipelineStage("idle");
+      setCleanProgress(String(e));
+      autoGenAfterClean.current = false;
     }
   };
 
   const startGenerationStep = async () => {
     if (!currentProject) return;
+    // Read form values from store to avoid stale closure (this fn is called from useEffect listener)
+    const { formGenMode, formGenSource, formGenModel } = useGenerationStore.getState();
+    if (!formGenMode) {
+      useGenerationStore.setState({ genError: t("generate.noModeSelected") });
+      setPipelineStage("idle");
+      return;
+    }
     setPipelineStage("generating");
     // Clear displayed dataset versions (visual only, files untouched)
     setDatasetVersions([]);
@@ -232,9 +386,9 @@ export function DataPrepPage() {
     try {
       await invoke("generate_dataset", {
         projectId: currentProject.id,
-        model: genSource === "ollama" ? genModel : "",
-        mode: genMode,
-        source: genSource,
+        model: formGenSource === "ollama" ? formGenModel : "",
+        mode: formGenMode,
+        source: formGenSource,
         resume: false,
         lang: i18n.language,
       });
@@ -617,21 +771,38 @@ export function DataPrepPage() {
                       1.3 {t("section.genType")}
                     </span>
                   </h3>
+                  {/* Content-based mode detection hint */}
+                  {rawFiles.length > 0 && modeCapabilityReady.current && (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">{t(modeCapability.hintKey)}</p>
+                  )}
                   <div className="flex gap-2">
-                    {(["qa", "style", "chat", "instruct"] as const).map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => setGenMode(m)}
-                        disabled={generating}
-                        className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
-                          genMode === m
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-border text-muted-foreground hover:bg-accent"
-                        }`}
-                      >
-                        {MODE_LABELS[m]}
-                      </button>
-                    ))}
+                    {(["qa", "style", "chat", "instruct"] as const).map((m) => {
+                      const st = modeCapability.status[m];
+                      return (
+                        <button
+                          key={m}
+                          onClick={() => setGenMode(m)}
+                          disabled={generating}
+                          className={`relative flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                            genMode === m
+                              ? "border-primary bg-primary/10 text-foreground"
+                              : "border-border text-muted-foreground hover:bg-accent"
+                          }`}
+                        >
+                          {MODE_LABELS[m]}
+                          {/* Badge icon in top-right corner: recommended/cautious only */}
+                          {rawFiles.length > 0 && modeCapabilityReady.current && st !== "available" && (
+                            <span className={`absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] ${
+                              st === "recommended"
+                                ? "bg-success text-success-foreground"
+                                : "bg-warning text-warning-foreground"
+                            }`}>
+                              {st === "recommended" ? <Check size={9} /> : <AlertCircle size={9} />}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                   {genMode && (
                     <p className="text-xs text-muted-foreground leading-relaxed">
@@ -753,7 +924,7 @@ export function DataPrepPage() {
         </div>
 
         {/* Preview Panel / AI Log Panel */}
-        <div className="sticky top-4">
+        <div ref={previewPanelRef} className="sticky top-4">
           <h3 className="mb-2 text-sm font-semibold text-foreground">
             {(generating || aiLogs.length > 0) ? (
               <>

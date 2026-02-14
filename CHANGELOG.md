@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-02-14
+
+### Added
+- **Content-Based Mode Detection**: Backend `sample_raw_files` command reads first 2000 bytes of each raw file; frontend `analyzeContentForModes()` combines file extension and content heuristics (prose/dialogue/headings/structured data) to recommend generation modes
+- **Smart Mode Tab Badges**: Mode tabs show recommendation status icons — green checkmark for recommended, warning icon for cautious, no icon for available
+- **Intelligent Default Mode Selection**: After file import, auto-selects the first recommended mode (priority: qa > instruct > style > chat) instead of always defaulting to first tab
+- **Mode Detection Hint Text**: Context-aware hint below 1.3 section title describing detected content type (prose, dialogue, structured, general)
+
+### Fixed
+- **Generation Code 2 Root Cause** (BUG-042): Fixed stale closure bug where `startGenerationStep` captured initial empty `genMode=""` from `useEffect([], ...)` listener; now reads current values from `useGenerationStore.getState()`
+- **Hardcoded Error String**: Replaced hardcoded "No generation mode selected" with i18n key `generate.noModeSelected`
+
+### Changed
+- Mode compatibility detection upgraded from extension-only heuristic to content-sampling analysis
+- Old flat detection panel replaced with compact badge icons on mode tabs
+- Removed `useMemo` and `Star` unused imports
+
 ## [0.3.0] - 2026-02-13
 
 ### Added

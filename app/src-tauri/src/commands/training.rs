@@ -34,10 +34,15 @@ pub async fn start_training(
         .as_str()
         .ok_or("Missing model parameter")?
         .to_string();
-    // Use provided dataset_path or fall back to legacy flat dataset/ dir
+    // Require explicit dataset version path to avoid accidentally training on stale/legacy data.
     let data_dir = match dataset_path {
-        Some(ref p) if !p.is_empty() => std::path::PathBuf::from(p),
-        _ => project_path.join("dataset"),
+        Some(ref p) if !p.trim().is_empty() => std::path::PathBuf::from(p),
+        _ => {
+            return Err(
+                "Dataset version is required. Please select a dataset version before starting training."
+                    .into(),
+            )
+        }
     };
     let adapter_path = project_path.join("adapters").join(&job_id);
     let fine_tune_type = training_params["fine_tune_type"].as_str().unwrap_or("lora").to_string();

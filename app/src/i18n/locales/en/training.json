@@ -89,6 +89,31 @@
   "datasetLegacy": "Legacy Dataset",
   "trainProgress": "Training Progress",
   "initializing": "Initializing...",
+  "eta": {
+    "title": "Estimated Time Left",
+    "estimating": "Estimating...",
+    "done": "Completed",
+    "format": "~ {{time}}"
+  },
+  "health": {
+    "title": "Training Health",
+    "level": {
+      "green": "Healthy",
+      "yellow": "Attention Needed",
+      "red": "Critical"
+    },
+    "hintNormal": "Training is stable. You can keep waiting.",
+    "hintLossFluctuating": "Loss is slightly fluctuating, which is usually normal.",
+    "hintLossRising": "Loss is trending upward. Check data quality or learning rate.",
+    "hintOutOfMemory": "Memory pressure detected. Reduce batch size or enable grad checkpoint.",
+    "hintError": "Training error detected. Check logs to locate the issue."
+  },
+  "trend": {
+    "title": "Loss Trend",
+    "good": "Training is converging well",
+    "stable": "Loss is mostly stable, keep monitoring",
+    "warning": "Loss is volatile, attention recommended"
+  },
   "latestTrainLoss": "Latest Train Loss:",
   "lossCurve": "Loss Curve",
   "waitingData": "Waiting for training data...",
@@ -113,6 +138,14 @@
     "keyParams": "Key Parameters",
     "lossImprove": "Loss Improvement",
     "goToExport": "Export Model",
-    "noData": "N/A"
+    "noData": "N/A",
+    "report": {
+      "copyMd": "Copy Report Markdown",
+      "saveMd": "Save Markdown",
+      "saveCsv": "Save CSV",
+      "saveSvg": "Save SVG",
+      "savePng": "Save PNG",
+      "share": "System Share"
+    }
   }
 }

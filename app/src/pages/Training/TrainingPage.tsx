@@ -10,6 +10,104 @@ import { type TrainingParams } from "@/services/training";
 import { ModelSelector } from "@/components/ModelSelector";
 import { StepProgress } from "@/components/StepProgress";
 
+type HealthLevel = "green" | "yellow" | "red";
+
+function formatDurationShort(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function deriveTrainingHealth(logs: string[], trainLossData: [number, number][]): {
+  level: HealthLevel;
+  hintKey: string;
+  trendKey: string;
+} {
+  const recentLogs = logs.slice(-80).join("\n").toLowerCase();
+  if (
+    recentLogs.includes("out of memory") ||
+    recentLogs.includes("oom") ||
+    recentLogs.includes("memory error")
+  ) {
+    return {
+      level: "red",
+      hintKey: "health.hintOutOfMemory",
+      trendKey: "trend.warning",
+    };
+  }
+
+  if (recentLogs.includes("error") || recentLogs.includes("traceback")) {
+    return {
+      level: "red",
+      hintKey: "health.hintError",
+      trendKey: "trend.warning",
+    };
+  }
+
+  const recentLoss = trainLossData
+    .slice(-4)
+    .map(([, loss]) => loss)
+    .filter((loss) => Number.isFinite(loss));
+
+  if (recentLoss.length >= 2) {
+    const first = recentLoss[0];
+    const last = recentLoss[recentLoss.length - 1];
+    const ratio = (last - first) / (Math.abs(first) + 1e-6);
+
+    if (ratio <= -0.03) {
+      return {
+        level: "green",
+        hintKey: "health.hintNormal",
+        trendKey: "trend.good",
+      };
+    }
+
+    if (ratio <= 0.05) {
+      return {
+        level: "yellow",
+        hintKey: "health.hintLossFluctuating",
+        trendKey: "trend.stable",
+      };
+    }
+
+    return {
+      level: "yellow",
+      hintKey: "health.hintLossRising",
+      trendKey: "trend.warning",
+    };
+  }
+
+  return {
+    level: "green",
+    hintKey: "health.hintNormal",
+    trendKey: "trend.stable",
+  };
+}
+
+function sanitizeReportFileName(input: string): string {
+  const normalized = input
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return normalized || "training-report";
+}
+
+function downloadBlob(fileName: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
 function LossChart({ trainLoss, valLoss, totalIters }: {
   trainLoss: [number, number][];
   valLoss: [number, number][];
@@ -100,7 +198,9 @@ export function TrainingPage() {
   } = useTrainingStore();
 
   const logRef = useRef<HTMLDivElement>(null);
+  const lossChartRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const [reportCopied, setReportCopied] = useState(false);
   const [datasetVersions, setDatasetVersions] = useState<DatasetVersionInfo[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string>("");
   const [datasetDropdownOpen, setDatasetDropdownOpen] = useState(false);
@@ -113,8 +213,9 @@ export function TrainingPage() {
   const [paramsEdited, setParamsEdited] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [nowTs, setNowTs] = useState(Date.now());
 
-  // Can start training? Model must be set and valid (or not a local path)
+  // Model-level validation (dataset selection is validated separately before start)
   const canStartTraining = !!(params.model && (modelValid !== false));
 
   // Auto-collapse steps when training starts, expand when idle
@@ -125,6 +226,13 @@ export function TrainingPage() {
       setStep3MethodOpen(false);
       setStep4Open(false);
     }
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== "running") return;
+    setNowTs(Date.now());
+    const timer = window.setInterval(() => setNowTs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
   }, [status]);
 
   // Handle model selection from ModelSelector
@@ -209,6 +317,216 @@ export function TrainingPage() {
 
   const paramsDone = (!!params.model && !!selectedDataset) || paramsEdited;
 
+  const elapsedSeconds = startedAt
+    ? Math.max(1, Math.floor((nowTs - startedAt) / 1000))
+    : 0;
+
+  const remainingIters = Math.max(0, params.iters - currentIter);
+  const iterPerSec = currentIter > 0 && elapsedSeconds > 0 ? currentIter / elapsedSeconds : 0;
+  const etaSeconds = iterPerSec > 0 ? Math.ceil(remainingIters / iterPerSec) : null;
+
+  const etaText =
+    remainingIters <= 0
+      ? t("eta.done")
+      : currentIter <= 0 || etaSeconds === null
+        ? t("eta.estimating")
+        : t("eta.format", { time: formatDurationShort(etaSeconds) });
+
+  const health = deriveTrainingHealth(logs, trainLossData);
+  const healthDotClass =
+    health.level === "green"
+      ? "bg-success"
+      : health.level === "yellow"
+        ? "bg-warning"
+        : "bg-destructive";
+
+  const hasLossData = trainLossData.length > 0 || valLossData.length > 0;
+  const durationMs = (startedAt && completedAt) ? completedAt - startedAt : 0;
+  const durationMin = Math.floor(durationMs / 60000);
+  const durationSec = Math.floor((durationMs % 60000) / 1000);
+  const durationStr = durationMin > 0 ? `${durationMin}m ${durationSec}s` : `${durationSec}s`;
+  const finalTrainLoss = trainLossData.length > 0 ? trainLossData[trainLossData.length - 1][1] : null;
+  const firstTrainLoss = trainLossData.length > 0 ? trainLossData[0][1] : null;
+  const finalValLoss = valLossData.length > 0 ? valLossData[valLossData.length - 1][1] : null;
+  const lossImprove = (firstTrainLoss !== null && finalTrainLoss !== null)
+    ? (1 - finalTrainLoss / firstTrainLoss) * 100
+    : null;
+  const modelShort = params.model.split("/").pop() || params.model;
+
+  const getReportFileStem = () => {
+    const projectPart = sanitizeReportFileName(currentProject?.name || "training");
+    const tsPart = new Date().toISOString().replace(/[:.]/g, "-");
+    return `${projectPart}-${tsPart}`;
+  };
+
+  const buildTrainingCsv = () => {
+    const byIter = new Map<number, { train?: number; val?: number }>();
+    for (const [iter, loss] of trainLossData) {
+      const old = byIter.get(iter) || {};
+      byIter.set(iter, { ...old, train: loss });
+    }
+    for (const [iter, loss] of valLossData) {
+      const old = byIter.get(iter) || {};
+      byIter.set(iter, { ...old, val: loss });
+    }
+    const rows = [...byIter.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([iter, values]) => {
+        const train = values.train !== undefined ? values.train.toFixed(6) : "";
+        const val = values.val !== undefined ? values.val.toFixed(6) : "";
+        return `${iter},${train},${val}`;
+      });
+    return ["iter,train_loss,val_loss", ...rows].join("\n");
+  };
+
+  const buildTrainingReportMarkdown = () => {
+    const startedText = startedAt ? new Date(startedAt).toLocaleString() : "-";
+    const completedText = completedAt ? new Date(completedAt).toLocaleString() : "-";
+    const platform = typeof navigator !== "undefined" ? navigator.platform : "unknown";
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "unknown";
+    const csvContent = buildTrainingCsv();
+    const logTail = logs.slice(-200).join("\n");
+
+    return [
+      `# ${t("summary.title")}`,
+      "",
+      `- ${t("summary.baseModel")}: ${params.model || "-"}`,
+      `- ${t("summary.totalIters")}: ${currentIter}`,
+      `- ${t("summary.duration")}: ${durationMs > 0 ? durationStr : t("summary.noData")}`,
+      `- ${t("summary.finalTrainLoss")}: ${finalTrainLoss !== null ? finalTrainLoss.toFixed(4) : t("summary.noData")}`,
+      `- ${t("summary.finalValLoss")}: ${finalValLoss !== null ? finalValLoss.toFixed(4) : t("summary.noData")}`,
+      `- ${t("summary.lossImprove")}: ${lossImprove !== null ? `${lossImprove > 0 ? "↓" : "↑"} ${Math.abs(lossImprove).toFixed(1)}%` : t("summary.noData")}`,
+      `- ${t("summary.adapterPath")}: ${adapterPath || "-"}`,
+      `- started_at: ${startedText}`,
+      `- completed_at: ${completedText}`,
+      "",
+      "## Params",
+      "",
+      `- fine_tune_type: ${params.fine_tune_type}`,
+      `- optimizer: ${params.optimizer}`,
+      `- learning_rate: ${params.learning_rate}`,
+      `- batch_size: ${params.batch_size}`,
+      `- iters: ${params.iters}`,
+      `- max_seq_length: ${params.max_seq_length}`,
+      "",
+      "## Environment",
+      "",
+      `- platform: ${platform}`,
+      `- user_agent: ${userAgent}`,
+      "",
+      "## Loss Series",
+      "",
+      "```csv",
+      csvContent,
+      "```",
+      "",
+      "## Training Log (last 200 lines)",
+      "",
+      "```text",
+      logTail,
+      "```",
+    ].join("\n");
+  };
+
+  const handleCopyReportMarkdown = async () => {
+    if (!navigator.clipboard?.writeText) return;
+    try {
+      await navigator.clipboard.writeText(buildTrainingReportMarkdown());
+      setReportCopied(true);
+      window.setTimeout(() => setReportCopied(false), 2000);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
+
+  const handleSaveReportMarkdown = () => {
+    downloadBlob(
+      `${getReportFileStem()}.md`,
+      new Blob([buildTrainingReportMarkdown()], { type: "text/markdown;charset=utf-8" })
+    );
+  };
+
+  const handleSaveReportCsv = () => {
+    downloadBlob(
+      `${getReportFileStem()}.csv`,
+      new Blob([buildTrainingCsv()], { type: "text/csv;charset=utf-8" })
+    );
+  };
+
+  const getLossSvgText = (): string | null => {
+    const svgNode = lossChartRef.current?.querySelector<SVGSVGElement>("svg");
+    if (!svgNode) return null;
+    const cloned = svgNode.cloneNode(true) as SVGSVGElement;
+    if (!cloned.getAttribute("xmlns")) {
+      cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    }
+    if (!cloned.getAttribute("xmlns:xlink")) {
+      cloned.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    }
+    return new XMLSerializer().serializeToString(cloned);
+  };
+
+  const handleSaveLossSvg = () => {
+    const svgText = getLossSvgText();
+    if (!svgText) return;
+    downloadBlob(
+      `${getReportFileStem()}-loss.svg`,
+      new Blob([svgText], { type: "image/svg+xml;charset=utf-8" })
+    );
+  };
+
+  const handleSaveLossPng = async () => {
+    const svgText = getLossSvgText();
+    if (!svgText) return;
+
+    const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("load svg failed"));
+        img.src = svgUrl;
+      });
+
+      const svgNode = lossChartRef.current?.querySelector<SVGSVGElement>("svg");
+      const width = Math.max(1, Math.round(svgNode?.viewBox.baseVal.width || svgNode?.clientWidth || 960));
+      const height = Math.max(1, Math.round(svgNode?.viewBox.baseVal.height || svgNode?.clientHeight || 520));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.drawImage(image, 0, 0, width, height);
+
+      const pngBlob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), "image/png");
+      });
+
+      if (pngBlob) {
+        downloadBlob(`${getReportFileStem()}-loss.png`, pngBlob);
+      }
+    } catch {
+      // ignore png export errors
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
+  };
+
+  const handleShareReport = async () => {
+    const markdown = buildTrainingReportMarkdown();
+    const nav = navigator as Navigator & { share?: (data: { title?: string; text?: string }) => Promise<void> };
+    if (typeof nav.share === "function") {
+      try {
+        await nav.share({ title: t("summary.title"), text: markdown });
+        return;
+      } catch {
+        // user canceled or share failed, fallback to copy
+      }
+    }
+    await handleCopyReportMarkdown();
+  };
+
   const { canStart: taskCanStart, acquireTask } = useTaskStore();
   const taskCheck = currentProject ? taskCanStart(currentProject.id, "training") : { allowed: true };
 
@@ -225,7 +543,7 @@ export function TrainingPage() {
   };
 
   const handleStart = async () => {
-    if (!currentProject || !params.model) return;
+    if (!currentProject || !params.model || !selectedDataset) return;
     // Check global task lock
     const check = taskCanStart(currentProject.id, "training");
     if (!check.allowed) return;
@@ -295,18 +613,7 @@ export function TrainingPage() {
       <StepProgress subSteps={trainingSubSteps} />
 
       {/* Training Summary Panel */}
-      {status === "completed" && (() => {
-        const durationMs = (startedAt && completedAt) ? completedAt - startedAt : 0;
-        const durationMin = Math.floor(durationMs / 60000);
-        const durationSec = Math.floor((durationMs % 60000) / 1000);
-        const durationStr = durationMin > 0 ? `${durationMin}m ${durationSec}s` : `${durationSec}s`;
-        const finalTrainLoss = trainLossData.length > 0 ? trainLossData[trainLossData.length - 1][1] : null;
-        const firstTrainLoss = trainLossData.length > 0 ? trainLossData[0][1] : null;
-        const finalValLoss = valLossData.length > 0 ? valLossData[valLossData.length - 1][1] : null;
-        const lossImprove = (firstTrainLoss && finalTrainLoss) ? ((1 - finalTrainLoss / firstTrainLoss) * 100).toFixed(1) : null;
-        const modelShort = params.model.split("/").pop() || params.model;
-
-        return (
+      {status === "completed" && (
           <div className="rounded-lg border border-success/30 bg-success/5 overflow-hidden">
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-success/20 bg-success/10 px-5 py-3">
@@ -349,8 +656,8 @@ export function TrainingPage() {
                   <Target size={10} />
                   {t("summary.lossImprove")}
                 </div>
-                <p className={`text-lg font-semibold font-mono ${lossImprove && parseFloat(lossImprove) > 0 ? "text-success" : "text-foreground"}`}>
-                  {lossImprove !== null ? `${parseFloat(lossImprove) > 0 ? "↓" : "↑"} ${Math.abs(parseFloat(lossImprove))}%` : t("summary.noData")}
+                <p className={`text-lg font-semibold font-mono ${lossImprove !== null && lossImprove > 0 ? "text-success" : "text-foreground"}`}>
+                  {lossImprove !== null ? `${lossImprove > 0 ? "↓" : "↑"} ${Math.abs(lossImprove).toFixed(1)}%` : t("summary.noData")}
                 </p>
               </div>
             </div>
@@ -380,7 +687,7 @@ export function TrainingPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 border-t border-border/30 px-5 py-3">
+            <div className="flex flex-wrap gap-2 border-t border-border/30 px-5 py-3">
               {adapterPath && (
                 <button onClick={() => invoke("open_adapter_folder", { adapterPath })} className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
                   <FolderOpen size={12} />
@@ -395,10 +702,38 @@ export function TrainingPage() {
                 <Upload size={12} />
                 {t("summary.goToExport")}
               </button>
+              <button onClick={handleCopyReportMarkdown} className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
+                <Copy size={12} />
+                {reportCopied ? tc("copied") : t("summary.report.copyMd")}
+              </button>
+              <button onClick={handleSaveReportMarkdown} className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
+                <FileText size={12} />
+                {t("summary.report.saveMd")}
+              </button>
+              <button onClick={handleSaveReportCsv} className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
+                <BarChart3 size={12} />
+                {t("summary.report.saveCsv")}
+              </button>
+              <button
+                onClick={handleSaveLossSvg}
+                disabled={!hasLossData}
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+              >
+                {t("summary.report.saveSvg")}
+              </button>
+              <button
+                onClick={handleSaveLossPng}
+                disabled={!hasLossData}
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+              >
+                {t("summary.report.savePng")}
+              </button>
+              <button onClick={handleShareReport} className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
+                {t("summary.report.share")}
+              </button>
             </div>
           </div>
-        );
-      })()}
+      )}
 
       {/* ===== Step 1: Select Model (collapsible) ===== */}
       <div className="rounded-lg border border-border bg-card">
@@ -865,13 +1200,16 @@ export function TrainingPage() {
         </button>
       ) : (
         <div className="space-y-2">
-          <button onClick={handleStart} disabled={!canStartTraining || !taskCheck.allowed}
+          <button onClick={handleStart} disabled={!canStartTraining || !selectedDataset || !taskCheck.allowed}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
             <Play size={16} />
             {t("start")}
           </button>
           {!canStartTraining && params.model && (
             <p className="text-center text-xs text-red-400">{t("invalidModelError")}</p>
+          )}
+          {!selectedDataset && (
+            <p className="text-center text-xs text-warning">{t("selectDatasetVersion")}</p>
           )}
           {!taskCheck.allowed && (
             <p className="text-center text-xs text-warning">{getTaskLockHint(taskCheck.reason)}</p>
@@ -898,6 +1236,24 @@ export function TrainingPage() {
                 <div className="h-full rounded-full bg-blue-500 transition-all duration-500"
                   style={{ width: `${Math.min(100, Math.round((currentIter / params.iters) * 100))}%` }} />
               </div>
+              <div className="mt-2 grid gap-2 lg:grid-cols-3">
+                <div className="rounded-md border border-border/70 bg-background/60 p-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("eta.title")}</p>
+                  <p className="mt-1 text-xs font-medium text-foreground">{etaText}</p>
+                </div>
+                <div className="rounded-md border border-border/70 bg-background/60 p-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("health.title")}</p>
+                  <p className="mt-1 flex items-center gap-2 text-xs font-medium text-foreground">
+                    <span className={`h-2 w-2 rounded-full ${healthDotClass}`} />
+                    {t(`health.level.${health.level}`)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{t(health.hintKey)}</p>
+                </div>
+                <div className="rounded-md border border-border/70 bg-background/60 p-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("trend.title")}</p>
+                  <p className="mt-1 text-xs font-medium text-foreground">{t(health.trendKey)}</p>
+                </div>
+              </div>
               {trainLossData.length > 0 && (
                 <p className="text-xs text-muted-foreground">
                   {t("latestTrainLoss")} <span className="font-mono text-foreground">{trainLossData[trainLossData.length - 1][1].toFixed(4)}</span>
@@ -913,7 +1269,7 @@ export function TrainingPage() {
           <div className={`grid gap-4 ${trainLossData.length > 0 || valLossData.length > 0 ? "lg:grid-cols-[1fr_1fr]" : ""}`}>
             {/* Loss Chart */}
             {(trainLossData.length > 0 || valLossData.length > 0) && (
-              <div className="rounded-lg border border-border bg-card p-3">
+              <div ref={lossChartRef} className="rounded-lg border border-border bg-card p-3">
                 <h3 className="mb-1 flex items-center gap-2 text-xs font-semibold text-foreground">
                   <BarChart3 size={12} />
                   {t("lossCurve")}

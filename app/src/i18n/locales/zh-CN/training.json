@@ -89,6 +89,31 @@
   "datasetLegacy": "旧版数据集",
   "trainProgress": "训练进度",
   "initializing": "初始化中...",
+  "eta": {
+    "title": "预计剩余时间",
+    "estimating": "正在估算中...",
+    "done": "已完成",
+    "format": "约 {{time}}"
+  },
+  "health": {
+    "title": "训练健康状态",
+    "level": {
+      "green": "正常",
+      "yellow": "需关注",
+      "red": "异常"
+    },
+    "hintNormal": "训练过程稳定，可继续等待。",
+    "hintLossFluctuating": "Loss 有轻微波动，通常属于正常现象。",
+    "hintLossRising": "Loss 呈上升趋势，建议检查数据质量或学习率。",
+    "hintOutOfMemory": "检测到内存不足，建议降低 Batch 或开启梯度检查点。",
+    "hintError": "检测到训练错误，请查看日志定位问题。"
+  },
+  "trend": {
+    "title": "Loss 趋势",
+    "good": "训练正在收敛，效果良好",
+    "stable": "Loss 基本稳定，可继续观察",
+    "warning": "Loss 波动较大，建议关注"
+  },
   "latestTrainLoss": "最新 Train Loss:",
   "lossCurve": "Loss 曲线",
   "waitingData": "等待训练数据...",
@@ -113,6 +138,14 @@
     "keyParams": "关键参数",
     "lossImprove": "损失改善",
     "goToExport": "导出模型",
-    "noData": "无数据"
+    "noData": "无数据",
+    "report": {
+      "copyMd": "复制报告 Markdown",
+      "saveMd": "保存 Markdown",
+      "saveCsv": "保存 CSV",
+      "saveSvg": "保存 SVG",
+      "savePng": "保存 PNG",
+      "share": "系统分享"
+    }
   }
 }

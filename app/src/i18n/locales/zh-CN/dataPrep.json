@@ -37,6 +37,17 @@
     "mode_style_desc": "分析原文写作风格，让 AI 模仿该风格创作全新内容。适合训练模型学习特定作者的文风。",
     "mode_chat_desc": "基于文本内容生成多轮对话数据。适合训练模型的对话能力和上下文理解。",
     "mode_instruct_desc": "将文本转化为指令-输出对，涵盖总结、分析、推理等任务类型。适合通用指令微调。",
+    "modeCheckTitle": "模式适配检测（基于当前文件类型）",
+    "modeStatus": {
+      "recommended": "推荐",
+      "available": "可用",
+      "cautious": "谨慎"
+    },
+    "modeCheckGeneralHint": "当前文件以文本内容为主，4 种模式均可用；风格模仿对连贯叙事文本效果更好。",
+    "modeCheckProseHint": "检测到散文内容，风格模仿和知识问答效果最佳。",
+    "modeCheckDialogueHint": "检测到对话内容，多轮对话和知识问答效果最佳。",
+    "modeCheckNoFiles": "请先导入文件以获取模式建议。",
+    "modeCheckStructuredHint": "检测到结构化数据（如 JSON/CSV），推荐知识问答或指令训练模式。",
     "progressLabel": "已完成 {{step}}/{{total}} 条（{{percent}}%）",
     "sourceLabel": "生成方式",
     "source_ollama": "AI 生成（Ollama 本地模型）",
@@ -56,7 +67,8 @@
     "ollamaHint": "使用本地 Ollama 大模型生成高质量训练数据，推荐使用 7B 以上模型。",
     "stopGeneration": "停止生成",
     "cleaningStatus": "清洗中...",
-    "envCheck": "运行环境检测"
+    "envCheck": "运行环境检测",
+    "noModeSelected": "请先选择生成模式"
   },
   "preview": {
     "title": "预览",

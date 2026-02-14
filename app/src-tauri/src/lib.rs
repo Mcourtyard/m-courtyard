@@ -8,7 +8,7 @@ use commands::environment::{check_environment, setup_environment, install_uv, ch
 use commands::project::{create_project, delete_project, list_projects};
 use commands::training::{start_training, stop_training, open_project_folder, list_adapters, open_adapter_folder, scan_local_models, open_model_cache, validate_model_path};
 use commands::files::{import_files, list_project_files, read_file_content, delete_file};
-use commands::dataset::{start_cleaning, generate_dataset, get_dataset_preview, stop_generation, list_dataset_versions, open_dataset_folder};
+use commands::dataset::{start_cleaning, generate_dataset, get_dataset_preview, stop_generation, list_dataset_versions, open_dataset_folder, sample_raw_files};
 use commands::inference::start_inference;
 use commands::export::export_to_ollama;
 
@@ -46,6 +46,7 @@ pub fn run() {
             stop_generation,
             list_dataset_versions,
             open_dataset_folder,
+            sample_raw_files,
             open_project_folder,
             list_adapters,
             open_adapter_folder,

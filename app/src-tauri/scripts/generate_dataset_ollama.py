@@ -89,6 +89,36 @@ def text_similarity(a: str, b: str) -> float:
     return intersection / union if union > 0 else 0.0
 
 
+def dominant_script(text: str) -> str:
+    """Return dominant script family: latin / cjk / mixed."""
+    if not text:
+        return "mixed"
+    cjk = len(re.findall(r'[\u4e00-\u9fff]', text))
+    latin = len(re.findall(r'[A-Za-z]', text))
+    if cjk >= 20 and cjk > latin * 2:
+        return "cjk"
+    if latin >= 40 and latin > cjk * 2:
+        return "latin"
+    return "mixed"
+
+
+def collect_output_text(data: dict, mode: str) -> str:
+    """Extract representative generated text for quality/language checks."""
+    if mode == "qa":
+        return f"{data.get('question', '')}\n{data.get('answer', '')}".strip()
+    if mode in ("style", "instruct"):
+        return str(data.get("output", ""))
+    if mode == "chat":
+        convs = data.get("conversations", [])
+        if isinstance(convs, list):
+            return "\n".join(
+                str(item.get("content", ""))
+                for item in convs
+                if isinstance(item, dict)
+            ).strip()
+    return ""
+
+
 def extract_text_from_response(api_result: dict) -> str:
     """Extract usable text from Ollama response, checking both content and thinking fields."""
     msg = api_result.get("message", {})
@@ -361,6 +391,7 @@ def main():
 
             try:
                 user_msg = user_template.format(text=text[:2000])
+                user_msg = f"{user_msg}\n\n{t('gen.prompt.keep_language')}"
                 # Style mode needs more tokens for creative content
                 n_predict = 4096 if args.mode == "style" else 2048
                 api_result = call_ollama(args.model, system_prompt, user_msg, temperature=temp, num_predict=n_predict)
@@ -385,6 +416,16 @@ def main():
                 # Parse JSON
                 data = parse_json_response(response_text, mode=args.mode)
                 if data:
+                    # Guardrail: keep generated language/script aligned with source text.
+                    src_script = dominant_script(text)
+                    out_script = dominant_script(collect_output_text(data, args.mode))
+                    if src_script in ("latin", "cjk") and out_script in ("latin", "cjk") and src_script != out_script:
+                        failed += 1
+                        emit("log", message=t("gen.lang_mismatch", src=src_script, out=out_script))
+                        emit("progress", step=i + 1, total=total,
+                             desc=t("gen.progress_status", success=success_count, failed=failed))
+                        continue
+
                     # Quality check for style mode: reject if output is too similar to input
                     if args.mode == "style":
                         output_text = data.get("output", "")

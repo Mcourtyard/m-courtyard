@@ -37,6 +37,17 @@
     "mode_style_desc": "Analyze the writing style and generate new content imitating it. Ideal for training models to learn a specific author's style.",
     "mode_chat_desc": "Generate multi-turn conversations based on text content. Ideal for training dialogue and context understanding.",
     "mode_instruct_desc": "Convert text into instruction-output pairs covering summarization, analysis, reasoning, etc. Ideal for general instruction fine-tuning.",
+    "modeCheckTitle": "Mode Compatibility Check (Based on Current File Types)",
+    "modeStatus": {
+      "recommended": "Recommended",
+      "available": "Available",
+      "cautious": "Cautious"
+    },
+    "modeCheckGeneralHint": "Text-based content detected. All four modes are usable; style imitation works best on coherent prose.",
+    "modeCheckProseHint": "Narrative prose detected. Style Imitation and Knowledge Q&A are recommended.",
+    "modeCheckDialogueHint": "Dialogue content detected. Multi-turn Chat and Knowledge Q&A are recommended.",
+    "modeCheckNoFiles": "Import files first to get mode recommendations.",
+    "modeCheckStructuredHint": "Structured data detected (e.g. JSON/CSV). Knowledge Q&A or Instruction mode recommended.",
     "progressLabel": "Completed {{step}}/{{total}} ({{percent}}%)",
     "sourceLabel": "Generation Method",
     "source_ollama": "AI Generation (Ollama Local Model)",
@@ -56,7 +67,8 @@
     "ollamaHint": "Uses local Ollama LLM for high-quality training data generation. 7B+ models recommended.",
     "stopGeneration": "Stop Generation",
     "cleaningStatus": "Cleaning...",
-    "envCheck": "Environment Check"
+    "envCheck": "Environment Check",
+    "noModeSelected": "Please select a generation mode first"
   },
   "preview": {
     "title": "Preview",

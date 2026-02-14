@@ -43,21 +43,34 @@ pub async fn start_cleaning(
     if !script.exists() {
         return Err(format!("Cleaning script not found at: {}", script.display()));
     }
+    let supports_lang = script_supports_lang_arg(&script);
 
     let python_bin = executor.python_bin().clone();
 
     tokio::spawn(async move {
+        let mut caffeinate_args: Vec<String> = vec![
+            "-i".to_string(),
+            python_bin.to_string_lossy().to_string(),
+            script.to_string_lossy().to_string(),
+            "--project-dir".to_string(),
+            project_path.to_string_lossy().to_string(),
+        ];
+        let lang_value = lang.unwrap_or_else(|| "en".to_string());
+        if supports_lang {
+            caffeinate_args.push("--lang".to_string());
+            caffeinate_args.push(lang_value);
+        } else {
+            let _ = app.emit(
+                "cleaning:log",
+                serde_json::json!({
+                    "message": "⚠️ Cleaning script does not support --lang, fallback to script default language."
+                }),
+            );
+        }
+
         // Wrap with caffeinate -i to prevent idle sleep during cleaning
         let result = tokio::process::Command::new("caffeinate")
-            .args([
-                "-i",
-                &python_bin.to_string_lossy(),
-                &script.to_string_lossy(),
-                "--project-dir",
-                &project_path.to_string_lossy(),
-                "--lang",
-                &lang.unwrap_or_else(|| "en".to_string()),
-            ])
+            .args(&caffeinate_args)
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn();
@@ -66,18 +79,37 @@ pub async fn start_cleaning(
             Ok(mut child) => {
                 use tokio::io::{AsyncBufReadExt, BufReader};
 
+                let mut stdout_task = None;
                 if let Some(stdout) = child.stdout.take() {
-                    let reader = BufReader::new(stdout);
-                    let mut lines = reader.lines();
-                    while let Ok(Some(line)) = lines.next_line().await {
-                        // Parse JSON events from Python script
-                        if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
-                            let event_type = event["type"].as_str().unwrap_or("unknown");
-                            let _ = app.emit(&format!("cleaning:{}", event_type), &event);
-                        } else {
-                            let _ = app.emit("cleaning:log", serde_json::json!({ "line": line }));
+                    let app_stdout = app.clone();
+                    stdout_task = Some(tokio::spawn(async move {
+                        let reader = BufReader::new(stdout);
+                        let mut lines = reader.lines();
+                        while let Ok(Some(line)) = lines.next_line().await {
+                            // Parse JSON events from Python script
+                            if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
+                                let event_type = event["type"].as_str().unwrap_or("unknown");
+                                let _ = app_stdout.emit(&format!("cleaning:{}", event_type), &event);
+                            } else {
+                                let _ = app_stdout.emit("cleaning:log", serde_json::json!({ "line": line }));
+                            }
                         }
-                    }
+                    }));
+                }
+
+                let mut stderr_task = None;
+                if let Some(stderr) = child.stderr.take() {
+                    let app_stderr = app.clone();
+                    stderr_task = Some(tokio::spawn(async move {
+                        let reader = BufReader::new(stderr);
+                        let mut lines = reader.lines();
+                        while let Ok(Some(line)) = lines.next_line().await {
+                            let line = line.trim();
+                            if !line.is_empty() {
+                                let _ = app_stderr.emit("cleaning:log", serde_json::json!({ "line": line }));
+                            }
+                        }
+                    }));
                 }
 
                 match child.wait().await {
@@ -93,6 +125,13 @@ pub async fn start_cleaning(
                             "message": e.to_string()
                         }));
                     }
+                }
+
+                if let Some(task) = stdout_task {
+                    let _ = task.await;
+                }
+                if let Some(task) = stderr_task {
+                    let _ = task.await;
                 }
             }
             Err(e) => {
@@ -141,6 +180,7 @@ pub async fn generate_dataset(
     if !script.exists() {
         return Err(format!("Dataset generation script not found: {}", script.display()));
     }
+    let supports_lang = script_supports_lang_arg(&script);
 
     let python_bin = executor.python_bin().clone();
     let should_resume = resume.unwrap_or(false);
@@ -171,8 +211,17 @@ pub async fn generate_dataset(
         if should_resume {
             py_args.push("--resume".to_string());
         }
-        py_args.push("--lang".to_string());
-        py_args.push(lang.unwrap_or_else(|| "en".to_string()));
+        if supports_lang {
+            py_args.push("--lang".to_string());
+            py_args.push(lang.unwrap_or_else(|| "en".to_string()));
+        } else {
+            let _ = app.emit(
+                "dataset:log",
+                serde_json::json!({
+                    "message": "⚠️ Dataset script does not support --lang, fallback to script default language."
+                }),
+            );
+        }
 
         // Wrap with caffeinate -i to prevent idle sleep during generation
         let mut caffeinate_args: Vec<String> = vec![
@@ -196,17 +245,36 @@ pub async fn generate_dataset(
 
                 use tokio::io::{AsyncBufReadExt, BufReader};
 
+                let mut stdout_task = None;
                 if let Some(stdout) = child.stdout.take() {
-                    let reader = BufReader::new(stdout);
-                    let mut lines = reader.lines();
-                    while let Ok(Some(line)) = lines.next_line().await {
-                        if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
-                            let event_type = event["type"].as_str().unwrap_or("unknown");
-                            let _ = app.emit(&format!("dataset:{}", event_type), &event);
-                        } else {
-                            let _ = app.emit("dataset:log", serde_json::json!({ "line": line }));
+                    let app_stdout = app.clone();
+                    stdout_task = Some(tokio::spawn(async move {
+                        let reader = BufReader::new(stdout);
+                        let mut lines = reader.lines();
+                        while let Ok(Some(line)) = lines.next_line().await {
+                            if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
+                                let event_type = event["type"].as_str().unwrap_or("unknown");
+                                let _ = app_stdout.emit(&format!("dataset:{}", event_type), &event);
+                            } else {
+                                let _ = app_stdout.emit("dataset:log", serde_json::json!({ "line": line }));
+                            }
                         }
-                    }
+                    }));
+                }
+
+                let mut stderr_task = None;
+                if let Some(stderr) = child.stderr.take() {
+                    let app_stderr = app.clone();
+                    stderr_task = Some(tokio::spawn(async move {
+                        let reader = BufReader::new(stderr);
+                        let mut lines = reader.lines();
+                        while let Ok(Some(line)) = lines.next_line().await {
+                            let line = line.trim();
+                            if !line.is_empty() {
+                                let _ = app_stderr.emit("dataset:log", serde_json::json!({ "line": line }));
+                            }
+                        }
+                    }));
                 }
 
                 // Clear PID
@@ -236,8 +304,14 @@ pub async fn generate_dataset(
                                     "message": "Generation stopped, incomplete data cleaned up"
                                 }));
                             } else {
+                                let msg = if code == 2 {
+                                    "Generation exited with code 2 (argument parsing failed). Check AI logs for stderr details."
+                                        .to_string()
+                                } else {
+                                    format!("Generation exited with code {}", code)
+                                };
                                 let _ = app.emit("dataset:error", serde_json::json!({
-                                    "message": format!("Generation exited with code {}", code)
+                                    "message": msg
                                 }));
                             }
                         }
@@ -248,6 +322,13 @@ pub async fn generate_dataset(
                             "message": e.to_string()
                         }));
                     }
+                }
+
+                if let Some(task) = stdout_task {
+                    let _ = task.await;
+                }
+                if let Some(task) = stderr_task {
+                    let _ = task.await;
                 }
             }
             Err(e) => {
@@ -356,6 +437,49 @@ pub fn list_dataset_versions(
     Ok(versions)
 }
 
+/// Sample raw file content for mode compatibility detection
+#[tauri::command]
+pub fn sample_raw_files(project_id: String) -> Result<Vec<RawFileSample>, String> {
+    let dir_manager = ProjectDirManager::new();
+    let raw_dir = dir_manager.project_path(&project_id).join("raw");
+    if !raw_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut samples = Vec::new();
+    let entries = std::fs::read_dir(&raw_dir).map_err(|e| e.to_string())?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() { continue; }
+        let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+        let ext = path.extension().unwrap_or_default().to_string_lossy().to_lowercase();
+        let size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+
+        // Read first 2000 bytes for content analysis
+        let snippet = match std::fs::read(&path) {
+            Ok(bytes) => {
+                let take = bytes.len().min(2000);
+                // Try UTF-8, fallback to lossy
+                String::from_utf8(bytes[..take].to_vec())
+                    .unwrap_or_else(|_| String::from_utf8_lossy(&bytes[..take]).to_string())
+            }
+            Err(_) => String::new(),
+        };
+
+        samples.push(RawFileSample { name, ext, size, snippet });
+    }
+
+    Ok(samples)
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct RawFileSample {
+    pub name: String,
+    pub ext: String,
+    pub size: u64,
+    pub snippet: String,
+}
+
 /// Open the dataset root directory in Finder
 #[tauri::command]
 pub fn open_dataset_folder(project_id: String) -> Result<(), String> {
@@ -418,6 +542,12 @@ fn count_jsonl_lines(path: &std::path::Path) -> usize {
     std::fs::read_to_string(path)
         .map(|c| c.lines().filter(|l| !l.trim().is_empty()).count())
         .unwrap_or(0)
+}
+
+fn script_supports_lang_arg(script_path: &std::path::Path) -> bool {
+    std::fs::read_to_string(script_path)
+        .map(|s| s.contains("--lang") || s.contains("add_lang_arg"))
+        .unwrap_or(false)
 }
 
 fn parse_timestamp_display(ts: &str) -> String {
