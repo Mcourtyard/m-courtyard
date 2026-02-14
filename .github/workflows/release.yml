@@ -58,7 +58,7 @@ jobs:
             | macOS 14+ | Apple Silicon (M1/M2/M3/M4) | `M-Courtyard_<version>_aarch64.dmg` |
 
             ### What's New
-            See [CHANGELOG](https://github.com/tuwenbo0120/m-courtyard/blob/main/CHANGELOG.md) for details.
+            See [CHANGELOG](https://github.com/Mcourtyard/m-courtyard/blob/main/CHANGELOG.md) for details.
 
             ### Installation Note
             > ⚠️ Since the app is not code-signed, macOS may show a "damaged" warning. To fix:
@@ -85,6 +85,6 @@ jobs:
         run: |
           if [ -n "$DISCORD_WEBHOOK" ]; then
             curl -H "Content-Type: application/json" \
-              -d "{\"content\": \"🎉 **M-Courtyard ${GITHUB_REF_NAME}** has been built successfully!\\n\\nDownload: https://github.com/tuwenbo0120/m-courtyard/releases\\n\\nSee what's new in the release notes.\"}" \
+              -d "{\"content\": \"🎉 **M-Courtyard ${GITHUB_REF_NAME}** has been built successfully!\\n\\nDownload: https://github.com/Mcourtyard/m-courtyard/releases\\n\\nSee what's new in the release notes.\"}" \
               "$DISCORD_WEBHOOK"
           fi

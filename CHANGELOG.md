@@ -73,6 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub Actions CI**: Automated .dmg build and release on tag push
 - **Discord Integration**: Automated release notifications via webhook
 
-[0.3.0]: https://github.com/tuwenbo0120/m-courtyard/releases/tag/v0.3.0
-[0.2.0]: https://github.com/tuwenbo0120/m-courtyard/releases/tag/v0.2.0
-[0.1.0]: https://github.com/tuwenbo0120/m-courtyard/releases/tag/v0.1.0
+[0.3.0]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.3.0
+[0.2.0]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.2.0
+[0.1.0]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.1.0

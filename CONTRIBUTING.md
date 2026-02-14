@@ -36,14 +36,14 @@ pnpm tauri dev
 
 ### Reporting Bugs
 
-- Use [GitHub Issues](https://github.com/tuwenbo0120/m-courtyard/issues) with the **Bug Report** template
+- Use [GitHub Issues](https://github.com/Mcourtyard/m-courtyard/issues) with the **Bug Report** template
 - Include your macOS version, chip model, and RAM
 - Provide steps to reproduce the issue
 
 ### Suggesting Features
 
-- Use [GitHub Issues](https://github.com/tuwenbo0120/m-courtyard/issues) with the **Feature Request** template
-- Or start a discussion in [GitHub Discussions](https://github.com/tuwenbo0120/m-courtyard/discussions)
+- Use [GitHub Issues](https://github.com/Mcourtyard/m-courtyard/issues) with the **Feature Request** template
+- Or start a discussion in [GitHub Discussions](https://github.com/Mcourtyard/m-courtyard/discussions)
 
 ### Submitting Code
 
@@ -88,7 +88,7 @@ m-courtyard/
 ## Community
 
 - [Discord](https://discord.gg/hjkrHWrQ) — Chat and get help
-- [GitHub Discussions](https://github.com/tuwenbo0120/m-courtyard/discussions) — Feature ideas and Q&A
+- [GitHub Discussions](https://github.com/Mcourtyard/m-courtyard/discussions) — Feature ideas and Q&A
 
 ## License
 

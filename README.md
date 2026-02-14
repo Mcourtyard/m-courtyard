@@ -9,11 +9,11 @@
 
 *From raw documents to a deployable Ollama model — entirely on your Mac.*
 
-[![GitHub stars](https://img.shields.io/github/stars/tuwenbo0120/m-courtyard?style=social)](https://github.com/tuwenbo0120/m-courtyard/stargazers)
-[![GitHub Downloads](https://img.shields.io/github/downloads/tuwenbo0120/m-courtyard/total)](https://github.com/tuwenbo0120/m-courtyard/releases)
-[![GitHub Release](https://img.shields.io/github/v/release/tuwenbo0120/m-courtyard)](https://github.com/tuwenbo0120/m-courtyard/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/Mcourtyard/m-courtyard?style=social)](https://github.com/Mcourtyard/m-courtyard/stargazers)
+[![GitHub Downloads](https://img.shields.io/github/downloads/Mcourtyard/m-courtyard/total)](https://github.com/Mcourtyard/m-courtyard/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/Mcourtyard/m-courtyard)](https://github.com/Mcourtyard/m-courtyard/releases/latest)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![GitHub last commit](https://img.shields.io/github/last-commit/tuwenbo0120/m-courtyard)](https://github.com/tuwenbo0120/m-courtyard/commits/main)
+[![GitHub last commit](https://img.shields.io/github/last-commit/Mcourtyard/m-courtyard)](https://github.com/Mcourtyard/m-courtyard/commits/main)
 [![Discord](https://img.shields.io/discord/1471348538909790260?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/hjkrHWrQ)
 
 English | **[中文](./README_zh-CN.md)**
@@ -77,7 +77,7 @@ Most fine-tuning tools are CLI-heavy, cloud-dependent, or require juggling multi
 
 | Platform | Chip | Download |
 |----------|------|----------|
-| macOS 14+ | Apple Silicon (M1/M2/M3/M4) | [📦 Download .dmg](https://github.com/tuwenbo0120/m-courtyard/releases/latest) |
+| macOS 14+ | Apple Silicon (M1/M2/M3/M4) | [📦 Download .dmg](https://github.com/Mcourtyard/m-courtyard/releases/latest) |
 
 > **⚠️ macOS Gatekeeper Notice**
 > Since the app is not signed with an Apple Developer certificate, macOS may show a "damaged" warning. To fix this:
@@ -131,7 +131,7 @@ Most fine-tuning tools are CLI-heavy, cloud-dependent, or require juggling multi
 
 ### Option 1: Download Release (Recommended)
 
-1. Go to [**Releases**](https://github.com/tuwenbo0120/m-courtyard/releases/latest) and download the latest `.dmg`
+1. Go to [**Releases**](https://github.com/Mcourtyard/m-courtyard/releases/latest) and download the latest `.dmg`
 2. Open the `.dmg` file and drag **M-Courtyard.app** to your Applications folder
 3. Launch M-Courtyard — done!
 
@@ -154,7 +154,7 @@ Most fine-tuning tools are CLI-heavy, cloud-dependent, or require juggling multi
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/tuwenbo0120/m-courtyard.git
+git clone https://github.com/Mcourtyard/m-courtyard.git
 cd m-courtyard/app
 
 # 2. Make sure Rust is in PATH (needed after first install)
@@ -264,8 +264,8 @@ Please make sure to:
 ## Community
 
 - [Discord](https://discord.gg/hjkrHWrQ) — Chat, get help, share your fine-tuned models
-- [GitHub Discussions](https://github.com/tuwenbo0120/m-courtyard/discussions) — Feature ideas, Q&A, announcements
-- [GitHub Issues](https://github.com/tuwenbo0120/m-courtyard/issues) — Bug reports and feature requests
+- [GitHub Discussions](https://github.com/Mcourtyard/m-courtyard/discussions) — Feature ideas, Q&A, announcements
+- [GitHub Issues](https://github.com/Mcourtyard/m-courtyard/issues) — Bug reports and feature requests
 
 ## Support
 
@@ -275,4 +275,4 @@ If you find M-Courtyard useful:
 ## Star History
 
 <!-- TODO: Uncomment after getting initial stars -->
-<!-- [![Star History Chart](https://api.star-history.com/svg?repos=tuwenbo0120/m-courtyard&type=Date)](https://star-history.com/#tuwenbo0120/m-courtyard&Date) -->
+<!-- [![Star History Chart](https://api.star-history.com/svg?repos=Mcourtyard/m-courtyard&type=Date)](https://star-history.com/#Mcourtyard/m-courtyard&Date) -->

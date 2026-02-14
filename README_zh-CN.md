@@ -9,11 +9,11 @@
 
 *从原始文档到可部署的 Ollama 模型 — 全程在你的 Mac 上完成。*
 
-[![GitHub stars](https://img.shields.io/github/stars/tuwenbo0120/m-courtyard?style=social)](https://github.com/tuwenbo0120/m-courtyard/stargazers)
-[![GitHub Downloads](https://img.shields.io/github/downloads/tuwenbo0120/m-courtyard/total)](https://github.com/tuwenbo0120/m-courtyard/releases)
-[![GitHub Release](https://img.shields.io/github/v/release/tuwenbo0120/m-courtyard)](https://github.com/tuwenbo0120/m-courtyard/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/Mcourtyard/m-courtyard?style=social)](https://github.com/Mcourtyard/m-courtyard/stargazers)
+[![GitHub Downloads](https://img.shields.io/github/downloads/Mcourtyard/m-courtyard/total)](https://github.com/Mcourtyard/m-courtyard/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/Mcourtyard/m-courtyard)](https://github.com/Mcourtyard/m-courtyard/releases/latest)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![GitHub last commit](https://img.shields.io/github/last-commit/tuwenbo0120/m-courtyard)](https://github.com/tuwenbo0120/m-courtyard/commits/main)
+[![GitHub last commit](https://img.shields.io/github/last-commit/Mcourtyard/m-courtyard)](https://github.com/Mcourtyard/m-courtyard/commits/main)
 [![Discord](https://img.shields.io/discord/1471348538909790260?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/hjkrHWrQ)
 
 **[English](./README.md)** | 中文
@@ -77,7 +77,7 @@
 
 | 平台 | 芯片 | 下载 |
 |------|------|------|
-| macOS 14+ | Apple Silicon (M1/M2/M3/M4) | [📦 下载 .dmg](https://github.com/tuwenbo0120/m-courtyard/releases/latest) |
+| macOS 14+ | Apple Silicon (M1/M2/M3/M4) | [📦 下载 .dmg](https://github.com/Mcourtyard/m-courtyard/releases/latest) |
 
 > **⚠️ macOS 安全提示**
 > 由于应用未使用 Apple 开发者证书签名，macOS 可能提示"已损坏"。按以下步骤解决：
@@ -131,7 +131,7 @@
 
 ### 方式一：下载安装包（推荐）
 
-1. 前往 [**Releases**](https://github.com/tuwenbo0120/m-courtyard/releases/latest) 下载最新 `.dmg` 文件
+1. 前往 [**Releases**](https://github.com/Mcourtyard/m-courtyard/releases/latest) 下载最新 `.dmg` 文件
 2. 打开 `.dmg` 文件，将 **M-Courtyard.app** 拖入应用程序文件夹
 3. 启动 M-Courtyard — 开始使用！
 
@@ -154,7 +154,7 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/tuwenbo0120/m-courtyard.git
+git clone https://github.com/Mcourtyard/m-courtyard.git
 cd m-courtyard/app
 
 # 2. 确保 Rust 已加入 PATH（首次安装后需要）
@@ -252,8 +252,8 @@ m-courtyard/
 ## 社区
 
 - [Discord](https://discord.gg/hjkrHWrQ) — 聊天、求助、分享你的微调模型
-- [GitHub Discussions](https://github.com/tuwenbo0120/m-courtyard/discussions) — 功能建议、问答、公告
-- [GitHub Issues](https://github.com/tuwenbo0120/m-courtyard/issues) — Bug 报告和功能请求
+- [GitHub Discussions](https://github.com/Mcourtyard/m-courtyard/discussions) — 功能建议、问答、公告
+- [GitHub Issues](https://github.com/Mcourtyard/m-courtyard/issues) — Bug 报告和功能请求
 
 ## 支持项目
 
@@ -263,4 +263,4 @@ m-courtyard/
 ## Star History
 
 <!-- TODO: 有一定 Star 后取消注释 -->
-<!-- [![Star History Chart](https://api.star-history.com/svg?repos=tuwenbo0120/m-courtyard&type=Date)](https://star-history.com/#tuwenbo0120/m-courtyard&Date) -->
+<!-- [![Star History Chart](https://api.star-history.com/svg?repos=Mcourtyard/m-courtyard&type=Date)](https://star-history.com/#Mcourtyard/m-courtyard&Date) -->
