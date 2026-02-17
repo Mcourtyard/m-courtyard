@@ -76,6 +76,7 @@ const HF_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
     brand: "qwen",
     labelKey: "onlineBrands.qwen",
     versions: [
+      { id: "mlx-community/Qwen3.5-397B-A17B-4bit", label: "Qwen 3.5 397B MoE", size: "~250GB", descKey: "topRated", releasedAt: "2026-02-17" },
       { id: "mlx-community/Qwen3-Coder-Next-4bit", label: "Qwen3 Coder Next", size: "~6GB", descKey: "codeStrong", releasedAt: "2026-02-03" },
       { id: "mlx-community/Qwen3-4B-Instruct-2507-4bit", label: "Qwen 3 4B", size: "~2.6GB", descKey: "versatile", releasedAt: "2025-08-06" },
       { id: "mlx-community/Qwen3-14B-4bit-DWQ-053125", label: "Qwen 3 14B", size: "~9GB", descKey: "topRated", releasedAt: "2025-06-02" },
