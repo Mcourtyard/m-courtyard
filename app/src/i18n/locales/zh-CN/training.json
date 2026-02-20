@@ -197,5 +197,21 @@
     "needModel": "请先选择训练模型",
     "needDataset": "请先选择数据集",
     "needMethod": "请先选择训练方法"
+  },
+  "queue": {
+    "addToQueue": "加入队列",
+    "title": "训练队列",
+    "empty": "暂无排队任务",
+    "status": {
+      "queued": "排队中",
+      "running": "进行中",
+      "completed": "已完成",
+      "failed": "失败"
+    },
+    "count": "队列中 {{count}} 个任务",
+    "remove": "移除",
+    "clear": "清除已完成",
+    "nextUp": "下一个：{{name}}",
+    "added": "已加入训练队列"
   }
 }

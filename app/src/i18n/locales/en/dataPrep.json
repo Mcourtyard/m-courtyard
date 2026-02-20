@@ -102,6 +102,36 @@
   "addFile": "Add Files",
   "addFolder": "Add Folder",
   "selectFolder": "Select Folder",
+  "clearAll": "Clear All",
+  "clearAllConfirm": "Delete all {{count}} imported files?",
+  "filePage": "{{current}} / {{total}}",
+  "dropZone": {
+    "hint": "Drop files or folders here to import",
+    "dropping": "Release to import {{count}} item(s)"
+  },
+  "mergeToggle": {
+    "label": "Merge as Single Dataset",
+    "hint": "When enabled, all files are merged into one final training set output. When disabled, each file generates its own separate dataset."
+  },
+  "stats": {
+    "fileIndex": "File {{current}}/{{total}}",
+    "generated": "Generated {{success}}/{{total}}",
+    "successRate": "Success {{rate}}%"
+  },
+  "queue": {
+    "waiting": "Waiting",
+    "cleaning": "Cleaning",
+    "done": "Done",
+    "failed": "Failed",
+    "overallProgress": "Completed {{done}}/{{total}} files",
+    "segUnit": "segs"
+  },
+  "notification": {
+    "title": "M-Courtyard",
+    "datasetComplete": "Dataset generation complete! {{count}} samples generated.",
+    "cleaningComplete": "Data cleaning complete for {{count}} file(s)."
+  },
+  "importedCount": "{{count}} file(s) imported via drag & drop",
   "datasetReady": "Dataset Ready — Go to Training",
   "aiLog": "Data Preview",
   "connectingAI": "Connecting to AI model...",

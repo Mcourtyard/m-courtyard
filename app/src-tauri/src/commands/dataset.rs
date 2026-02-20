@@ -308,10 +308,11 @@ pub async fn generate_dataset(
                     }));
                 }
 
-                // Clear PID
+                let wait_result = child.wait().await;
+                // Clear PID after process exits so stop_generation can use it while running
                 GENERATION_PID.store(0, Ordering::SeqCst);
 
-                match child.wait().await {
+                match wait_result {
                     Ok(status) => {
                         if status.success() {
                             // Rename directory to completion timestamp

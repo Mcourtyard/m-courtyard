@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
-import { Upload, Trash2, Eye, ArrowRight, FolderOpen, Square, Play, ChevronDown, ChevronRight, CheckCircle2, Circle, AlertTriangle, Settings, Check, AlertCircle, ChevronLeft } from "lucide-react";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { Upload, Trash2, Eye, ArrowRight, FolderOpen, Square, Play, ChevronDown, ChevronRight, CheckCircle2, Circle, AlertTriangle, Settings, Check, AlertCircle, ChevronLeft, ListPlus, X } from "lucide-react";
 import i18nGlobal from "@/i18n";
 import { useNavigate } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
 import { useGenerationStore } from "@/stores/generationStore";
 import { useTaskStore } from "@/stores/taskStore";
+import { useTrainingQueueStore } from "@/stores/trainingQueueStore";
 import { ModelSelector } from "@/components/ModelSelector";
 import { StepProgress } from "@/components/StepProgress";
 
@@ -176,6 +178,7 @@ function analyzeContentForModes(samples: RawFileSample[]): { status: ModeStatusM
 export function DataPrepPage() {
   const { t } = useTranslation("dataPrep");
   const { t: tc } = useTranslation("common");
+  const { t: tTrain } = useTranslation("training");
   const navigate = useNavigate();
   const { projects, fetchProjects, currentProject, setCurrentProject } =
     useProjectStore();
@@ -194,7 +197,9 @@ export function DataPrepPage() {
     generating, genProgress, genStep, genTotal, genError, aiLogs,
     ollamaPathMismatch,
     initListeners, setReloadFiles, clearLogs, newVersionIds, setScrollToDatasets,
+    genFiles, genCurrentFileIdx, setGenFiles, genSuccessCount, genFailCount,
   } = useGenerationStore();
+  const { queue: trainingQueue, removeFromQueue, clearQueue: clearTrainingQueue } = useTrainingQueueStore();
   const {
     formGenMode: genMode, formGenSource: genSource, formGenModel: genModel,
     setFormField,
@@ -220,6 +225,14 @@ export function DataPrepPage() {
   const [datasetPage, setDatasetPage] = useState(0);
   const DATASETS_PER_PAGE = 10;
   const [expandedDataset, setExpandedDataset] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [mergeMode, setMergeMode] = useState(false);
+  const [queueExpanded, setQueueExpanded] = useState(false);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const [dragFileCount, setDragFileCount] = useState(0);
+  const [filePage, setFilePage] = useState(0);
+  const FILES_PER_PAGE = 10;
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false);
 
   // Show scrollbar on scroll, hide after 3 seconds of inactivity
   useEffect(() => {
@@ -325,6 +338,50 @@ export function DataPrepPage() {
       setPipelineStage("idle");
     }
   }, [generating, cleaning]);
+
+  // Drag-and-drop file import via Tauri webview window events
+  useEffect(() => {
+    const appWindow = getCurrentWebviewWindow();
+    let unlisten: (() => void) | null = null;
+
+    appWindow.onDragDropEvent((event) => {
+      if (event.payload.type === "enter") {
+        setIsDragging(true);
+        setDragFileCount(event.payload.paths?.length ?? 0);
+      } else if (event.payload.type === "leave") {
+        setIsDragging(false);
+        setDragFileCount(0);
+      } else if (event.payload.type === "drop") {
+        setIsDragging(false);
+        setDragFileCount(0);
+        const paths = event.payload.paths;
+        if (paths && paths.length > 0 && currentProject) {
+          // Pass all paths (files + directories) to backend; it handles recursive expansion & filtering
+          invoke("import_files", {
+            projectId: currentProject.id,
+            sourcePaths: paths,
+          }).then(() => {
+            loadFiles();
+          }).catch((e) => console.error("Drag-drop import failed:", e));
+        }
+      }
+    }).then((fn) => { unlisten = fn; });
+
+    return () => { unlisten?.(); };
+  }, [currentProject]);
+
+  // Send macOS notification when dataset generation completes
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    listen<{ version?: string }>("dataset:complete", () => {
+      // Notify user — generation finished
+      invoke("send_notification", {
+        title: t("notification.title"),
+        body: t("notification.datasetComplete", { count: 0 }),
+      }).catch(() => {});
+    }).then((fn) => { unsub = fn; });
+    return () => { unsub?.(); };
+  }, []);
 
   const loadFiles = async () => {
     if (!currentProject) return;
@@ -461,7 +518,9 @@ export function DataPrepPage() {
     if (!acquireTask(currentProject.id, currentProject.name, "generating")) return;
     const store = useGenerationStore.getState();
     store.clearLogs();
+    setGenFiles(rawFiles.map(f => ({ name: f.name, sizeBytes: f.size_bytes })));
     scrollToPreviewTop();
+    setQueueExpanded(false);
     // Stage 1: always clean first so generated dataset strictly matches current raw files
     setPipelineStage("cleaning");
     setCleaning(true);
@@ -532,7 +591,12 @@ export function DataPrepPage() {
     } catch (e) {
       console.error("Stop failed:", e);
     }
+    // Fallback: reset frontend state in case backend event doesn't fire
+    setCleaning(false);
+    setCleanProgress("");
+    useGenerationStore.getState().stopGeneration();
     setPipelineStage("idle");
+    useTaskStore.getState().releaseTask();
   };
 
 
@@ -624,6 +688,22 @@ export function DataPrepPage() {
       }
     } catch (e) {
       console.error("Delete failed:", e);
+    }
+  };
+
+  const handleClearAllFiles = async () => {
+    if (!currentProject || rawFiles.length === 0) return;
+    try {
+      for (const f of rawFiles) {
+        await invoke("delete_file", { path: f.path });
+      }
+      await loadFiles();
+      setFilePage(0);
+      setPreview(null);
+      setPreviewName("");
+      setShowClearAllDialog(false);
+    } catch (e) {
+      console.error("Clear all failed:", e);
     }
   };
 
@@ -722,8 +802,17 @@ export function DataPrepPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* File Lists */}
         <div className="space-y-4">
-          {/* 1.1 Select raw data files - collapsible card */}
-          <div ref={sectionStep1Ref} className="rounded-lg border border-border bg-card">
+          {/* 1.1 Select raw data files - collapsible card with drag-drop */}
+          <div ref={sectionStep1Ref} className="relative rounded-lg border border-border bg-card">
+            {/* Drag-and-drop overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary bg-primary/10 backdrop-blur-sm">
+                <Upload size={32} className="mb-2 text-primary" />
+                <p className="text-sm font-medium text-primary">
+                  {dragFileCount > 0 ? t("dropZone.dropping", { count: dragFileCount }) : t("dropZone.hint")}
+                </p>
+              </div>
+            )}
             <button
               onClick={() => setStep1Open(!step1Open)}
               className="flex w-full items-center justify-between p-4"
@@ -740,10 +829,34 @@ export function DataPrepPage() {
               </h3>
             </button>
             {step1Open && (
-              <div className="border-t border-border p-4 space-y-3">
+              <div ref={dropZoneRef} className="border-t border-border p-4 space-y-3">
+                {/* Merge checkbox + Clear all — toolbar row */}
+                {rawFiles.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <label
+                      className="flex items-center gap-2 cursor-pointer select-none"
+                      title={t("mergeToggle.hint")}
+                      onClick={() => setMergeMode(!mergeMode)}
+                    >
+                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${mergeMode ? "border-primary bg-primary" : "border-muted-foreground/40 bg-transparent"}`}>
+                        {mergeMode && <Check size={11} className="text-primary-foreground" />}
+                      </span>
+                      <span className="text-xs text-foreground">{t("mergeToggle.label")}</span>
+                    </label>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowClearAllDialog(true); }}
+                      disabled={cleaning || generating}
+                      className="p-1.5 rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                      title={t("clearAll")}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                )}
                 {rawFiles.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border py-6 text-center">
                     <p className="mb-3 text-xs text-muted-foreground">{t("files.empty")}</p>
+                    <p className="mb-3 text-[11px] text-muted-foreground/70">{t("dropZone.hint")}</p>
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={handleImport}
@@ -763,9 +876,65 @@ export function DataPrepPage() {
                       </button>
                     </div>
                   </div>
+                ) : (cleaning || generating) && genFiles.length > 0 ? (
+                  /* ─── Queue view: replaces static list during generation ─── */
+                  <div className="space-y-1.5">
+                    {/* Collapsed summary row — always visible */}
+                    <button
+                      onClick={() => setQueueExpanded(!queueExpanded)}
+                      className="flex w-full items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-left transition-colors hover:bg-primary/10"
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="inline-block h-2 w-2 shrink-0 animate-pulse rounded-full bg-primary" />
+                        <span className="truncate text-xs font-medium text-foreground">
+                          {cleaning ? t("generate.cleaningStatus") : (genFiles[genCurrentFileIdx]?.name ?? genFiles[0]?.name ?? "...")}
+                        </span>
+                        {!cleaning && genTotal > 0 && (
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            {genStep}/{genTotal} {t("queue.segUnit")}
+                            {genProgress && ` · ${genProgress}`}
+                          </span>
+                        )}
+                      </span>
+                      {queueExpanded ? <ChevronDown size={13} className="shrink-0 text-muted-foreground" /> : <ChevronRight size={13} className="shrink-0 text-muted-foreground" />}
+                    </button>
+
+                    {/* Expanded file queue list */}
+                    {queueExpanded && (
+                      <div className="max-h-52 overflow-y-auto rounded-md border border-border space-y-px">
+                        {genFiles.map((f, idx) => {
+                          const isDone = idx < genCurrentFileIdx;
+                          const isActive = idx === genCurrentFileIdx && !cleaning;
+                          return (
+                            <div
+                              key={f.name}
+                              className={`flex items-center gap-2 px-3 py-2 text-xs ${
+                                isActive ? "bg-primary/5" : isDone ? "bg-muted/30" : ""
+                              }`}
+                            >
+                              {isDone ? (
+                                <CheckCircle2 size={13} className="shrink-0 text-success" />
+                              ) : isActive ? (
+                                <span className="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                              ) : (
+                                <Circle size={13} className="shrink-0 text-muted-foreground/40" />
+                              )}
+                              <span className={`truncate ${isActive ? "font-medium text-foreground" : isDone ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
+                                {f.name}
+                              </span>
+                              <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                                {formatSize(f.sizeBytes)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-1">
-                    {rawFiles.map((f) => (
+                    {/* Paginated file list */}
+                    {rawFiles.slice(filePage * FILES_PER_PAGE, (filePage + 1) * FILES_PER_PAGE).map((f) => (
                       <div
                         key={f.path}
                         className="flex items-center justify-between rounded-md border border-border px-3 py-2"
@@ -780,14 +949,40 @@ export function DataPrepPage() {
                             {formatSize(f.size_bytes)}
                           </span>
                         </button>
-                        <button
-                          onClick={() => handleDeleteFile(f)}
-                          className="p-1 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {pipelineStage === "idle" && (
+                            <button
+                              onClick={() => handleDeleteFile(f)}
+                              className="p-1 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
+                    {/* Pagination controls */}
+                    {rawFiles.length > FILES_PER_PAGE && (
+                      <div className="flex items-center justify-between pt-1.5">
+                        <button
+                          onClick={() => setFilePage(Math.max(0, filePage - 1))}
+                          disabled={filePage === 0}
+                          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-30"
+                        >
+                          <ChevronLeft size={12} />
+                        </button>
+                        <span className="text-[11px] text-muted-foreground">
+                          {t("filePage", { current: filePage + 1, total: Math.ceil(rawFiles.length / FILES_PER_PAGE) })}
+                        </span>
+                        <button
+                          onClick={() => setFilePage(Math.min(Math.ceil(rawFiles.length / FILES_PER_PAGE) - 1, filePage + 1))}
+                          disabled={filePage >= Math.ceil(rawFiles.length / FILES_PER_PAGE) - 1}
+                          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-30"
+                        >
+                          <ChevronRight size={12} />
+                        </button>
+                      </div>
+                    )}
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={handleImport}
@@ -1043,27 +1238,6 @@ export function DataPrepPage() {
                     </>
                   )}
 
-                  {/* Progress Bar */}
-                  {generating && genTotal > 0 && (
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{genProgress}</span>
-                        <span>{Math.round((genStep / genTotal) * 100)}%</span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all duration-300"
-                          style={{ width: `${Math.round((genStep / genTotal) * 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {t("generate.progressLabel", { step: genStep, total: genTotal, percent: Math.round((genStep / genTotal) * 100) })}
-                      </p>
-                    </div>
-                  )}
-                  {generating && genTotal === 0 && genProgress && (
-                    <p className="text-xs text-muted-foreground">{genProgress}</p>
-                  )}
                   {genError && !ollamaPathMismatch && (
                     <p className="text-xs text-red-400">{genError}</p>
                   )}
@@ -1225,10 +1399,11 @@ export function DataPrepPage() {
         </div>
 
         {/* Preview Panel / AI Log Panel — outer border aligned with left 1.1 card */}
-        <div ref={previewPanelRef} className="sticky top-4 rounded-lg border border-border bg-card">
-          <div className="flex items-center justify-between p-4">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              {t("aiLog")}
+        <div ref={previewPanelRef} className="sticky top-4 space-y-4">
+          <div className="rounded-lg border border-border bg-card">
+            <div className="flex items-center justify-between p-4">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                {t("aiLog")}
               {generating && <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-success" />}
               {!generating && previewName && !(aiLogs.length > 0) && (
                 <span className="font-normal text-muted-foreground">
@@ -1281,8 +1456,120 @@ export function DataPrepPage() {
               )}
             </div>
           </div>
+
+          {/* ─── Generation stats panel (below preview card, during generation) ─── */}
+          {generating && genFiles.length > 0 && (
+            <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-2">
+              {/* Row 1: current file name */}
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2 w-2 shrink-0 animate-pulse rounded-full bg-primary" />
+                <span className="truncate text-xs font-medium text-foreground">
+                  {genFiles[genCurrentFileIdx]?.name ?? genFiles[0]?.name}
+                </span>
+              </div>
+              {/* Row 2: stats */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                <span>
+                  {t("stats.fileIndex", { current: genCurrentFileIdx + 1, total: genFiles.length })}
+                </span>
+                <span className="text-border">·</span>
+                <span>
+                  {t("stats.generated", { success: genSuccessCount, total: genTotal })}
+                </span>
+                <span className="text-border">·</span>
+                <span className={`font-medium ${
+                  genSuccessCount + genFailCount > 0 && (genSuccessCount / (genSuccessCount + genFailCount)) < 0.5
+                    ? "text-destructive"
+                    : genSuccessCount + genFailCount > 0
+                    ? "text-success"
+                    : ""
+                }`}>
+                  {t("stats.successRate", {
+                    rate: genSuccessCount + genFailCount > 0
+                      ? Math.round((genSuccessCount / (genSuccessCount + genFailCount)) * 100)
+                      : 100
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+      </div>
+
+      {/* ===== Training Queue Status (full width below main grid) ===== */}
+      {trainingQueue.length > 0 && (() => {
+        const queuedCount = trainingQueue.filter((j) => j.status === "queued").length;
+        const hasFinished = trainingQueue.some((j) => j.status === "completed" || j.status === "failed");
+        return (
+          <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <ListPlus size={15} />
+                {tTrain("queue.title")}
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                  {tTrain("queue.count", { count: queuedCount })}
+                </span>
+              </h3>
+              <div className="flex items-center gap-2">
+                {hasFinished && (
+                  <button
+                    onClick={() => clearTrainingQueue()}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {tTrain("queue.clear")}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              {trainingQueue.map((job, idx) => (
+                <div
+                  key={job.id}
+                  className={`flex items-center justify-between rounded-md border px-3 py-2 text-xs ${
+                    job.status === "running"
+                      ? "border-primary/30 bg-primary/5"
+                      : job.status === "completed"
+                      ? "border-success/30 bg-success/5"
+                      : job.status === "failed"
+                      ? "border-destructive/30 bg-destructive/5"
+                      : "border-border"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <span className="w-5 text-center text-[10px] text-muted-foreground font-mono">#{idx + 1}</span>
+                    <span className="font-medium text-foreground">{job.projectName}</span>
+                    <span className="text-muted-foreground">
+                      {(() => { try { const p = JSON.parse(job.params); return `${p.iters} iters · ${p.fine_tune_type}`; } catch { return ""; } })()}
+                    </span>
+                    {job.status === "running" && (
+                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      job.status === "running" ? "bg-primary/10 text-primary" :
+                      job.status === "completed" ? "bg-success/10 text-success" :
+                      job.status === "failed" ? "bg-destructive/10 text-destructive" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
+                      {tTrain(`queue.status.${job.status}`)}
+                    </span>
+                    {job.status === "queued" && (
+                      <button
+                        onClick={() => removeFromQueue(job.id)}
+                        className="p-0.5 text-muted-foreground hover:text-foreground"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirm && (
@@ -1303,12 +1590,42 @@ export function DataPrepPage() {
                 onClick={async () => {
                   try {
                     await invoke("delete_file", { path: deleteConfirm.path });
-                    reloadFiles();
+                    await loadFiles();
+                    if (previewName === deleteConfirm.name) {
+                      setPreview(null);
+                      setPreviewName("");
+                    }
                   } catch (e) {
                     console.error("Delete failed:", e);
                   }
                   setDeleteConfirm(null);
                 }}
+                className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive/90"
+              >
+                {tc("confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Confirmation Dialog */}
+      {showClearAllDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-lg">
+            <h3 className="text-sm font-semibold text-foreground">{t("clearAll")}</h3>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("clearAllConfirm", { count: rawFiles.length })}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowClearAllDialog(false)}
+                className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
+              >
+                {tc("cancel")}
+              </button>
+              <button
+                onClick={handleClearAllFiles}
                 className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive/90"
               >
                 {tc("confirm")}

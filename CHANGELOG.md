@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2026-02-20
+
+### Added
+- **Generation Queue View**: During dataset generation, the 1.1 file list area is replaced by a collapsible queue view — a single summary row (current file name + segment progress) that expands to a full scrollable list showing each file's status (completed ✓ / in-progress ⟳ / pending ○)
+- **Generation Stats Panel**: A stats card appears below the Data Preview panel during generation, showing two rows: current file name (with pulse indicator) and three inline stats — file index N/M · generated count success/total · success rate % (color-coded green/red based on threshold)
+- **Per-file Progress Tracking**: `generationStore` now tracks `genFiles`, `genCurrentFileIdx` (estimated from cumulative file-size ratio against segment progress), `genSuccessCount`, and `genFailCount` parsed from `dataset:progress` events
+
+### Fixed
+- **Stop Generation Ineffective** (BUG-092): `GENERATION_PID` was cleared before `child.wait().await` in `generate_dataset`, making `stop_generation` unable to find the running process PID; moved the clear to after the wait
+- **Clear All No Confirmation** (BUG-093): Two-click confirmation pattern for "Clear All" was unreliable; replaced with a standard modal dialog (`showClearAllDialog` state)
+- **Frontend State Stuck After Stop** (BUG-094): Added fallback state resets in `handleStop` — if backend `dataset:stopped` event does not fire, `cleaning`/`generating`/taskLock are reset client-side
+
+### Changed
+- **Merge as Single Dataset default**: Changed default value from `true` to `false`; tooltip updated to clarify the toggle controls final output format (merge outputs), not pre-processing merge
+- **Removed duplicate progress bar**: Progress bar and text below the "Stop Generation" button removed (now shown in the stats panel below the preview)
+- **Removed duplicate status bar**: The "已生成 N 条 (M 失败)" spinning bar at the top of the Data Preview panel removed; generation status is now centralized in the stats panel
+
 ## [0.4.2] - 2026-02-20
 
 ### Added

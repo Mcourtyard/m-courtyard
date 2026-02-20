@@ -197,5 +197,21 @@
     "needModel": "Please select a training model first",
     "needDataset": "Please select a dataset first",
     "needMethod": "Please select a training method first"
+  },
+  "queue": {
+    "addToQueue": "Add to Queue",
+    "title": "Training Queue",
+    "empty": "No queued jobs",
+    "status": {
+      "queued": "Queued",
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "count": "{{count}} job(s) in queue",
+    "remove": "Remove",
+    "clear": "Clear Completed",
+    "nextUp": "Next: {{name}}",
+    "added": "Added to training queue"
   }
 }

@@ -102,6 +102,36 @@
   "addFile": "添加文件",
   "addFolder": "添加文件夹",
   "selectFolder": "选择文件夹",
+  "clearAll": "全部清除",
+  "clearAllConfirm": "确认删除全部 {{count}} 个已导入文件？",
+  "filePage": "{{current}} / {{total}}",
+  "dropZone": {
+    "hint": "拖拽文件或文件夹到此处导入",
+    "dropping": "松开即可导入 {{count}} 项"
+  },
+  "mergeToggle": {
+    "label": "合并为单数据集",
+    "hint": "开启后将所有文件最终合并输出为一个训练集；关闭则每个文件单独生成数据集。"
+  },
+  "stats": {
+    "fileIndex": "文件 {{current}}/{{total}}",
+    "generated": "已生成 {{success}}/{{total}} 条",
+    "successRate": "成功率 {{rate}}%"
+  },
+  "queue": {
+    "waiting": "等待中",
+    "cleaning": "清洗中",
+    "done": "已完成",
+    "failed": "失败",
+    "overallProgress": "已完成 {{done}}/{{total}} 个文件",
+    "segUnit": "段"
+  },
+  "notification": {
+    "title": "M-Courtyard",
+    "datasetComplete": "数据集生成完成！共生成 {{count}} 条样本。",
+    "cleaningComplete": "{{count}} 个文件清洗完成。"
+  },
+  "importedCount": "通过拖拽导入了 {{count}} 个文件",
   "datasetReady": "数据集已就绪 — 去训练模型",
   "aiLog": "数据预览",
   "connectingAI": "正在连接 AI 模型...",

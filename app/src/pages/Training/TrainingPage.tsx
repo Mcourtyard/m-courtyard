@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { Play, Square, Gauge, Layers, Target, Gem, BarChart3, FileText, FolderOpen, Copy, Check, ArrowRight, Trash2, ChevronDown, ChevronRight, ChevronLeft, X, CheckCircle2, Circle, Trophy, Upload, Clock, TrendingDown, AlertTriangle } from "lucide-react";
+import { Play, Square, Gauge, Layers, Target, Gem, BarChart3, FileText, FolderOpen, Copy, Check, ArrowRight, Trash2, ChevronDown, ChevronRight, ChevronLeft, X, CheckCircle2, Circle, Trophy, Upload, Clock, TrendingDown, AlertTriangle, ListPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
 import { useTrainingStore } from "@/stores/trainingStore";
+import { useTrainingQueueStore } from "@/stores/trainingQueueStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { type TrainingParams } from "@/services/training";
 import { ModelSelector } from "@/components/ModelSelector";
@@ -626,6 +627,8 @@ export function TrainingPage() {
 
   const { canStart: taskCanStart, acquireTask } = useTaskStore();
   const taskCheck = currentProject ? taskCanStart(currentProject.id, "training") : { allowed: true };
+  const { queue, addToQueue, removeFromQueue, clearQueue } = useTrainingQueueStore();
+  const [queueAdded, setQueueAdded] = useState(false);
 
   // Parse task lock reason into i18n message
   const getTaskLockHint = (reason?: string): string => {
@@ -667,6 +670,21 @@ export function TrainingPage() {
     if (!taskCheck.allowed) return;
     handleStart();
   };
+
+  const handleAddToQueue = () => {
+    if (!currentProject || !params.model || !selectedDataset || !params.fine_tune_type) return;
+    addToQueue({
+      projectId: currentProject.id,
+      projectName: currentProject.name,
+      params: JSON.stringify(params),
+      datasetPath: selectedDataset.path || "",
+    });
+    setQueueAdded(true);
+    setTimeout(() => setQueueAdded(false), 2000);
+  };
+
+  const queuedCount = queue.filter((j) => j.status === "queued").length;
+  const hasCompletedJobs = queue.some((j) => j.status === "completed" || j.status === "failed");
 
   const handleStart = async () => {
     if (!currentProject || !params.model || !selectedDataset) return;
@@ -1363,7 +1381,7 @@ export function TrainingPage() {
         )}
       </div>
 
-      {/* ===== Start / Stop Button (always visible) ===== */}
+      {/* ===== Start / Stop / Queue Buttons (always visible) ===== */}
       {status === "running" ? (
         <button onClick={handleStop}
           className="flex w-full items-center justify-center gap-2 rounded-md bg-destructive px-4 py-3 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90">
@@ -1372,21 +1390,100 @@ export function TrainingPage() {
         </button>
       ) : (
         <div className="space-y-2">
-          <button onClick={handleStartWithValidation}
-            className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-medium transition-colors ${
-              !canStartTraining || !selectedDataset || !taskCheck.allowed
-                ? "bg-primary/50 text-primary-foreground/70 cursor-not-allowed"
-                : "bg-primary text-primary-foreground hover:bg-primary/90"
-            }`}>
-            <Play size={16} />
-            {t("start")}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={handleStartWithValidation}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-medium transition-colors ${
+                !canStartTraining || !selectedDataset || !taskCheck.allowed
+                  ? "bg-primary/50 text-primary-foreground/70 cursor-not-allowed"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}>
+              <Play size={16} />
+              {t("start")}
+            </button>
+            <button
+              onClick={handleAddToQueue}
+              disabled={!params.model || !selectedDataset || !params.fine_tune_type}
+              className={`flex items-center gap-1.5 rounded-md border px-3 py-3 text-sm font-medium transition-colors ${
+                queueAdded
+                  ? "border-success bg-success/10 text-success"
+                  : "border-border text-muted-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+              }`}
+              title={t("queue.addToQueue")}
+            >
+              {queueAdded ? <Check size={16} /> : <ListPlus size={16} />}
+              {queueAdded ? t("queue.added") : t("queue.addToQueue")}
+            </button>
+          </div>
           {!canStartTraining && params.model && (
             <p className="text-center text-xs text-red-400">{t("invalidModelError")}</p>
           )}
           {!taskCheck.allowed && (
             <p className="text-center text-xs text-warning">{getTaskLockHint(taskCheck.reason)}</p>
           )}
+        </div>
+      )}
+
+      {/* ===== Training Queue Status Bar ===== */}
+      {queue.length > 0 && (
+        <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <ListPlus size={14} />
+              {t("queue.title")}
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                {t("queue.count", { count: queuedCount })}
+              </span>
+            </h3>
+            {hasCompletedJobs && (
+              <button
+                onClick={clearQueue}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("queue.clear")}
+              </button>
+            )}
+          </div>
+          <div className="space-y-1">
+            {queue.map((job) => (
+              <div
+                key={job.id}
+                className={`flex items-center justify-between rounded-md border px-3 py-1.5 text-xs ${
+                  job.status === "running"
+                    ? "border-primary/30 bg-primary/5"
+                    : job.status === "completed"
+                    ? "border-success/30 bg-success/5"
+                    : job.status === "failed"
+                    ? "border-destructive/30 bg-destructive/5"
+                    : "border-border"
+                }`}
+              >
+                <span className="flex items-center gap-2 truncate">
+                  <span className="font-medium text-foreground">{job.projectName}</span>
+                  <span className="text-muted-foreground">
+                    {(() => { try { const p = JSON.parse(job.params); return `${p.iters} iters · ${p.fine_tune_type}`; } catch { return ""; } })()}
+                  </span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                    job.status === "running" ? "bg-primary/10 text-primary" :
+                    job.status === "completed" ? "bg-success/10 text-success" :
+                    job.status === "failed" ? "bg-destructive/10 text-destructive" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {t(`queue.status.${job.status}`)}
+                  </span>
+                  {job.status === "queued" && (
+                    <button
+                      onClick={() => removeFromQueue(job.id)}
+                      className="p-0.5 text-muted-foreground hover:text-destructive"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

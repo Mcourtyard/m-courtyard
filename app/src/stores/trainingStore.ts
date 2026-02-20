@@ -159,6 +159,22 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       (event) => {
         set({ status: event.payload.success ? "completed" : "failed", completedAt: Date.now() });
         useTaskStore.getState().releaseTask();
+        // Send macOS notification
+        import("@tauri-apps/api/core").then(({ invoke: inv }) => {
+          inv("send_notification", {
+            title: "M-Courtyard",
+            body: event.payload.success ? "Training completed successfully!" : "Training failed.",
+          }).catch(() => {});
+        });
+        // Trigger training queue to process next job
+        import("./trainingQueueStore").then(({ useTrainingQueueStore }) => {
+          const qStore = useTrainingQueueStore.getState();
+          const running = qStore.queue.find((j) => j.status === "running");
+          if (running) {
+            if (event.payload.success) qStore.markCompleted(running.id);
+            else qStore.markFailed(running.id);
+          }
+        });
       }
     );
     unlistens.push(u2);
@@ -171,6 +187,12 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
           logs: [...s.logs, `ERROR: ${event.payload.error}`],
         }));
         useTaskStore.getState().releaseTask();
+        // Trigger training queue to process next job
+        import("./trainingQueueStore").then(({ useTrainingQueueStore }) => {
+          const qStore = useTrainingQueueStore.getState();
+          const running = qStore.queue.find((j) => j.status === "running");
+          if (running) qStore.markFailed(running.id);
+        });
       }
     );
     unlistens.push(u3);
