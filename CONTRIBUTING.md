@@ -75,15 +75,25 @@ pnpm tauri dev
 m-courtyard/
 ├── app/
 │   ├── src/              # React frontend
-│   │   ├── pages/        # Page components
-│   │   ├── components/   # Shared components
+│   │   ├── pages/        # Page components (DataPrep, Training, Testing, Export)
+│   │   ├── components/   # Shared components (StepProgress, ModelSelector, etc.)
 │   │   ├── stores/       # Zustand state stores
+│   │   │   ├── generationStore.ts   # Dataset generation state + per-file progress
+│   │   │   └── trainingQueueStore.ts # Training job queue
 │   │   ├── services/     # Tauri command wrappers
-│   │   └── i18n/         # Internationalization
+│   │   └── i18n/         # Internationalization (en / zh-CN)
 │   └── src-tauri/
-│       ├── src/          # Rust backend
-│       └── scripts/      # Python ML scripts
+│       ├── src/
+│       │   └── commands/ # Rust IPC handlers (dataset, training, export, etc.)
+│       └── scripts/      # Python ML scripts (clean, generate, export, inference)
 ```
+
+## Key Architecture Notes
+
+- **Batch generation** (`generationStore`): `genFiles` holds the full file list; `genCurrentFileIdx` is estimated from the cumulative file-size ratio against segment progress events. `genSuccessCount` / `genFailCount` are parsed from the `dataset:progress` event desc string.
+- **Training queue** (`trainingQueueStore`): A Zustand store that persists across navigation. Jobs are added with "Add to Queue" and consumed sequentially by the training pipeline.
+- **Backend events**: The Rust backend emits `dataset:progress`, `dataset:log`, `dataset:done`, `dataset:error`, and `dataset:stopped` events; the frontend subscribes in `generationStore.initListeners()` (called once at app startup).
+- **Python scripts**: All scripts accept a `--lang` flag for i18n. Scripts are bundled as Tauri resources under `scripts/**/*`.
 
 ## Community
 

@@ -19,3 +19,5 @@ Please describe the tests you ran to verify your changes.
 - [ ] I have written commit messages in English following [Conventional Commits](https://www.conventionalcommits.org/)
 - [ ] I have added tests that prove my fix is effective or that my feature works (if applicable)
 - [ ] New and existing tests pass locally with my changes
+- [ ] If touching DataPrep generation pipeline, tested with multiple files (batch mode) and verified queue view / stats panel update correctly
+- [ ] If touching `generationStore`, verified `genFiles` / `genCurrentFileIdx` / `genSuccessCount` / `genFailCount` update as expected during generation

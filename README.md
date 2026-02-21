@@ -92,15 +92,32 @@ Most fine-tuning tools are CLI-heavy, cloud-dependent, or require juggling multi
 
 <!-- TODO: Add more platforms when available -->
 
+## What's New — v0.4.3
+
+**Batch Processing** — N files → 1 operation, leave and come back to a notification.
+
+- **Multi-file drag-and-drop** — Drop files or folders onto the 1.1 section; duplicates skipped automatically
+- **Generation queue view** — The file list transforms into a live queue during generation: current file + segment progress in the collapsed row; expand to see per-file status (✓ / ⟳ / ○)
+- **Generation stats panel** — Card below the preview showing file N/M, generated count, and success rate (color-coded)
+- **Training queue** — Queue multiple training jobs; status panel shows all jobs in real time
+- **Merge as Single Dataset** — Toggle whether all source files output one combined dataset or separate datasets per file
+- **macOS completion notification** — System notification when the full pipeline finishes
+
+[View full changelog →](CHANGELOG.md)
+
+---
+
 ## Key Features
 
 ### Data Processing & Generation
+- **Batch multi-file import** — Drag-and-drop multiple files at once; queue-based generation with per-file progress
 - **AI dataset generation** — Use a local LLM to transform documents into high-quality training data
 - **Multiple generation types** — Knowledge Q&A / Style Imitation / Multi-turn Dialogue / Instruction Training
 - **Rule-based generation** — Generate basic training data without any AI model
 - **Incremental save & crash recovery** — Every generated sample is saved immediately; resume after interruption
 
 ### Model Training
+- **Training queue** — Queue multiple experiments; run them back-to-back without manual intervention
 - **mlx-lm LoRA training** — Leverages Apple MLX unified memory for efficient fine-tuning on Apple Silicon
 - **Live training visualization** — Real-time loss curves, iteration progress bar, and streaming logs
 - **Multi-source model hub** — Auto-detect Ollama models, scan local HuggingFace/ModelScope caches, or download online
@@ -114,6 +131,7 @@ Most fine-tuning tools are CLI-heavy, cloud-dependent, or require juggling multi
 
 ### User Experience
 - **Guided 4-step workflow** — Unified progress bar + sub-step timeline across all pages
+- **macOS notifications** — System notification on pipeline completion
 - **100% local & private** — All data stays on your machine, no cloud dependency
 - **Sleep prevention** — Automatically prevents macOS sleep during long-running tasks
 - **i18n** — English and Chinese UI, switchable in Settings
