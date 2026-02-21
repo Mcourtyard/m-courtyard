@@ -59,6 +59,7 @@ interface Props {
   disabled?: boolean;
   projectId?: string;
   onSelectAdapter?: (adapter: AdapterInfo) => void;
+  defaultOpen?: boolean;
 }
 
 const SOURCE_LABELS_STATIC: Record<string, string> = {
@@ -77,11 +78,10 @@ const HF_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
     brand: "qwen",
     labelKey: "onlineBrands.qwen",
     versions: [
-      { id: "mlx-community/Qwen3.5-397B-A17B-4bit", label: "Qwen 3.5 397B MoE", size: "~250GB", descKey: "topRated", releasedAt: "2026-02-17" },
-      { id: "mlx-community/Qwen3-Coder-Next-4bit", label: "Qwen3 Coder Next", size: "~6GB", descKey: "codeStrong", releasedAt: "2026-02-03" },
-      { id: "mlx-community/Qwen3-4B-Instruct-2507-4bit", label: "Qwen 3 4B", size: "~2.6GB", descKey: "versatile", releasedAt: "2025-08-06" },
-      { id: "mlx-community/Qwen3-14B-4bit-DWQ-053125", label: "Qwen 3 14B", size: "~9GB", descKey: "topRated", releasedAt: "2025-06-02" },
-      { id: "mlx-community/Qwen3-0.6B-4bit", label: "Qwen 3 0.6B", size: "~0.6GB", descKey: "lightweight", releasedAt: "2025-04-28" },
+      { id: "mlx-community/Qwen3-Coder-Next-4bit", label: "Qwen3 Coder Next · 4-bit", size: "~6GB", descKey: "codeStrong", releasedAt: "2026-02-03" },
+      { id: "mlx-community/Qwen3-4B-Instruct-2507-4bit", label: "Qwen 3 4B · 4-bit", size: "~2.6GB", descKey: "versatile", releasedAt: "2025-08-06" },
+      { id: "mlx-community/Qwen3-14B-4bit-DWQ-053125", label: "Qwen 3 14B · 4-bit DWQ", size: "~9GB", descKey: "topRated", releasedAt: "2025-06-02" },
+      { id: "mlx-community/Qwen3-0.6B-4bit", label: "Qwen 3 0.6B · 4-bit", size: "~0.6GB", descKey: "lightweight", releasedAt: "2025-04-28" },
     ],
     moreUrl: "https://huggingface.co/models?search=mlx-community%2FQwen3",
   },
@@ -89,10 +89,10 @@ const HF_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
     brand: "deepseek",
     labelKey: "onlineBrands.deepseek",
     versions: [
-      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-14B-4bit", label: "DeepSeek R1 14B", size: "~9GB", descKey: "topRated", releasedAt: "2025-01-20" },
-      { id: "mlx-community/DeepSeek-R1-Distill-Llama-8B-4bit-mlx", label: "DeepSeek R1 8B", size: "~5GB", descKey: "reasoningGeneral", releasedAt: "2025-01-20" },
-      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-7B-4bit", label: "DeepSeek R1 7B", size: "~4.7GB", descKey: "reasoning", releasedAt: "2025-01-20" },
-      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-1.5B-4bit", label: "DeepSeek R1 1.5B", size: "~1GB", descKey: "reasoningLight", releasedAt: "2025-01-20" },
+      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-14B-4bit", label: "DeepSeek R1 14B · 4-bit", size: "~9GB", descKey: "topRated", releasedAt: "2025-01-20" },
+      { id: "mlx-community/DeepSeek-R1-Distill-Llama-8B-4bit", label: "DeepSeek R1 8B · 4-bit", size: "~5GB", descKey: "reasoningGeneral", releasedAt: "2025-01-20" },
+      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-7B-4bit", label: "DeepSeek R1 7B · 4-bit", size: "~4.7GB", descKey: "reasoning", releasedAt: "2025-01-20" },
+      { id: "mlx-community/DeepSeek-R1-Distill-Qwen-1.5B-4bit", label: "DeepSeek R1 1.5B · 4-bit", size: "~1GB", descKey: "reasoningLight", releasedAt: "2025-01-20" },
     ],
     moreUrl: "https://huggingface.co/models?search=mlx-community%2FDeepSeek",
   },
@@ -100,19 +100,18 @@ const HF_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
     brand: "glm",
     labelKey: "onlineBrands.glm",
     versions: [
-      { id: "mlx-community/GLM-5-4bit", label: "GLM 5", size: "~24GB", descKey: "topRated", releasedAt: "2026-02-12" },
-      { id: "mlx-community/GLM-4.5-Air-4bit", label: "GLM 4.5 Air", size: "~8GB", descKey: "higherQuality", releasedAt: "2025-07-28" },
-      { id: "mlx-community/GLM-4.7-Flash-4bit", label: "GLM 4.7 Flash", size: "~5GB", descKey: "lightweight", releasedAt: "2026-01-19" },
+      { id: "mlx-community/GLM-4.7-Flash-4bit", label: "GLM 4.7 Flash · 4-bit", size: "~5GB", descKey: "lightweight", releasedAt: "2026-01-19" },
+      { id: "mlx-community/GLM-4.5-Air-4bit", label: "GLM 4.5 Air · 4-bit", size: "~8GB", descKey: "higherQuality", releasedAt: "2025-07-28" },
     ],
-    moreUrl: "https://huggingface.co/models?search=mlx-community%2FGLM",
+    moreUrl: "https://huggingface.co/models?search=mlx-community%2FGLM-4",
   },
   {
     brand: "llama",
     labelKey: "onlineBrands.llama",
     versions: [
-      { id: "mlx-community/Llama-3.2-1B-Instruct-4bit", label: "Llama 3.2 1B", size: "~0.8GB", descKey: "lightweight", releasedAt: "2024-09-25" },
-      { id: "mlx-community/Llama-3.2-3B-Instruct-4bit", label: "Llama 3.2 3B", size: "~2GB", descKey: "balanced", releasedAt: "2024-09-25" },
-      { id: "mlx-community/Llama-3.1-8B-Instruct-4bit", label: "Llama 3.1 8B", size: "~5GB", descKey: "popularGeneral", releasedAt: "2024-07-23" },
+      { id: "mlx-community/Llama-3.2-1B-Instruct-4bit", label: "Llama 3.2 1B · 4-bit", size: "~0.8GB", descKey: "lightweight", releasedAt: "2024-09-25" },
+      { id: "mlx-community/Llama-3.2-3B-Instruct-4bit", label: "Llama 3.2 3B · 4-bit", size: "~2GB", descKey: "balanced", releasedAt: "2024-09-25" },
+      { id: "mlx-community/Llama-3.1-8B-Instruct-4bit", label: "Llama 3.1 8B · 4-bit", size: "~5GB", descKey: "popularGeneral", releasedAt: "2024-07-23" },
     ],
     moreUrl: "https://huggingface.co/models?search=mlx-community%2FLlama",
   },
@@ -120,28 +119,18 @@ const HF_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
     brand: "gptoss",
     labelKey: "onlineBrands.gptoss",
     versions: [
-      { id: "mlx-community/gpt-oss-20b-MXFP4-Q8", label: "gpt-oss 20B Q8", size: "~22GB", descKey: "topRated", releasedAt: "2025-08-10" },
-      { id: "mlx-community/gpt-oss-20b-MXFP4-Q4", label: "gpt-oss 20B Q4", size: "~13GB", descKey: "openaiFamily", releasedAt: "2025-08-10" },
+      { id: "mlx-community/gpt-oss-20b-MXFP4-Q8", label: "gpt-oss 20B · MXFP4 Q8", size: "~22GB", descKey: "topRated", releasedAt: "2025-08-10" },
+      { id: "mlx-community/gpt-oss-20b-MXFP4-Q4", label: "gpt-oss 20B · MXFP4 Q4", size: "~13GB", descKey: "openaiFamily", releasedAt: "2025-08-10" },
     ],
     moreUrl: "https://huggingface.co/models?search=mlx-community%2Fgpt-oss",
-  },
-  {
-    brand: "kimi",
-    labelKey: "onlineBrands.kimi",
-    versions: [
-      { id: "mlx-community/Kimi-K2.5", label: "Kimi K2.5", size: "~16GB", descKey: "topRated", releasedAt: "2026-01-27" },
-      { id: "mlx-community/Kimi-K2-Thinking", label: "Kimi K2 Thinking", size: "~16GB", descKey: "reasoning", releasedAt: "2025-11-07" },
-      { id: "mlx-community/Kimi-K2-Instruct-4bit", label: "Kimi K2 Instruct", size: "~16GB", descKey: "popularGeneral", releasedAt: "2025-07-11" },
-    ],
-    moreUrl: "https://huggingface.co/models?search=mlx-community%2FKimi",
   },
   {
     brand: "mistral",
     labelKey: "onlineBrands.mistral",
     versions: [
-      { id: "mlx-community/mistralai_Ministral-3-14B-Instruct-2512-MLX-MXFP4", label: "Ministral 3 14B", size: "~8GB", descKey: "higherQuality", releasedAt: "2025-12-30" },
-      { id: "mlx-community/mistralai_Devstral-Small-2-24B-Instruct-2512-MLX-8Bit", label: "Devstral Small 24B", size: "~24GB", descKey: "codeStrong", releasedAt: "2025-12-14" },
-      { id: "mlx-community/Mistral-7B-Instruct-v0.2-4-bit", label: "Mistral 7B Instruct", size: "~4.1GB", descKey: "popularGeneral", releasedAt: "2023-12-22" },
+      { id: "mlx-community/mistralai_Ministral-3-14B-Instruct-2512-MLX-MXFP4", label: "Ministral 3 14B · MXFP4", size: "~8GB", descKey: "higherQuality", releasedAt: "2025-12-30" },
+      { id: "mlx-community/mistralai_Devstral-Small-2-24B-Instruct-2512-MLX-8Bit", label: "Devstral Small 24B · 8-bit", size: "~24GB", descKey: "codeStrong", releasedAt: "2025-12-14" },
+      { id: "mlx-community/Mistral-7B-Instruct-v0.2-4-bit", label: "Mistral 7B v0.2 · 4-bit", size: "~4.1GB", descKey: "popularGeneral", releasedAt: "2023-12-22" },
     ],
     moreUrl: "https://huggingface.co/models?search=mlx-community%2FMistral",
   },
@@ -149,9 +138,9 @@ const HF_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
     brand: "phi",
     labelKey: "onlineBrands.phi",
     versions: [
-      { id: "mlx-community/Phi-3.5-mini-instruct-4bit", label: "Phi 3.5 Mini", size: "~2.6GB", descKey: "lightweight", releasedAt: "2024-08-20" },
-      { id: "mlx-community/Phi-3-medium-128k-instruct-4bit", label: "Phi 3 Medium 128K", size: "~7.8GB", descKey: "higherQuality", releasedAt: "2024-05-21" },
-      { id: "mlx-community/Phi-3-mini-4k-instruct-4bit", label: "Phi 3 Mini 4K", size: "~2.2GB", descKey: "lightweight", releasedAt: "2024-04-23" },
+      { id: "mlx-community/Phi-3.5-mini-instruct-4bit", label: "Phi 3.5 Mini · 4-bit", size: "~2.6GB", descKey: "lightweight", releasedAt: "2024-08-20" },
+      { id: "mlx-community/Phi-3-medium-128k-instruct-4bit", label: "Phi 3 Medium 14B · 4-bit", size: "~7.8GB", descKey: "higherQuality", releasedAt: "2024-05-21" },
+      { id: "mlx-community/Phi-3-mini-4k-instruct-4bit", label: "Phi 3 Mini · 4-bit", size: "~2.2GB", descKey: "lightweight", releasedAt: "2024-04-23" },
     ],
     moreUrl: "https://huggingface.co/models?search=mlx-community%2FPhi-3",
   },
@@ -167,7 +156,7 @@ const OLLAMA_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease(
       { id: "qwen3:4b", label: "Qwen 3 4B", size: "~2.6GB", descKey: "versatile", releasedAt: "2025-04-29" },
       { id: "qwen3:0.6b", label: "Qwen 3 0.6B", size: "~0.6GB", descKey: "lightweight", releasedAt: "2025-04-29" },
     ],
-    moreUrl: "https://ollama.com/search?q=qwen3",
+    moreUrl: "https://ollama.com/search?q=qwen",
   },
   {
     brand: "deepseek",
@@ -184,11 +173,10 @@ const OLLAMA_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease(
     brand: "glm",
     labelKey: "onlineBrands.glm",
     versions: [
-      { id: "glm-5:latest", label: "GLM 5", size: "~24GB", descKey: "topRated", releasedAt: "2026-02-12" },
       { id: "glm-4.7-flash", label: "GLM 4.7 Flash", size: "~5GB", descKey: "lightweight", releasedAt: "2026-01-19" },
       { id: "glm-4.7", label: "GLM 4.7", size: "~9GB", descKey: "higherQuality", releasedAt: "2025-07-28" },
     ],
-    moreUrl: "https://ollama.com/search?q=glm5",
+    moreUrl: "https://ollama.com/search?q=glm",
   },
   {
     brand: "llama",
@@ -208,14 +196,6 @@ const OLLAMA_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease(
       { id: "gpt-oss:20b", label: "gpt-oss 20B", size: "~14GB", descKey: "openaiFamily", releasedAt: "2025-10-01" },
     ],
     moreUrl: "https://ollama.com/library/gpt-oss",
-  },
-  {
-    brand: "kimi",
-    labelKey: "onlineBrands.kimi",
-    versions: [
-      { id: "kimi-k2.5:latest", label: "Kimi K2.5", size: "~16GB", descKey: "topRated", releasedAt: "2026-01-27" },
-    ],
-    moreUrl: "https://ollama.com/search?q=kimi",
   },
   {
     brand: "mistral",
@@ -296,7 +276,7 @@ function getDisabledReasonKey(source: string, mode: ModelSelectorMode, daemonVis
   return "";
 }
 
-export function ModelSelector({ mode, selectedModel, onSelect, disabled, projectId, onSelectAdapter }: Props) {
+export function ModelSelector({ mode, selectedModel, onSelect, disabled, projectId, onSelectAdapter, defaultOpen }: Props) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const sourceLabel = (s: string) => {
@@ -309,11 +289,13 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
   const [ollamaModels, setOllamaModels] = useState<OllamaModelInfo[]>([]);
   const [hfSource, setHfSource] = useState<string>("huggingface");
   const [loading, setLoading] = useState(false);
+  const [localLoaded, setLocalLoaded] = useState(false);
+  const [ollamaLoaded, setOllamaLoaded] = useState(false);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const [expandedHfBrands, setExpandedHfBrands] = useState<Set<string>>(new Set());
   const [expandedOllamaBrands, setExpandedOllamaBrands] = useState<Set<string>>(new Set());
   const [showOnline, setShowOnline] = useState(false);
-  const [showPanel, setShowPanel] = useState(false);
+  const [showPanel, setShowPanel] = useState(!!defaultOpen);
 
   const loadModels = useCallback(async () => {
     setLoading(true);
@@ -324,6 +306,7 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
       setAllModels([]);
     }
     setLoading(false);
+    setLocalLoaded(true);
   }, []);
 
   const loadOllamaModels = useCallback(async () => {
@@ -333,6 +316,7 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
     } catch {
       setOllamaModels([]);
     }
+    setOllamaLoaded(true);
   }, []);
 
   const loadHfSource = useCallback(async () => {
@@ -507,6 +491,16 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
 
   const totalModels = combinedModels.length;
   const usableModels = combinedModels.filter((m) => isModelUsable(m.source, mode, m.name, ollamaModels)).length;
+
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (defaultOpen && localLoaded && ollamaLoaded && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      if (usableModels === 0) {
+        setShowOnline(true);
+      }
+    }
+  }, [defaultOpen, localLoaded, ollamaLoaded, usableModels]);
 
   return (
     <div className="space-y-2">

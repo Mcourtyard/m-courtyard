@@ -371,10 +371,10 @@ export function ExportPage() {
               onClick={() => setStep1Open(!step1Open)}
               className="flex w-full items-center justify-between p-4"
             >
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                {step1Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span className="flex items-center gap-1.5">
-                  {selectedAdapter ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {selectedAdapter ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
                   4.1 {t("section.selectAdapter")}
                   {validationHint === "validation.needAdapter" && (
                     <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
@@ -452,13 +452,13 @@ export function ExportPage() {
                         >
                           {isSelected
                             ? <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span>
-                            : <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${canSelect ? "border-muted-foreground/30" : "border-muted-foreground/15"}`} />}
+                            : <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${canSelect ? "border-muted-foreground/70" : "border-muted-foreground/40"}`} />}
                           <div className="min-w-0 flex-1">
-                            <span className={`font-medium ${canSelect ? "text-foreground" : "text-muted-foreground/40"}`}>{a.created}</span>
-                            <span className="ml-1.5 text-muted-foreground/50">{a.name.slice(0, 8)}</span>
-                            {a.base_model && <span className="ml-1.5 text-muted-foreground/40">· {a.base_model}</span>}
+                            <span className={`font-medium ${canSelect ? "text-foreground" : "text-muted-foreground"}`}>{a.created}</span>
+                            <span className="ml-1.5 text-muted-foreground">{a.name.slice(0, 8)}</span>
+                            {a.base_model && <span className="ml-1.5 text-muted-foreground">· {a.base_model}</span>}
                             {!a.has_weights && (
-                              <span className="ml-1.5 rounded bg-warning/15 px-1 py-0.5 text-[10px] text-warning/80">{t("noWeights")}</span>
+                              <span className="ml-1.5 rounded bg-warning/20 px-1 py-0.5 text-[10px] text-warning">{t("noWeights")}</span>
                             )}
                           </div>
                           <button
@@ -466,7 +466,7 @@ export function ExportPage() {
                             className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] transition-colors ${
                               confirmingDelete
                                 ? "bg-destructive text-destructive-foreground"
-                                : "text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10"
+                                : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             }`}
                             title={t("deleteAdapter")}
                           >
@@ -501,7 +501,7 @@ export function ExportPage() {
             )}
             {/* Base model info (read-only, auto from adapter) */}
             {baseModel && (
-              <p className="mt-0.5 text-[10px] text-muted-foreground/60">
+              <p className="mt-0.5 text-[10px] text-muted-foreground">
                 {t("baseModel")}{baseModel}
               </p>
             )}
@@ -515,10 +515,10 @@ export function ExportPage() {
               onClick={() => setStep2Open(!step2Open)}
               className="flex w-full items-center justify-between p-4"
             >
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                {step2Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span className="flex items-center gap-1.5">
-                  {modelName.trim() ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {modelName.trim() ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
                   4.2 {t("section.modelName")}
                   {validationHint === "validation.needModelName" && (
                     <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
@@ -548,10 +548,10 @@ export function ExportPage() {
               onClick={() => setStep3Open(!step3Open)}
               className="flex w-full items-center justify-between p-4"
             >
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                {step3Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step3Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span className="flex items-center gap-1.5">
-                  {quantDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {quantDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
                   4.3 {t("section.quantization")}
                   {validationHint === "validation.needQuantization" && (
                     <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
@@ -699,7 +699,7 @@ export function ExportPage() {
                       <div key={i} className={
                         line.includes("!!!") || line.includes("Error") || line.includes("failed") ? "text-red-400" :
                         line.includes("---") || line.includes("successfully") || line.includes("done") || line.includes("ready") ? "text-success" :
-                        line.includes("GGUF") || line.includes("Converting") ? "text-blue-400" :
+                        line.includes("GGUF") || line.includes("Converting") ? "text-info" :
                         "text-foreground"
                       }>
                         {line}
@@ -728,7 +728,7 @@ export function ExportPage() {
                 {(ollamaDir || manifestDir || outputDir) && (
                   <button
                     onClick={() => invoke("open_adapter_folder", { adapterPath: ollamaDir || manifestDir || outputDir })}
-                    className="flex items-center gap-1 text-[11px] text-success/60 hover:text-success transition-colors"
+                    className="flex items-center gap-1 text-[11px] text-success hover:text-success/80 transition-colors"
                   >
                     <FolderOpen size={12} />
                     {tc("openFolder")}
@@ -766,7 +766,7 @@ export function ExportPage() {
                 )}
               </div>
               {/* Row 2: Run hint for beginners */}
-              <p className="text-xs text-success/60">{t("ollama.successRunHint")}</p>
+              <p className="text-xs text-success">{t("ollama.successRunHint")}</p>
               {/* Row 3: Command with copy button */}
               <div className="flex items-center gap-2 rounded-md bg-background/50 border border-success/20 px-3 py-2">
                 <code className="flex-1 text-xs text-success font-mono select-all">
@@ -816,12 +816,12 @@ export function ExportPage() {
                     )}
                   </div>
                   {verifyState === "ok" && verifyPreview && (
-                    <p className="text-muted-foreground/70">
+                    <p className="text-muted-foreground">
                       <span className="font-medium">{t("verify.preview")}</span> {verifyPreview}
                     </p>
                   )}
                   {verifyState === "failed" && verifyError && (
-                    <p className="text-destructive/70 break-all">{verifyError}</p>
+                    <p className="text-destructive break-all">{verifyError}</p>
                   )}
                 </div>
               )}
@@ -833,9 +833,9 @@ export function ExportPage() {
       {/* GGUF Export */}
       <div className="rounded-lg border border-border bg-card p-4 space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">{t("gguf.title")}</h3>
+          <h3 className="text-base font-semibold text-foreground">{t("gguf.title")}</h3>
           <p className="text-xs text-muted-foreground mt-1">{t("gguf.description")}</p>
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5">{t("gguf.archNote")}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{t("gguf.archNote")}</p>
         </div>
 
         {/* GGUF path warning */}

@@ -65,7 +65,7 @@ export function ProjectsPage() {
         {projects.length > 0 && (
           <button
             onClick={() => setShowCreateDialog(true)}
-            className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Plus size={16} />
             {t("create")}
@@ -85,7 +85,7 @@ export function ProjectsPage() {
 
       {showCreateDialog && (
         <div className="rounded-lg border border-border p-4">
-          <h3 className="mb-3 text-sm font-medium text-foreground">
+          <h3 className="mb-3 text-sm font-semibold text-foreground">
             {t("createTitle")}
           </h3>
           <div className="flex gap-3">
@@ -101,7 +101,7 @@ export function ProjectsPage() {
             <button
               onClick={handleCreate}
               disabled={!newProjectName.trim()}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {t("create")}
             </button>
@@ -121,7 +121,7 @@ export function ProjectsPage() {
         /* Empty state: large centered create button */
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-20">
           <FolderOpen size={56} className="text-muted-foreground/40" />
-          <p className="mt-4 text-sm font-medium text-muted-foreground">
+          <p className="mt-4 text-sm font-semibold text-muted-foreground">
             {t("empty")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground/70">
@@ -129,7 +129,7 @@ export function ProjectsPage() {
           </p>
           <button
             onClick={() => setShowCreateDialog(true)}
-            className="mt-6 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="mt-6 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Plus size={18} />
             {t("create")}
@@ -170,7 +170,7 @@ export function ProjectsPage() {
                         <button onClick={() => setRenamingId(null)} className="rounded p-1 text-muted-foreground hover:bg-accent"><X size={14} /></button>
                       </div>
                     ) : (
-                      <p className={`text-sm font-medium ${isCurrent ? "text-primary" : "text-foreground"}`}>
+                      <p className={`text-sm font-semibold ${isCurrent ? "text-primary" : "text-foreground"}`}>
                         {project.name}
                       </p>
                     )}
@@ -178,7 +178,7 @@ export function ProjectsPage() {
                       {t(`status.${project.status}`)} · {project.created_at}
                     </p>
                     {activeProjectId === project.id && activeTaskType && (
-                      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400 ring-1 ring-blue-500/20">
+                      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-info/10 px-2 py-0.5 text-[10px] font-medium text-info ring-1 ring-info/20">
                         <Loader2 size={10} className="animate-spin" />
                         {t(`taskBadge.${activeTaskType}`)}
                       </span>

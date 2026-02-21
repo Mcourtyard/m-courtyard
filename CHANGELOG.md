@@ -21,10 +21,15 @@ Delivers the **Batch Processing** cluster (PRD D-1 · D-2 · H-3): multi-file dr
 
 ### Fixed
 - **Stop Generation Ineffective** (BUG-092): `GENERATION_PID` was cleared before `child.wait().await` in `generate_dataset`, so `stop_generation` always read PID 0 and could not kill the process; moved the clear to after the wait call
+- **Cloud-only / Oversized / Incorrect Models in Online List** (BUG-097/099): Verified every model against official HuggingFace and Ollama library pages. Removed: Qwen 3.5 (no lightweight local variant), GLM-5 from Ollama (`glm-5:cloud` only), entire Kimi brand from Ollama (`kimi-k2.5:cloud` only) and HuggingFace (`Kimi-K2-Thinking-4bit` is 1.24 TB not 16 GB), `mlx-community/GLM-5-4bit` from HuggingFace (355B MoE ≈ 177 GB at 4-bit, not 24 GB). Fixed incorrect model ID `DeepSeek-R1-Distill-Llama-8B-4bit-mlx` → `DeepSeek-R1-Distill-Llama-8B-4bit`. Added explicit quantization format to all HuggingFace model labels (e.g. `· 4-bit`, `· 4-bit DWQ`, `· MXFP4`, `· 8-bit`)
+- **DataPrep Hint Text Styling** (BUG-095): Merged AI-generation and built-in rule descriptions into the `generate.hint` area; replaced `text-info`/`text-warning` color classes with `text-foreground/80` to eliminate inconsistent blue/yellow accent text
+- **Model Selector Default State** (BUG-096): Added `defaultOpen` prop to `ModelSelector`; in DataPrep the panel is now expanded by default and automatically switches to the Online tab when `usableModels === 0`
+- **Online Model Sort Order** (BUG-098): `sortOnlineGroupsByRelease` now guarantees versions within each brand group are sorted by `releasedAt` descending so the newest model always appears first
 
 ### Changed
 - **Generation status UI consolidated**: Removed redundant progress bar below the Stop button and the spinning status bar at the top of the Data Preview panel; all generation status is now shown in the queue row and stats panel
 - **Merge as Single Dataset** semantics clarified: the toggle controls output format (merge final datasets), not pre-processing; default changed from on to off
+- **Online model lists refined**: Ollama GLM brand retains only locally-runnable `glm-4.7-flash` (~5 GB) and `glm-4.7` (~9 GB); HuggingFace MLX GLM brand retains `GLM-4.7-Flash-4bit` (~5 GB) and `GLM-4.5-Air-4bit` (~8 GB); `GLM-5-4bit` removed as the 355B MoE base model results in ≈177 GB download at 4-bit quantization
 
 ## [0.4.2] - 2026-02-20
 

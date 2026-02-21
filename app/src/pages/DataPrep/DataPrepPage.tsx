@@ -811,16 +811,19 @@ export function DataPrepPage() {
                 <p className="text-sm font-medium text-primary">
                   {dragFileCount > 0 ? t("dropZone.dropping", { count: dragFileCount }) : t("dropZone.hint")}
                 </p>
+                <p className="mt-2 text-sm font-medium text-primary/70">
+                  {t("dropZone.supportedFormats")}
+                </p>
               </div>
             )}
             <button
               onClick={() => setStep1Open(!step1Open)}
               className="flex w-full items-center justify-between p-4"
             >
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                {step1Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span className="flex items-center gap-1.5">
-                  {rawFiles.length > 0 ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {rawFiles.length > 0 ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
                   1.1 {t("section.selectFiles")} ({rawFiles.length})
                   {validationHint === "validation.needFiles" && (
                     <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
@@ -855,8 +858,9 @@ export function DataPrepPage() {
                 )}
                 {rawFiles.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border py-6 text-center">
-                    <p className="mb-3 text-xs text-muted-foreground">{t("files.empty")}</p>
-                    <p className="mb-3 text-[11px] text-muted-foreground/70">{t("dropZone.hint")}</p>
+                    <p className="mb-3 text-sm text-muted-foreground">{t("files.empty")}</p>
+                    <p className="mb-1 text-xs text-muted-foreground">{t("dropZone.hint")}</p>
+                    <p className="mb-3 text-[11px] text-muted-foreground">{t("dropZone.supportedFormats")}</p>
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={handleImport}
@@ -917,9 +921,9 @@ export function DataPrepPage() {
                               ) : isActive ? (
                                 <span className="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                               ) : (
-                                <Circle size={13} className="shrink-0 text-muted-foreground/40" />
+                                <Circle size={13} className="shrink-0 text-muted-foreground/60" />
                               )}
-                              <span className={`truncate ${isActive ? "font-medium text-foreground" : isDone ? "text-muted-foreground" : "text-muted-foreground/60"}`}>
+                              <span className={`truncate ${isActive ? "font-medium text-foreground" : isDone ? "text-muted-foreground" : "text-muted-foreground/80"}`}>
                                 {f.name}
                               </span>
                               <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
@@ -1013,10 +1017,10 @@ export function DataPrepPage() {
                 onClick={() => setStep2Open(!step2Open)}
                 className="flex w-full items-center justify-between p-4"
               >
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  {step2Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                  {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                   <span className="flex items-center gap-1.5">
-                    {methodDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                    {methodDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
                     1.2 {t("section.genMethod")}
                     {(validationHint === "validation.needModel" || validationHint === "validation.needMode") && (
                       <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
@@ -1031,7 +1035,15 @@ export function DataPrepPage() {
               </button>
               {step2Open && (
                 <div className="border-t border-border p-4 space-y-3">
-                  <p className="text-xs text-muted-foreground">{t("generate.hint")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("generate.hint")}
+                    {genSource === "ollama" && (
+                      <span className="ml-1 text-foreground/80">{t("generate.ollamaHint")}</span>
+                    )}
+                    {genSource === "builtin" && (
+                      <span className="ml-1 text-foreground/80">{t("generate.builtinHint")}</span>
+                    )}
+                  </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setGenSource("ollama")}
@@ -1076,7 +1088,6 @@ export function DataPrepPage() {
                         </div>
                       ) : (
                         <>
-                          <p className="text-xs text-blue-400">{t("generate.ollamaHint")}</p>
                           {genModel && (
                             <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
                               <span className="font-medium text-foreground">{genModel}</span>
@@ -1088,19 +1099,16 @@ export function DataPrepPage() {
                             onSelect={(modelId) => setGenModel(modelId)}
                             disabled={generating}
                             projectId={currentProject?.id}
+                            defaultOpen={true}
                           />
                         </>
                       )}
                     </div>
                   )}
-                  {genSource === "builtin" && (
-                    <p className="text-xs text-warning">{t("generate.builtinHint")}</p>
-                  )}
-
                   {/* 1.3 Generation type */}
-                  <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground pt-1">
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-foreground pt-1">
                     <span className="flex items-center gap-1.5">
-                      {typeDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                      {typeDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
                       1.3 {t("section.genType")}
                     </span>
                   </h3>
@@ -1273,10 +1281,10 @@ export function DataPrepPage() {
               onClick={() => setStep3Open(!step3Open)}
               className="flex w-full items-center justify-between p-4"
             >
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                {step3Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step3Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span className="flex items-center gap-1.5">
-                  {datasetVersions.length > 0 ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+                  {datasetVersions.length > 0 ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
                   1.4 {t("section.datasets")} ({datasetVersions.length})
                 </span>
               </h3>
@@ -1434,7 +1442,7 @@ export function DataPrepPage() {
                         log.includes("✅") ? "text-success" :
                         log.includes("❌") ? "text-red-400" :
                         log.includes("⚠️") ? "text-warning" :
-                        log.includes("🤖") ? "text-blue-400" :
+                        log.includes("🤖") ? "text-info" :
                         log.includes("📡") || log.includes("💾") ? "text-tag-trained" :
                         log.includes("──") || log.includes("══") ? "text-muted-foreground font-semibold" :
                         "text-foreground"

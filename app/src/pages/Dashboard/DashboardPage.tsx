@@ -94,7 +94,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Projects count */}
         <div className="rounded-lg border border-border p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("nav:projects")}
           </p>
           <p className="mt-2 text-3xl font-bold text-foreground">{projects.length}</p>
@@ -102,7 +102,7 @@ export function DashboardPage() {
 
         {/* Environment */}
         <div className="rounded-lg border border-border p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("common:environment")}
           </p>
           {env ? (
@@ -125,7 +125,7 @@ export function DashboardPage() {
 
         {/* Hardware */}
         <div className="rounded-lg border border-border p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("common:hardware")}
           </p>
           {env ? (
@@ -155,10 +155,10 @@ export function DashboardPage() {
       {env && env.python_ready && !env.mlx_lm_ready && (
         <div
           onClick={() => navigate("/settings")}
-          className="flex cursor-pointer items-center gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3"
+          className="flex cursor-pointer items-center gap-3 rounded-lg border border-info/30 bg-info/10 px-4 py-3"
         >
-          <AlertCircle size={18} className="text-blue-500" />
-          <p className="text-sm text-blue-400">
+          <AlertCircle size={18} className="text-info" />
+          <p className="text-sm text-info">
             {t("common:mlxHint")}
           </p>
         </div>

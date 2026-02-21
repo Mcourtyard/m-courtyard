@@ -107,7 +107,8 @@
   "filePage": "{{current}} / {{total}}",
   "dropZone": {
     "hint": "Drop files or folders here to import",
-    "dropping": "Release to import {{count}} item(s)"
+    "dropping": "Release to import {{count}} item(s)",
+    "supportedFormats": "Supported formats: txt, md, docx, pdf, json, jsonl"
   },
   "mergeToggle": {
     "label": "Merge as Single Dataset",

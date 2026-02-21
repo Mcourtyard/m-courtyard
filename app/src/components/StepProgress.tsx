@@ -50,7 +50,7 @@ export function StepProgress({ subSteps }: StepProgressProps) {
               <button
                 key={step.key}
                 onClick={() => navigate(step.path)}
-                className={`relative z-10 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                className={`relative z-10 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                   isCurrent
                     ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
                     : isPast
@@ -86,7 +86,7 @@ export function StepProgress({ subSteps }: StepProgressProps) {
             {subSteps.map((sub) => (
               <span
                 key={sub.key}
-                className={`relative z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
+                className={`relative z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-all ${
                   sub.active
                     ? "bg-card text-primary ring-1 ring-primary/40"
                     : sub.done

@@ -107,7 +107,8 @@
   "filePage": "{{current}} / {{total}}",
   "dropZone": {
     "hint": "拖拽文件或文件夹到此处导入",
-    "dropping": "松开即可导入 {{count}} 项"
+    "dropping": "松开即可导入 {{count}} 项",
+    "supportedFormats": "支持的格式: txt, md, docx, pdf, json, jsonl"
   },
   "mergeToggle": {
     "label": "合并为单数据集",

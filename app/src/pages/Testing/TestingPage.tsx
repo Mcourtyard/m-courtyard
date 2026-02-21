@@ -333,10 +333,10 @@ export function TestingPage() {
           onClick={() => setStep1Open(!step1Open)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            {step1Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             <span className="flex items-center gap-1.5">
-              {adapterValid ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              {adapterValid ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground" />}
               {t("section.selectAdapter")}
             </span>
           </h3>
@@ -369,9 +369,9 @@ export function TestingPage() {
                 {selectedAdapterInfo ? (
                   <>
                     <span className="font-medium text-foreground">{selectedAdapterInfo.created}</span>
-                    <span className="ml-1.5 text-muted-foreground/50">{selectedAdapterInfo.name.slice(0, 8)}</span>
+                    <span className="ml-1.5 text-muted-foreground">{selectedAdapterInfo.name.slice(0, 8)}</span>
                     {selectedAdapterInfo.base_model && (
-                      <span className="ml-1.5 text-muted-foreground/40">· {selectedAdapterInfo.base_model}</span>
+                      <span className="ml-1.5 text-muted-foreground">· {selectedAdapterInfo.base_model}</span>
                     )}
                   </>
                 ) : (
@@ -396,10 +396,10 @@ export function TestingPage() {
                           : "border-border text-muted-foreground hover:bg-accent"
                       }`}
                     >
-                      {isSelected ? <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span> : <span className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/30" />}
+                      {isSelected ? <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span> : <span className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground" />}
                       <div className="min-w-0 flex-1">
                         <span className="font-medium text-foreground">{a.created}</span>
-                        <span className="ml-1.5 text-muted-foreground/50">{a.name.slice(0, 8)}</span>
+                        <span className="ml-1.5 text-muted-foreground">{a.name.slice(0, 8)}</span>
                       </div>
                     </button>
                   );
@@ -413,7 +413,7 @@ export function TestingPage() {
                       : "border-border text-muted-foreground hover:bg-accent"
                   }`}
                 >
-                  {!selectedAdapter ? <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span> : <span className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/30" />}
+                  {!selectedAdapter ? <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-2 w-2 rounded-full bg-primary" /></span> : <span className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground" />}
                   <span>{t("noAdapterOption")}</span>
                 </button>
               </div>
@@ -423,7 +423,7 @@ export function TestingPage() {
 
         {/* Base model info (read-only) */}
         {modelId && (
-          <p className="text-[10px] text-muted-foreground/60">
+          <p className="text-[10px] text-muted-foreground">
             {t("baseModel")}{modelId}
           </p>
         )}
@@ -467,12 +467,12 @@ export function TestingPage() {
       >
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center py-16">
-            <MessageSquare size={40} className="text-muted-foreground/30" />
+            <MessageSquare size={40} className="text-muted-foreground" />
             <p className="mt-3 text-sm text-muted-foreground">
               {t("chat.empty")}
             </p>
             {selectedAdapter && (
-              <p className="mt-1 text-xs text-muted-foreground/70">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {t("adapterLoaded")}
               </p>
             )}
@@ -529,9 +529,9 @@ export function TestingPage() {
           onClick={() => setAdvancedABOpen(!advancedABOpen)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            {advancedABOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <GitCompare size={14} />
+          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            {advancedABOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            <GitCompare size={16} />
             {t("ab.advancedTitle")}
           </h3>
           <span className="text-[11px] text-muted-foreground">{t("ab.advancedTip")}</span>

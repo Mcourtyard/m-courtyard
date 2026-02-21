@@ -12,7 +12,7 @@
   --color-secondary: #27272a;
   --color-secondary-foreground: #fafafa;
   --color-muted: #27272a;
-  --color-muted-foreground: #a1a1aa;
+  --color-muted-foreground: #e4e4e7;
   --color-accent: #27272a;
   --color-accent-foreground: #fafafa;
   --color-destructive: #7f1d1d;
@@ -29,6 +29,7 @@
   --color-sidebar-border: #27272a;
   --color-sidebar-ring: #d4d4d8;
   --color-success: #22c55e;
+  --color-info: #3b82f6;
   --color-tag-hf: #facc15;
   --color-tag-ms: #c084fc;
   --color-tag-mlx: #60a5fa;
@@ -57,7 +58,7 @@
   --color-secondary: #1a3050;
   --color-secondary-foreground: #e2e8f0;
   --color-muted: #1a3050;
-  --color-muted-foreground: #8baac4;
+  --color-muted-foreground: #cbdceb;
   --color-accent: #1a3050;
   --color-accent-foreground: #e2e8f0;
   --color-destructive: #991b1b;
@@ -74,6 +75,7 @@
   --color-sidebar-border: #1e3a5f;
   --color-sidebar-ring: #60a5fa;
   --color-success: #34d399;
+  --color-info: #3b82f6;
   --success-glow: rgba(52, 211, 153, 0.4);
   --color-warning: #fbbf24;
 }
@@ -91,7 +93,7 @@
   --color-secondary: #3d2a10;
   --color-secondary-foreground: #f5ece0;
   --color-muted: #3d2a10;
-  --color-muted-foreground: #c4a06a;
+  --color-muted-foreground: #ebd5b3;
   --color-accent: #3d2a10;
   --color-accent-foreground: #f5ece0;
   --color-destructive: #dc2626;
@@ -108,6 +110,7 @@
   --color-sidebar-border: #4a3318;
   --color-sidebar-ring: #f59e0b;
   --color-success: #f59e0b;
+  --color-info: #0ea5e9;
   --success-glow: rgba(245, 158, 11, 0.4);
   --color-warning: #fb923c;
 }
@@ -125,7 +128,7 @@
   --color-secondary: #2d1a50;
   --color-secondary-foreground: #e8e0f5;
   --color-muted: #2d1a50;
-  --color-muted-foreground: #9a85c4;
+  --color-muted-foreground: #d8ccf2;
   --color-accent: #2d1a50;
   --color-accent-foreground: #e8e0f5;
   --color-destructive: #dc2626;
@@ -142,6 +145,7 @@
   --color-sidebar-border: #3a2260;
   --color-sidebar-ring: #a78bfa;
   --color-success: #a78bfa;
+  --color-info: #8b5cf6;
   --success-glow: rgba(167, 139, 250, 0.4);
   --color-warning: #fbbf24;
 }
@@ -176,6 +180,7 @@
   --color-sidebar-border: #e2e0dd;
   --color-sidebar-ring: #292524;
   --color-success: #16a34a;
+  --color-info: #2563eb;
   --success-glow: rgba(22, 163, 74, 0.3);
   --color-tag-hf: #a16207;
   --color-tag-ms: #7e22ce;

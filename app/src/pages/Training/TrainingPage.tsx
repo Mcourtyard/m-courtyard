@@ -842,7 +842,7 @@ export function TrainingPage() {
                 {t("goToTest")}
                 <ArrowRight size={12} />
               </button>
-              <button onClick={() => navigate("/export")} className="flex items-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs text-blue-400 transition-colors hover:bg-blue-500/30">
+              <button onClick={() => navigate("/export")} className="flex items-center gap-1.5 rounded-md border border-info/30 bg-info/20 px-3 py-1.5 text-xs text-info transition-colors hover:bg-info/30">
                 <Upload size={12} />
                 {t("summary.goToExport")}
               </button>
@@ -863,10 +863,10 @@ export function TrainingPage() {
           onClick={() => setStep1Open(!step1Open)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            {step1Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             <span className="flex items-center gap-1.5">
-              {params.model ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              {params.model ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
               2.1 {t("section.selectModel")}
               {validationHint === "validation.needModel" && (
                 <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
@@ -922,10 +922,10 @@ export function TrainingPage() {
           onClick={() => setStep2Open(!step2Open)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            {step2Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             <span className="flex items-center gap-1.5">
-              {selectedDataset ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              {selectedDataset ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
               2.2 {t("section.selectDataset")}
               {validationHint === "validation.needDataset" && (
                 <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
@@ -986,7 +986,7 @@ export function TrainingPage() {
                           <span className={`font-medium ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
                             {v.version === "legacy" ? t("datasetLegacy") : v.created}
                           </span>
-                          <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground/50">
+                          <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground">
                             train: {v.train_count} · valid: {v.valid_count}
                           </span>
                         </button>
@@ -1066,10 +1066,10 @@ export function TrainingPage() {
           onClick={() => setStep3MethodOpen(!step3MethodOpen)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            {step3MethodOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            {step3MethodOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             <span className="flex items-center gap-1.5">
-              {methodDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              {methodDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
               2.3 {t("section.method")}
               {validationHint === "validation.needMethod" && (
                 <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
@@ -1114,10 +1114,10 @@ export function TrainingPage() {
           onClick={() => setStep4Open(!step4Open)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            {step4Open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            {step4Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             <span className="flex items-center gap-1.5">
-              {paramsDone ? <CheckCircle2 size={18} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={18} className="text-muted-foreground/30" />}
+              {paramsDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
               2.4 {t("section.params")}
             </span>
           </h3>
@@ -1503,7 +1503,7 @@ export function TrainingPage() {
                 </span>
               </div>
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                <div className="h-full rounded-full bg-info transition-all duration-500"
                   style={{ width: `${Math.min(100, Math.round((currentIter / params.iters) * 100))}%` }} />
               </div>
               <div className="mt-2 grid gap-2 lg:grid-cols-3">
@@ -1615,7 +1615,7 @@ export function TrainingPage() {
                   logs.map((line, i) => (
                     <div key={i} className={
                       line.startsWith("ERROR") || line.includes("error") ? "text-red-400" :
-                      line.includes("Train loss") ? "text-blue-400" :
+                      line.includes("Train loss") ? "text-info" :
                       line.includes("Val loss") ? "text-warning" :
                       line.includes("Saved") ? "text-success" :
                       "text-foreground"
