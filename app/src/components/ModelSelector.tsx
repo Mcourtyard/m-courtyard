@@ -240,11 +240,6 @@ const HF_DOWNLOAD_LINKS = [
   { labelKey: "hfLinks.allModels", url: "https://huggingface.co/mlx-community/models" },
 ];
 
-const OLLAMA_LINKS = [
-  { labelKey: "ollamaLinks.website", url: "https://ollama.com" },
-  { labelKey: "ollamaLinks.library", url: "https://ollama.com/library" },
-];
-
 function isModelUsable(
   source: string,
   mode: ModelSelectorMode,
@@ -457,10 +452,14 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
   // Auto-expand the source with most usable models on first load
   useEffect(() => {
     if (combinedModels.length > 0 && expandedSources.size === 0) {
-      const best = sortedSources[0];
+      // Find the first source that has usable models
+      const best = sortedSources.find((source) => {
+        const models = grouped[source] || [];
+        return models.some((m) => isModelUsable(m.source, mode, m.name, ollamaModels));
+      });
       if (best) setExpandedSources(new Set([best]));
     }
-  }, [combinedModels.length]);
+  }, [combinedModels.length, mode, ollamaModels.length]);
 
   const navigateToSettings = () => {
     navigate("/settings?focus=download-source");
@@ -546,24 +545,34 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
       {showPanel && (
         <div className="rounded-lg border border-border bg-background">
           {/* Tab Bar */}
-          <div className="flex border-b border-border">
+          <div className="flex items-center justify-between border-b border-border pr-3">
+            <div className="flex">
+              <button
+                onClick={() => setShowOnline(false)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors ${
+                  !showOnline ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <HardDrive size={12} />
+                {t("modelSelector.localModels")}
+              </button>
+              <button
+                onClick={() => setShowOnline(true)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors ${
+                  showOnline ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Download size={12} />
+                {t("modelSelector.onlineTab")}
+              </button>
+            </div>
             <button
-              onClick={() => setShowOnline(false)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors ${
-                !showOnline ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
+              onClick={() => invoke("open_model_cache", { source: mode === "dataprep" ? "ollama" : null })}
+              className="flex items-center gap-1 shrink-0 text-xs text-muted-foreground hover:text-foreground"
+              title={t("modelSelector.modelCacheDir")}
             >
-              <HardDrive size={12} />
-              {t("modelSelector.localModels")}
-            </button>
-            <button
-              onClick={() => setShowOnline(true)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors ${
-                showOnline ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Download size={12} />
-              {t("modelSelector.onlineTab")}
+              <FolderOpen size={10} />
+              {t("modelSelector.modelCacheDir")}
             </button>
           </div>
 
@@ -691,32 +700,6 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                     })}
                   </div>
                 )}
-
-                {/* Model source links */}
-                <div className="space-y-2 border-t border-border pt-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-foreground">{t("modelSelector.downloadSources")}</p>
-                    <button
-                      onClick={() => invoke("open_model_cache")}
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      <FolderOpen size={10} />
-                      {t("modelSelector.manageDownloaded")}
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(mode === "dataprep" ? OLLAMA_LINKS : HF_DOWNLOAD_LINKS).map((link) => (
-                      <button
-                        key={link.url}
-                        onClick={() => openUrl(link.url)}
-                        className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      >
-                        <Globe size={10} />
-                        {t(`modelSelector.${link.labelKey}`)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             ) : (
               /* ======== Online Models Tab ======== */
@@ -796,23 +779,6 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                         );
                       })}
                     </div>
-                    <div className="space-y-2 border-t border-border pt-2">
-                      <p className="text-xs text-muted-foreground/60">
-                        <span className="font-mono text-foreground/70">ollama pull qwen3:4b</span>
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {OLLAMA_LINKS.map((link) => (
-                          <button
-                            key={link.url}
-                            onClick={() => openUrl(link.url)}
-                            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                          >
-                            <Globe size={10} />
-                            {t(`modelSelector.${link.labelKey}`)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </>
                 ) : (
                   /* --- Training: HuggingFace MLX models --- */
@@ -821,14 +787,6 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                       <p className="text-xs text-muted-foreground">
                         {t("modelSelector.downloadFrom", { source: t(`modelSelector.source${hfSource === "hf-mirror" ? "HfMirror" : hfSource === "modelscope" ? "Modelscope" : "Huggingface"}`) })}
                       </p>
-                      <button
-                        onClick={() => invoke("open_model_cache")}
-                        className="flex items-center gap-1 shrink-0 text-[10px] text-muted-foreground hover:text-foreground"
-                        title={t("modelSelector.openModelCache")}
-                      >
-                        <FolderOpen size={10} />
-                        {t("modelSelector.modelCacheDir")}
-                      </button>
                     </div>
                     {hfSource === "modelscope" && (
                       <p className="text-xs text-tag-hf/80 rounded-md bg-tag-hf/10 border border-tag-hf/20 px-3 py-2">

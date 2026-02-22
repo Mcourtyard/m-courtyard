@@ -111,6 +111,54 @@ def to_chat_format(data, mode):
     return messages
 
 
+def load_segments_from_file(path):
+    """Load segments from jsonl/text and normalize to dict records with text."""
+    records = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                raw_obj = json.loads(line)
+            except json.JSONDecodeError:
+                raw_obj = {"text": line}
+
+            if isinstance(raw_obj, dict):
+                text = str(raw_obj.get("text", "")).strip()
+                record = dict(raw_obj)
+            elif isinstance(raw_obj, str):
+                text = raw_obj.strip()
+                record = {"text": text}
+            else:
+                continue
+
+            if len(text) < 20:
+                continue
+
+            record["text"] = text
+            records.append(record)
+
+    return records
+
+
+def compute_quality_score(total, success, avg_output_len):
+    if total <= 0:
+        return 0.0, "C"
+    success_rate = success / total
+    reliability_score = success_rate * 70.0
+    richness_score = min(avg_output_len / 280.0, 1.0) * 20.0
+    volume_score = min(success / 10.0, 1.0) * 10.0
+    score = round(reliability_score + richness_score + volume_score, 1)
+    if score >= 85:
+        grade = "A"
+    elif score >= 70:
+        grade = "B"
+    else:
+        grade = "C"
+    return score, grade
+
+
 def main():
     parser = argparse.ArgumentParser(description="Courtyard dataset generation")
     parser.add_argument("--project-dir", required=True)
@@ -119,27 +167,24 @@ def main():
     parser.add_argument("--mode", default="qa", choices=["qa", "style", "chat", "instruct"])
     parser.add_argument("--max-samples", type=int, default=0, help="Max samples (0=all)")
     parser.add_argument("--split-ratio", type=float, default=0.9, help="Train/valid split")
+    parser.add_argument("--input-segments", default=None, help="Optional segments jsonl input path")
+    parser.add_argument("--quality-scoring", action="store_true", help="Enable post-generation quality scoring")
     add_lang_arg(parser)
     args = parser.parse_args()
 
     init_i18n(args.lang)
 
-    cleaned_dir = os.path.join(args.project_dir, "cleaned")
     dataset_dir = args.output_dir if args.output_dir else os.path.join(args.project_dir, "dataset")
     os.makedirs(dataset_dir, exist_ok=True)
 
-    segments_path = os.path.join(cleaned_dir, "segments.jsonl")
+    segments_path = args.input_segments or os.path.join(args.project_dir, "cleaned", "segments.jsonl")
     if not os.path.exists(segments_path):
         emit("error", message="No cleaned segments found. Run cleaning first.")
         sys.exit(1)
 
     # Load segments
-    segments = []
-    with open(segments_path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                segments.append(json.loads(line))
+    segment_records = load_segments_from_file(segments_path)
+    segments = [{"text": rec["text"]} for rec in segment_records]
 
     if not segments:
         emit("error", message="No segments found in cleaned data.")
@@ -163,8 +208,11 @@ def main():
     prompt_template = MODE_PROMPTS[args.mode]
     results = []
     failed = 0
+    failed_records = []
+    output_lengths = []
 
     for i, seg in enumerate(segments):
+        segment_record = dict(segment_records[i]) if i < len(segment_records) else {"text": seg.get("text", "")}
         text = seg["text"]
         # Truncate very long segments
         if len(text) > 2000:
@@ -179,13 +227,17 @@ def main():
                 messages = to_chat_format(parsed, args.mode)
                 if messages:
                     results.append({"messages": messages})
+                    output_lengths.append(sum(len(str(m.get("content", ""))) for m in messages if isinstance(m, dict)))
                 else:
                     failed += 1
+                    failed_records.append({**segment_record, "reason": "schema_mismatch"})
             else:
                 failed += 1
+                failed_records.append({**segment_record, "reason": "json_parse"})
         except Exception as e:
             emit("warning", message=f"Generation failed for segment {i}: {e}")
             failed += 1
+            failed_records.append({**segment_record, "reason": type(e).__name__})
 
         emit("progress", step=i + 1, total=total,
              desc=f"Generated {len(results)} samples ({failed} failed)")
@@ -215,6 +267,27 @@ def main():
     with open(valid_path, "w", encoding="utf-8") as f:
         for item in valid_data:
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+    failed_path = os.path.join(dataset_dir, "failed_segments.jsonl")
+    with open(failed_path, "w", encoding="utf-8") as f:
+        for rec in failed_records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    if args.quality_scoring:
+        avg_output_len = (sum(output_lengths) / len(output_lengths)) if output_lengths else 0.0
+        score, grade = compute_quality_score(total=total, success=len(results), avg_output_len=avg_output_len)
+        quality_payload = {
+            "score": score,
+            "grade": grade,
+            "success": len(results),
+            "failed": failed,
+            "total": total,
+            "success_rate": round((len(results) / total) if total > 0 else 0.0, 4),
+            "avg_output_len": round(avg_output_len, 1),
+        }
+        quality_path = os.path.join(dataset_dir, "quality.json")
+        with open(quality_path, "w", encoding="utf-8") as f:
+            json.dump(quality_payload, f, ensure_ascii=False, indent=2)
 
     emit("complete",
          total_segments=total,

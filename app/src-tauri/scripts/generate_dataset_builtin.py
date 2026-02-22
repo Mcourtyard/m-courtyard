@@ -22,6 +22,53 @@ def emit(event_type, **kwargs):
     print(json.dumps(payload, ensure_ascii=False), flush=True)
 
 
+def load_segments_from_file(path: str) -> list[dict]:
+    """Load segments jsonl/text file into normalized records."""
+    records: list[dict] = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                obj = {"text": line}
+
+            if isinstance(obj, dict):
+                text = str(obj.get("text", "")).strip()
+                rec = dict(obj)
+            elif isinstance(obj, str):
+                text = obj.strip()
+                rec = {"text": text}
+            else:
+                continue
+
+            if len(text) < 20:
+                continue
+            rec["text"] = text
+            records.append(rec)
+
+    return records
+
+
+def compute_quality_score(total: int, success: int, avg_output_len: float) -> tuple[float, str]:
+    if total <= 0:
+        return 0.0, "C"
+    success_rate = success / total
+    reliability_score = success_rate * 70.0
+    richness_score = min(avg_output_len / 240.0, 1.0) * 20.0
+    volume_score = min(success / 10.0, 1.0) * 10.0
+    score = round(reliability_score + richness_score + volume_score, 1)
+    if score >= 85:
+        grade = "A"
+    elif score >= 70:
+        grade = "B"
+    else:
+        grade = "C"
+    return score, grade
+
+
 # ── Rule-based generators ──────────────────────────────────────────
 
 def extract_heading_qa(text: str) -> list[dict]:
@@ -199,28 +246,20 @@ def main():
     parser.add_argument("--project-dir", required=True)
     parser.add_argument("--output-dir", default=None, help="Output directory for dataset files")
     parser.add_argument("--mode", default="qa", choices=["qa", "style", "chat", "instruct"])
+    parser.add_argument("--input-segments", default=None, help="Optional segments jsonl input path")
+    parser.add_argument("--quality-scoring", action="store_true", help="Enable post-generation quality scoring")
     add_lang_arg(parser)
     args = parser.parse_args()
 
     init_i18n(args.lang)
 
-    segments_path = os.path.join(args.project_dir, "cleaned", "segments.jsonl")
+    segments_path = args.input_segments or os.path.join(args.project_dir, "cleaned", "segments.jsonl")
     if not os.path.exists(segments_path):
         emit("error", message=t("builtin.no_segments"))
         sys.exit(1)
 
-    segments = []
-    with open(segments_path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    obj = json.loads(line)
-                    text = obj.get("text", "")
-                    if text and len(text) >= 20:
-                        segments.append(text)
-                except json.JSONDecodeError:
-                    continue
+    segment_records = load_segments_from_file(segments_path)
+    segments = [rec["text"] for rec in segment_records]
 
     if not segments:
         emit("error", message=t("builtin.no_valid_segments"))
@@ -230,9 +269,14 @@ def main():
     emit("progress", step=0, total=total, desc=t("builtin.starting", count=total, mode=args.mode))
 
     results = []
+    failed_records: list[dict] = []
     for i, text in enumerate(segments):
+        segment_record = dict(segment_records[i])
         items = generate_builtin([text], args.mode)
-        results.extend(items)
+        if items:
+            results.extend(items)
+        else:
+            failed_records.append({**segment_record, "reason": "no_items_generated"})
         emit("progress", step=i + 1, total=total,
              desc=t("builtin.complete", count=len(results)))
 
@@ -267,10 +311,42 @@ def main():
         for item in valid_data:
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
 
+    failed_path = os.path.join(dataset_dir, "failed_segments.jsonl")
+    with open(failed_path, "w", encoding="utf-8") as f:
+        for rec in failed_records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    if args.quality_scoring:
+        success_segments = total - len(failed_records)
+        output_lengths = []
+        for item in results:
+            try:
+                msgs = item.get("messages", [])
+                assistant_msgs = [m.get("content", "") for m in msgs if m.get("role") == "assistant"]
+                output_lengths.extend(len(str(s)) for s in assistant_msgs if str(s).strip())
+            except Exception:
+                continue
+
+        avg_output_len = (sum(output_lengths) / len(output_lengths)) if output_lengths else 0.0
+        score, grade = compute_quality_score(total=total, success=success_segments, avg_output_len=avg_output_len)
+        quality_payload = {
+            "score": score,
+            "grade": grade,
+            "success": success_segments,
+            "failed": len(failed_records),
+            "total": total,
+            "generated_samples": len(results),
+            "success_rate": round((success_segments / total) if total > 0 else 0.0, 4),
+            "avg_output_len": round(avg_output_len, 1),
+        }
+        quality_path = os.path.join(dataset_dir, "quality.json")
+        with open(quality_path, "w", encoding="utf-8") as f:
+            json.dump(quality_payload, f, ensure_ascii=False, indent=2)
+
     emit("complete",
          train_count=len(train_data),
          valid_count=len(valid_data),
-         failed=0,
+         failed=len(failed_records),
          total=total)
 
 

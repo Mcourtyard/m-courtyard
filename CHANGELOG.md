@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.5] - 2026-02-22
+
+Delivers the **Data Quality Improvement** cluster (PRD D-3 · D-4 · D-5 · D-6): privacy filtering, fuzzy deduplication, dataset quality scoring, and failed-sample batch retry.
+
+### Added
+- **Cleaning Quality Controls (1.2)**: Added Privacy Filter, Fuzzy Deduplication, and Quality Scoring toggles in Data Preparation; fuzzy dedup supports a configurable similarity threshold slider
+- **Failed Sample Batch Retry**: Dataset items now show failed sample count and provide a one-click retry action that regenerates only failed segments from a selected historical version
+- **Quality Badge and Score**: Dataset list and expanded details now display quality grade (A/B/C) and score when quality scoring is enabled
+
+### Changed
+- **Generation Parameter Pipeline**: Frontend store, Tauri command parameters, and Python scripts are now aligned to pass `privacy_filter`, `fuzzy_dedup`, `fuzzy_dedup_threshold`, `quality_scoring`, `retry_failed_only`, and `input_segments`
+- **Retry Flow Guard**: `generate_dataset` now validates cleaned segments only for normal generation; retry mode no longer incorrectly blocks on missing `cleaned/segments.jsonl`
+
+### Fixed
+- **Legacy Script Compatibility**: Added parser support for new generation flags in fallback scripts to prevent argument parsing errors (`exit code 2`) when quality/retry options are passed
+
 ## [0.4.4] - 2026-02-21
 
 Delivers the **Storage Transparency** cluster: cleanable cache visibility on the dashboard, cleanup safety guard during active tasks, and dynamic version display.
@@ -177,6 +193,7 @@ Delivers the **Batch Processing** cluster (PRD D-1 · D-2 · H-3): multi-file dr
 - **GitHub Actions CI**: Automated .dmg build and release on tag push
 - **Discord Integration**: Automated release notifications via webhook
 
+[0.4.5]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.4.5
 [0.4.4]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.4.4
 [0.4.3]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.4.3
 [0.4.2]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.4.2

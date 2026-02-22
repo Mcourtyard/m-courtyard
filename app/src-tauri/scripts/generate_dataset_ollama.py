@@ -446,6 +446,59 @@ def load_existing_progress(dataset_dir: str) -> int:
     return count
 
 
+def load_segments_from_file(path: str) -> list[dict]:
+    """Load segment records from jsonl/text file and normalize to {'text': ...} objects."""
+    records: list[dict] = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+
+            raw_obj = None
+            try:
+                raw_obj = json.loads(line)
+            except json.JSONDecodeError:
+                raw_obj = {"text": line}
+
+            if isinstance(raw_obj, dict):
+                text = str(raw_obj.get("text", "")).strip()
+                record = dict(raw_obj)
+            elif isinstance(raw_obj, str):
+                text = raw_obj.strip()
+                record = {"text": text}
+            else:
+                continue
+
+            if len(text) < 20:
+                continue
+
+            record["text"] = text
+            records.append(record)
+
+    return records
+
+
+def compute_quality_score(total: int, success: int, avg_output_len: float) -> tuple[float, str]:
+    """Compute a lightweight dataset quality score (0-100) and grade (A/B/C)."""
+    if total <= 0:
+        return 0.0, "C"
+
+    success_rate = success / total
+    reliability_score = success_rate * 70.0
+    richness_score = min(avg_output_len / 280.0, 1.0) * 20.0
+    volume_score = min(success / 10.0, 1.0) * 10.0
+
+    score = round(reliability_score + richness_score + volume_score, 1)
+    if score >= 85:
+        grade = "A"
+    elif score >= 70:
+        grade = "B"
+    else:
+        grade = "C"
+    return score, grade
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--project-dir", required=True)
@@ -453,29 +506,21 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--mode", default="qa", choices=["qa", "style", "chat", "instruct"])
     parser.add_argument("--resume", action="store_true", help="Resume from previous progress")
+    parser.add_argument("--input-segments", default=None, help="Optional segments jsonl input path")
+    parser.add_argument("--quality-scoring", action="store_true", help="Enable post-generation quality scoring")
     add_lang_arg(parser)
     args = parser.parse_args()
 
     init_i18n(args.lang)
 
-    segments_path = os.path.join(args.project_dir, "cleaned", "segments.jsonl")
+    segments_path = args.input_segments or os.path.join(args.project_dir, "cleaned", "segments.jsonl")
     if not os.path.exists(segments_path):
         emit("error", message=t("gen.no_segments"))
         sys.exit(1)
 
     # Load all segments
-    segments = []
-    with open(segments_path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    obj = json.loads(line)
-                    text = obj.get("text", "")
-                    if text and len(text) >= 20:
-                        segments.append(text)
-                except json.JSONDecodeError:
-                    continue
+    segment_records = load_segments_from_file(segments_path)
+    segments = [rec["text"] for rec in segment_records]
 
     if not segments:
         emit("error", message=t("gen.no_valid_segments"))
@@ -528,6 +573,8 @@ def main():
     success_count = skip_count
     failed = 0
     similarity_rejected = 0
+    failed_records: list[dict] = []
+    output_lengths: list[int] = []
 
     # Open files for incremental append
     file_mode = "a" if args.resume and skip_count > 0 else "w"
@@ -536,6 +583,7 @@ def main():
     try:
         for i in range(skip_count, total):
             text = segments[i]
+            segment_record = dict(segment_records[i])
             segment_preview = text[:80].replace("\n", " ")
             emit("log", message=t("gen.segment_header", current=i+1, total=total, preview=segment_preview))
 
@@ -552,6 +600,7 @@ def main():
 
                 if not response_text:
                     failed += 1
+                    failed_records.append({**segment_record, "reason": "empty_response"})
                     # Dump the raw API response keys for debugging
                     msg_keys = list(api_result.get("message", {}).keys())
                     emit("log", message=t("gen.empty_response", fields=str(msg_keys), reason=done_reason))
@@ -574,6 +623,7 @@ def main():
                         # For tiny batches, keep the sample to avoid hard-fail all segments.
                         if total > 3:
                             failed += 1
+                            failed_records.append({**segment_record, "reason": "lang_mismatch"})
                             emit("progress", step=i + 1, total=total,
                                  desc=t("gen.progress_status", success=success_count, failed=failed))
                             continue
@@ -586,6 +636,7 @@ def main():
                         if sim > 0.6:
                             failed += 1
                             similarity_rejected += 1
+                            failed_records.append({**segment_record, "reason": "style_similarity"})
                             emit("log", message=t("gen.style_rejected", similarity=f"{sim:.0%}"))
                             emit("progress", step=i + 1, total=total,
                                  desc=t("gen.progress_style", success=success_count, failed=failed, rejected=similarity_rejected))
@@ -594,22 +645,27 @@ def main():
                     chat_data = to_chat_format(data, args.mode)
                     if chat_data:
                         success_count += 1
+                        output_lengths.append(len(collect_output_text(data, args.mode)))
                         # Incremental write
                         train_file.write(json.dumps(chat_data, ensure_ascii=False) + "\n")
                         train_file.flush()
                         emit("log", message=t("gen.success", count=success_count, preview=str(list(data.values())[0])[:60]))
                     else:
                         failed += 1
+                        failed_records.append({**segment_record, "reason": "schema_mismatch"})
                         emit("log", message=t("gen.json_mismatch", keys=str(list(data.keys()))))
                 else:
                     failed += 1
+                    failed_records.append({**segment_record, "reason": "json_parse"})
                     emit("log", message=t("gen.json_parse_fail", text=response_text[:400]))
 
             except urllib.error.URLError as e:
                 failed += 1
+                failed_records.append({**segment_record, "reason": "network_error"})
                 emit("log", message=t("gen.network_error", error=str(e)))
             except Exception as e:
                 failed += 1
+                failed_records.append({**segment_record, "reason": type(e).__name__})
                 emit("log", message=t("gen.exception", type=type(e).__name__, error=str(e)))
 
             emit("progress", step=i + 1, total=total,
@@ -617,6 +673,28 @@ def main():
 
     finally:
         train_file.close()
+
+    failed_path = os.path.join(dataset_dir, "failed_segments.jsonl")
+    with open(failed_path, "w", encoding="utf-8") as f:
+        for rec in failed_records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    if args.quality_scoring:
+        avg_output_len = (sum(output_lengths) / len(output_lengths)) if output_lengths else 0.0
+        score, grade = compute_quality_score(total=total, success=success_count, avg_output_len=avg_output_len)
+        quality_payload = {
+            "score": score,
+            "grade": grade,
+            "success": success_count,
+            "failed": failed,
+            "total": total,
+            "success_rate": round((success_count / total) if total > 0 else 0.0, 4),
+            "avg_output_len": round(avg_output_len, 1),
+        }
+        quality_path = os.path.join(dataset_dir, "quality.json")
+        with open(quality_path, "w", encoding="utf-8") as f:
+            json.dump(quality_payload, f, ensure_ascii=False, indent=2)
+        emit("log", message=f"📊 Quality score: {score:.1f} ({grade})")
 
     emit("log", message=t("gen.summary", success=success_count, failed=failed, total=total))
 

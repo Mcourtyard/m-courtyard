@@ -72,8 +72,8 @@
     "taskTraining": "training model"
   },
   "modelSelector": {
-    "modelCacheDir": "Model Cache",
-    "openModelCache": "Open model cache directory",
+    "modelCacheDir": "Manage Downloaded",
+    "openModelCache": "Manage Downloaded",
     "downloaded": "Downloaded",
     "pulled": "Downloaded",
     "more": "More",
@@ -156,7 +156,6 @@
     "openFolderTitle": "Open {{source}} folder",
     "openFolder": "Open Folder",
     "downloadSources": "Model Download Sources",
-    "manageDownloaded": "Manage Downloaded",
     "downloadBtn": "Download",
     "downloading": "Downloading...",
     "downloadProgress": "{{percent}}%",

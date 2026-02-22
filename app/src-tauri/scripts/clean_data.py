@@ -11,6 +11,7 @@ import json
 import os
 import re
 import hashlib
+import difflib
 import sys
 import time
 
@@ -44,6 +45,20 @@ def remove_noise(text):
     return "\n".join(lines)
 
 
+def apply_privacy_filter(text):
+    """Mask common PII patterns while keeping sentence structure."""
+    patterns = [
+        (re.compile(r"\b1[3-9]\d{9}\b"), "[手机号]"),
+        (re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b"), "[邮箱]"),
+        (re.compile(r"\b\d{17}[\dXx]\b"), "[身份证号]"),
+        (re.compile(r"\b\d{15}\b"), "[身份证号]"),
+    ]
+    out = text
+    for pat, repl in patterns:
+        out = pat.sub(repl, out)
+    return out
+
+
 def dedup_paragraphs(paragraphs):
     """Remove exact duplicate paragraphs."""
     seen = set()
@@ -53,6 +68,24 @@ def dedup_paragraphs(paragraphs):
         if h not in seen and len(p.strip()) > 0:
             seen.add(h)
             unique.append(p)
+    return unique
+
+
+def fuzzy_dedup_paragraphs(paragraphs, threshold=0.85):
+    """Remove near-duplicate paragraphs with configurable similarity threshold."""
+    unique = []
+    for para in paragraphs:
+        candidate = para.strip()
+        if not candidate:
+            continue
+        is_dup = False
+        for kept in unique:
+            score = difflib.SequenceMatcher(None, candidate, kept).ratio()
+            if score >= threshold:
+                is_dup = True
+                break
+        if not is_dup:
+            unique.append(candidate)
     return unique
 
 
@@ -237,7 +270,7 @@ def read_pdf(path):
         return None
 
 
-def clean_file(input_path):
+def clean_file(input_path, privacy_filter=False, fuzzy_dedup=False, fuzzy_threshold=0.85):
     """Clean a single file and return cleaned segments."""
     ext = os.path.splitext(input_path)[1].lower()
 
@@ -267,9 +300,13 @@ def clean_file(input_path):
 
     text = fix_encoding(text)
     text = remove_noise(text)
+    if privacy_filter:
+        text = apply_privacy_filter(text)
 
     paragraphs = text.split("\n\n")
     paragraphs = dedup_paragraphs(paragraphs)
+    if fuzzy_dedup:
+        paragraphs = fuzzy_dedup_paragraphs(paragraphs, threshold=fuzzy_threshold)
     paragraphs = filter_short(paragraphs, min_chars=20)
 
     if not paragraphs:
@@ -297,6 +334,9 @@ def clean_file(input_path):
 def main():
     parser = argparse.ArgumentParser(description="Courtyard data cleaning")
     parser.add_argument("--project-dir", required=True, help="Project directory path")
+    parser.add_argument("--privacy-filter", action="store_true", help="Enable PII masking")
+    parser.add_argument("--fuzzy-dedup", action="store_true", help="Enable fuzzy near-duplicate removal")
+    parser.add_argument("--fuzzy-threshold", type=float, default=0.85, help="Fuzzy dedup threshold (0.5-1.0)")
     add_lang_arg(parser)
     args = parser.parse_args()
 
@@ -354,7 +394,12 @@ def main():
             total_raw_chars += len(raw_text)
 
             raw_paras = raw_text.split("\n\n")
-            segments = clean_file(input_path)
+            segments = clean_file(
+                input_path,
+                privacy_filter=args.privacy_filter,
+                fuzzy_dedup=args.fuzzy_dedup,
+                fuzzy_threshold=max(0.5, min(1.0, args.fuzzy_threshold)),
+            )
 
             cleaned_chars = sum(len(s["text"]) for s in segments)
             total_cleaned_chars += cleaned_chars

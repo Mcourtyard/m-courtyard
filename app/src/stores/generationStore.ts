@@ -27,13 +27,17 @@ interface GenerationState {
   formGenSource: "ollama" | "builtin";
   formGenModel: string;
   formManualModelPath: string;
+  formEnablePrivacyFilter: boolean;
+  formEnableFuzzyDedup: boolean;
+  formFuzzyDedupThreshold: number;
+  formEnableQualityScoring: boolean;
 
   // Actions
   startGeneration: () => void;
   stopGeneration: () => void;
   resetGeneration: () => void;
   clearLogs: () => void;
-  setFormField: (field: string, value: string) => void;
+  setFormField: (field: string, value: unknown) => void;
   resetForm: () => void;
   clearNewVersions: () => void;
   setGenFiles: (files: GenFileEntry[]) => void;
@@ -65,6 +69,10 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
   formGenSource: "ollama",
   formGenModel: "",
   formManualModelPath: "",
+  formEnablePrivacyFilter: false,
+  formEnableFuzzyDedup: false,
+  formFuzzyDedupThreshold: 0.85,
+  formEnableQualityScoring: false,
   newVersionIds: [],
 
   _listenersReady: false,
@@ -106,6 +114,10 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
     formGenSource: "ollama" as const,
     formGenModel: "",
     formManualModelPath: "",
+    formEnablePrivacyFilter: false,
+    formEnableFuzzyDedup: false,
+    formFuzzyDedupThreshold: 0.85,
+    formEnableQualityScoring: false,
   }),
 
   setReloadFiles: (fn) => set({ _reloadFiles: fn }),

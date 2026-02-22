@@ -32,6 +32,10 @@ interface DatasetVersionInfo {
   mode: string;
   source: string;
   model: string;
+  failed_count: number;
+  quality_score?: number | null;
+  quality_grade?: string;
+  quality_scoring_enabled?: boolean;
 }
 
 interface RawFileSample {
@@ -202,11 +206,19 @@ export function DataPrepPage() {
   const { queue: trainingQueue, removeFromQueue, clearQueue: clearTrainingQueue } = useTrainingQueueStore();
   const {
     formGenMode: genMode, formGenSource: genSource, formGenModel: genModel,
+    formEnablePrivacyFilter: enablePrivacyFilter,
+    formEnableFuzzyDedup: enableFuzzyDedup,
+    formFuzzyDedupThreshold: fuzzyDedupThreshold,
+    formEnableQualityScoring: enableQualityScoring,
     setFormField,
   } = useGenerationStore();
   const setGenMode = (v: string) => setFormField("formGenMode", v);
   const setGenSource = (v: "ollama" | "builtin") => setFormField("formGenSource", v);
   const setGenModel = (v: string) => setFormField("formGenModel", v);
+  const setEnablePrivacyFilter = (v: boolean) => setFormField("formEnablePrivacyFilter", v);
+  const setEnableFuzzyDedup = (v: boolean) => setFormField("formEnableFuzzyDedup", v);
+  const setFuzzyDedupThreshold = (v: number) => setFormField("formFuzzyDedupThreshold", v);
+  const setEnableQualityScoring = (v: boolean) => setFormField("formEnableQualityScoring", v);
   const logEndRef = useRef<HTMLDivElement>(null);
   const logScrollRef = useRef<HTMLDivElement>(null);
   const previewPanelRef = useRef<HTMLDivElement>(null);
@@ -233,6 +245,7 @@ export function DataPrepPage() {
   const [filePage, setFilePage] = useState(0);
   const FILES_PER_PAGE = 10;
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
+  const [retryingVersion, setRetryingVersion] = useState<string | null>(null);
 
   // Show scrollbar on scroll, hide after 3 seconds of inactivity
   useEffect(() => {
@@ -527,7 +540,15 @@ export function DataPrepPage() {
     setCleanProgress(t("generate.cleaningStatus"));
     autoGenAfterClean.current = true;
     try {
-      await invoke("start_cleaning", { projectId: currentProject.id, lang: i18nGlobal.language });
+      await invoke("start_cleaning", {
+        projectId: currentProject.id,
+        lang: i18nGlobal.language,
+        options: {
+          privacyFilter: enablePrivacyFilter,
+          fuzzyDedup: enableFuzzyDedup,
+          fuzzyDedupThreshold: fuzzyDedupThreshold,
+        },
+      });
     } catch (e) {
       setCleaning(false);
       setPipelineStage("idle");
@@ -555,7 +576,12 @@ export function DataPrepPage() {
   const startGenerationStep = async () => {
     if (!currentProject) return;
     // Read form values from store to avoid stale closure (this fn is called from useEffect listener)
-    const { formGenMode, formGenSource, formGenModel } = useGenerationStore.getState();
+    const {
+      formGenMode,
+      formGenSource,
+      formGenModel,
+      formEnableQualityScoring,
+    } = useGenerationStore.getState();
     if (!formGenMode) {
       useGenerationStore.setState({ genError: t("generate.noModeSelected") });
       setPipelineStage("idle");
@@ -574,6 +600,8 @@ export function DataPrepPage() {
         source: formGenSource,
         resume: false,
         lang: i18nGlobal.language,
+        qualityScoring: formEnableQualityScoring,
+        retryFailedOnly: false,
       });
     } catch (e) {
       useGenerationStore.setState({
@@ -711,6 +739,49 @@ export function DataPrepPage() {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getQualityGradeTone = (grade?: string) => {
+    const g = (grade || "").toUpperCase();
+    if (g === "A") return "bg-success/15 text-success border-success/30";
+    if (g === "B") return "bg-warning/15 text-warning border-warning/30";
+    if (g === "C") return "bg-destructive/15 text-destructive border-destructive/30";
+    return "bg-muted text-muted-foreground border-border";
+  };
+
+  const handleRetryFailed = async (version: string) => {
+    if (!currentProject || retryingVersion || generating || cleaning) return;
+    if (!acquireTask(currentProject.id, currentProject.name, "generating")) return;
+
+    setRetryingVersion(version);
+    setPipelineStage("generating");
+    const store = useGenerationStore.getState();
+    store.clearLogs();
+    store.startGeneration();
+
+    try {
+      await invoke("generate_dataset", {
+        projectId: currentProject.id,
+        model: "",
+        mode: "",
+        source: "",
+        resume: false,
+        lang: i18nGlobal.language,
+        qualityScoring: enableQualityScoring,
+        retryFailedOnly: true,
+        retryVersion: version,
+      });
+    } catch (e) {
+      useGenerationStore.setState({
+        generating: false,
+        genProgress: "",
+        genError: String(e),
+      });
+      setPipelineStage("idle");
+      useTaskStore.getState().releaseTask();
+    } finally {
+      setRetryingVersion(null);
+    }
   };
 
   if (!currentProject) {
@@ -1105,6 +1176,72 @@ export function DataPrepPage() {
                       )}
                     </div>
                   )}
+
+                  <div className="rounded-md border border-border/80 bg-muted/20 p-3 space-y-2">
+                    <p className="text-xs font-semibold text-foreground">{t("generate.qualityEnhanceTitle")}</p>
+
+                    <label className="flex items-start gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-3.5 w-3.5 rounded border-border"
+                        checked={enablePrivacyFilter}
+                        onChange={(e) => setEnablePrivacyFilter(e.target.checked)}
+                        disabled={generating || cleaning}
+                      />
+                      <span className="text-foreground">
+                        {t("generate.privacyFilter")}
+                        <span className="ml-1 text-muted-foreground">{t("generate.privacyFilterHint")}</span>
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-3.5 w-3.5 rounded border-border"
+                        checked={enableFuzzyDedup}
+                        onChange={(e) => setEnableFuzzyDedup(e.target.checked)}
+                        disabled={generating || cleaning}
+                      />
+                      <span className="text-foreground">
+                        {t("generate.fuzzyDedup")}
+                        <span className="ml-1 text-muted-foreground">{t("generate.fuzzyDedupHint")}</span>
+                      </span>
+                    </label>
+
+                    {enableFuzzyDedup && (
+                      <div className="space-y-1 pl-6">
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>{t("generate.fuzzyThreshold")}</span>
+                          <span>{fuzzyDedupThreshold.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0.5}
+                          max={1.0}
+                          step={0.05}
+                          value={fuzzyDedupThreshold}
+                          onChange={(e) => setFuzzyDedupThreshold(Number(e.target.value))}
+                          disabled={generating || cleaning}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+
+                    <label className="flex items-start gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-3.5 w-3.5 rounded border-border"
+                        checked={enableQualityScoring}
+                        onChange={(e) => setEnableQualityScoring(e.target.checked)}
+                        disabled={generating || cleaning}
+                      />
+                      <span className="text-foreground">
+                        {t("generate.qualityScoring")}
+                        <span className="ml-1 text-muted-foreground">{t("generate.qualityScoringHint")}</span>
+                      </span>
+                    </label>
+                  </div>
+
                   {/* 1.3 Generation type */}
                   <h3 className="flex items-center gap-2 text-base font-semibold text-foreground pt-1">
                     <span className="flex items-center gap-1.5">
@@ -1327,6 +1464,16 @@ export function DataPrepPage() {
                                         {t("dataset.new")}
                                       </span>
                                     )}
+                                    {v.quality_scoring_enabled && v.quality_grade && (
+                                      <span className={`rounded-sm border px-1.5 py-0.5 text-[9px] font-bold leading-none ${getQualityGradeTone(v.quality_grade)}`}>
+                                        {`Q-${v.quality_grade.toUpperCase()}`}
+                                      </span>
+                                    )}
+                                    {v.failed_count > 0 && (
+                                      <span className="rounded-sm border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[9px] font-medium leading-none text-warning">
+                                        {t("dataset.failedCount", { count: v.failed_count })}
+                                      </span>
+                                    )}
                                     <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground/60">{formatSize(v.train_size + v.valid_size)}</span>
                                   </button>
                                   {isExpanded && (
@@ -1357,6 +1504,35 @@ export function DataPrepPage() {
                                           <span className="text-foreground">
                                             {v.source === "ollama" ? t("dataset.methodOllama", { model: v.model || "?" }) : t("dataset.methodBuiltin")}
                                           </span>
+                                        </div>
+                                      )}
+                                      {v.quality_scoring_enabled && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="shrink-0 text-muted-foreground">{t("dataset.quality")}:</span>
+                                          <span className={`rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold leading-none ${getQualityGradeTone(v.quality_grade)}`}>
+                                            {(v.quality_grade || "-").toUpperCase()}
+                                          </span>
+                                          {typeof v.quality_score === "number" && (
+                                            <span className="text-foreground">
+                                              {t("dataset.qualityScore", { score: v.quality_score.toFixed(1) })}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                      {v.failed_count > 0 && (
+                                        <div className="pt-1">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRetryFailed(v.version);
+                                            }}
+                                            disabled={generating || cleaning || !!retryingVersion}
+                                            className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-medium text-warning transition-colors hover:bg-warning/15 disabled:opacity-50"
+                                          >
+                                            {retryingVersion === v.version
+                                              ? t("dataset.retryingFailed")
+                                              : t("dataset.retryFailed", { count: v.failed_count })}
+                                          </button>
                                         </div>
                                       )}
                                     </div>

@@ -6,6 +6,14 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 static GENERATION_PID: AtomicU32 = AtomicU32::new(0);
 
+#[derive(Debug, Clone, serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CleaningOptions {
+    pub privacy_filter: Option<bool>,
+    pub fuzzy_dedup: Option<bool>,
+    pub fuzzy_dedup_threshold: Option<f64>,
+}
+
 #[tauri::command]
 pub async fn stop_generation() -> Result<(), String> {
     let pid = GENERATION_PID.swap(0, Ordering::SeqCst);
@@ -26,6 +34,7 @@ pub async fn start_cleaning(
     app: tauri::AppHandle,
     project_id: String,
     lang: Option<String>,
+    options: Option<CleaningOptions>,
 ) -> Result<(), String> {
     let executor = PythonExecutor::default();
     if !executor.is_ready() {
@@ -56,6 +65,14 @@ pub async fn start_cleaning(
     let python_bin = executor.python_bin().clone();
 
     tokio::spawn(async move {
+        let clean_options = options.unwrap_or_default();
+        let enable_privacy_filter = clean_options.privacy_filter.unwrap_or(false);
+        let enable_fuzzy_dedup = clean_options.fuzzy_dedup.unwrap_or(false);
+        let fuzzy_threshold = clean_options
+            .fuzzy_dedup_threshold
+            .unwrap_or(0.85)
+            .clamp(0.5, 1.0);
+
         let mut caffeinate_args: Vec<String> = vec![
             "-i".to_string(),
             python_bin.to_string_lossy().to_string(),
@@ -63,6 +80,14 @@ pub async fn start_cleaning(
             "--project-dir".to_string(),
             project_path.to_string_lossy().to_string(),
         ];
+        if enable_privacy_filter {
+            caffeinate_args.push("--privacy-filter".to_string());
+        }
+        if enable_fuzzy_dedup {
+            caffeinate_args.push("--fuzzy-dedup".to_string());
+            caffeinate_args.push("--fuzzy-threshold".to_string());
+            caffeinate_args.push(format!("{:.2}", fuzzy_threshold));
+        }
         let lang_value = lang.unwrap_or_else(|| "en".to_string());
         if supports_lang {
             caffeinate_args.push("--lang".to_string());
@@ -162,6 +187,9 @@ pub async fn generate_dataset(
     source: String,
     resume: Option<bool>,
     lang: Option<String>,
+    quality_scoring: Option<bool>,
+    retry_failed_only: Option<bool>,
+    retry_version: Option<String>,
 ) -> Result<String, String> {
     let executor = PythonExecutor::default();
     if !executor.is_ready() {
@@ -171,15 +199,71 @@ pub async fn generate_dataset(
     let dir_manager = ProjectDirManager::new();
     let project_path = dir_manager.project_path(&project_id);
 
-    let segments_path = project_path.join("cleaned").join("segments.jsonl");
-    if !segments_path.exists() {
-        return Err("No cleaned data found. Run cleaning first.".into());
+    let scripts_dir = PythonExecutor::scripts_dir();
+    let dataset_root = project_path.join("dataset");
+    let retry_failed = retry_failed_only.unwrap_or(false);
+
+    if !retry_failed {
+        let segments_path = project_path.join("cleaned").join("segments.jsonl");
+        if !segments_path.exists() {
+            return Err("No cleaned data found. Run cleaning first.".into());
+        }
     }
 
-    let scripts_dir = PythonExecutor::scripts_dir();
+    let mut effective_model = model;
+    let mut effective_mode = mode;
+    let mut effective_source = source;
+    let mut retry_segments_input: Option<std::path::PathBuf> = None;
+    let mut resolved_retry_version: Option<String> = None;
+
+    if retry_failed {
+        let selected_version = retry_version
+            .clone()
+            .or_else(|| find_latest_retryable_version(&dataset_root));
+
+        let version = selected_version.ok_or_else(|| {
+            "No failed samples available for retry. Generate a dataset first.".to_string()
+        })?;
+
+        let retry_dir = dataset_root.join(&version);
+        let failed_segments_path = retry_dir.join("failed_segments.jsonl");
+        if !failed_segments_path.exists() {
+            return Err(format!(
+                "No failed segments file found for dataset version: {}",
+                version
+            ));
+        }
+
+        if let Ok(meta_content) = std::fs::read_to_string(retry_dir.join("meta.json")) {
+            if let Ok(meta_json) = serde_json::from_str::<serde_json::Value>(&meta_content) {
+                if effective_mode.trim().is_empty() {
+                    effective_mode = meta_json["mode"].as_str().unwrap_or("").to_string();
+                }
+                if effective_source.trim().is_empty() {
+                    effective_source = meta_json["source"].as_str().unwrap_or("").to_string();
+                }
+                if effective_model.trim().is_empty() {
+                    effective_model = meta_json["model"].as_str().unwrap_or("").to_string();
+                }
+            }
+        }
+
+        if effective_mode.trim().is_empty() {
+            return Err("Cannot resolve generation mode for retry.".to_string());
+        }
+        if effective_source.trim().is_empty() {
+            return Err("Cannot resolve generation source for retry.".to_string());
+        }
+        if effective_source != "builtin" && effective_model.trim().is_empty() {
+            return Err("Cannot resolve model for retry from failed dataset version.".to_string());
+        }
+
+        retry_segments_input = Some(failed_segments_path);
+        resolved_retry_version = Some(version);
+    }
 
     // Select script based on source
-    let script_name = match source.as_str() {
+    let script_name = match effective_source.as_str() {
         "ollama" => "generate_dataset_ollama.py",
         "builtin" => "generate_dataset_builtin.py",
         _ => "generate_dataset.py", // legacy mlx-lm fallback
@@ -192,10 +276,10 @@ pub async fn generate_dataset(
 
     let python_bin = executor.python_bin().clone();
     let should_resume = resume.unwrap_or(false);
+    let enable_quality_scoring = quality_scoring.unwrap_or(false);
 
     // Create timestamped output directory for this generation run
     let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S").to_string();
-    let dataset_root = project_path.join("dataset");
     let output_dir = dataset_root.join(&timestamp);
     let _ = std::fs::create_dir_all(&output_dir);
 
@@ -213,9 +297,12 @@ pub async fn generate_dataset(
         .unwrap_or_default();
     let meta = serde_json::json!({
         "raw_files": raw_file_names,
-        "mode": &mode,
-        "source": &source,
-        "model": if source != "builtin" { &model } else { "" },
+        "mode": &effective_mode,
+        "source": &effective_source,
+        "model": if effective_source != "builtin" { &effective_model } else { "" },
+        "quality_scoring_enabled": enable_quality_scoring,
+        "retry_failed_only": retry_failed,
+        "retry_version": resolved_retry_version,
     });
     let _ = std::fs::write(
         output_dir.join("meta.json"),
@@ -233,14 +320,21 @@ pub async fn generate_dataset(
             "--output-dir".to_string(),
             output_dir.to_string_lossy().to_string(),
             "--mode".to_string(),
-            mode,
+            effective_mode,
         ];
-        if source != "builtin" {
+        if effective_source != "builtin" {
             py_args.push("--model".to_string());
-            py_args.push(model);
+            py_args.push(effective_model);
         }
-        if should_resume {
+        if should_resume && !retry_failed {
             py_args.push("--resume".to_string());
+        }
+        if let Some(retry_input) = retry_segments_input {
+            py_args.push("--input-segments".to_string());
+            py_args.push(retry_input.to_string_lossy().to_string());
+        }
+        if enable_quality_scoring {
+            py_args.push("--quality-scoring".to_string());
         }
         if supports_lang {
             py_args.push("--lang".to_string());
@@ -389,6 +483,10 @@ pub struct DatasetVersionInfo {
     pub mode: String,
     pub source: String,
     pub model: String,
+    pub failed_count: usize,
+    pub quality_score: Option<f64>,
+    pub quality_grade: String,
+    pub quality_scoring_enabled: bool,
 }
 
 /// List all dataset versions for a project, sorted newest first
@@ -429,7 +527,7 @@ pub fn list_dataset_versions(
 
         // Read metadata if available
         let meta_path = path.join("meta.json");
-        let (raw_files, gen_mode, gen_source, gen_model) = if meta_path.exists() {
+        let (raw_files, gen_mode, gen_source, gen_model, mut quality_score, mut quality_grade, quality_scoring_enabled) = if meta_path.exists() {
             match std::fs::read_to_string(&meta_path) {
                 Ok(content) => {
                     let m: serde_json::Value = serde_json::from_str(&content).unwrap_or_default();
@@ -439,13 +537,31 @@ pub fn list_dataset_versions(
                     let mode = m["mode"].as_str().unwrap_or("").to_string();
                     let source = m["source"].as_str().unwrap_or("").to_string();
                     let model = m["model"].as_str().unwrap_or("").to_string();
-                    (rf, mode, source, model)
+                    let score = m["quality_score"].as_f64();
+                    let grade = m["quality_grade"].as_str().unwrap_or("").to_string();
+                    let enabled = m["quality_scoring_enabled"].as_bool().unwrap_or(false);
+                    (rf, mode, source, model, score, grade, enabled)
                 }
-                Err(_) => (vec![], String::new(), String::new(), String::new()),
+                Err(_) => (vec![], String::new(), String::new(), String::new(), None, String::new(), false),
             }
         } else {
-            (vec![], String::new(), String::new(), String::new())
+            (vec![], String::new(), String::new(), String::new(), None, String::new(), false)
         };
+
+        let failed_path = path.join("failed_segments.jsonl");
+        let failed_count = count_jsonl_lines(&failed_path);
+
+        let quality_path = path.join("quality.json");
+        if quality_path.exists() {
+            if let Ok(qc) = std::fs::read_to_string(&quality_path) {
+                if let Ok(qv) = serde_json::from_str::<serde_json::Value>(&qc) {
+                    quality_score = qv["score"].as_f64().or(quality_score);
+                    if quality_grade.is_empty() {
+                        quality_grade = qv["grade"].as_str().unwrap_or("").to_string();
+                    }
+                }
+            }
+        }
 
         versions.push(DatasetVersionInfo {
             version: dir_name,
@@ -459,6 +575,10 @@ pub fn list_dataset_versions(
             mode: gen_mode,
             source: gen_source,
             model: gen_model,
+            failed_count,
+            quality_score,
+            quality_grade,
+            quality_scoring_enabled,
         });
     }
 
@@ -493,6 +613,10 @@ pub fn list_dataset_versions(
             mode: String::new(),
             source: String::new(),
             model: String::new(),
+            failed_count: 0,
+            quality_score: None,
+            quality_grade: String::new(),
+            quality_scoring_enabled: false,
         });
     }
 
@@ -900,4 +1024,20 @@ fn find_latest_train_path(dataset_root: &std::path::Path) -> Option<std::path::P
         .collect();
     dirs.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
     dirs.first().map(|e| e.path().join("train.jsonl"))
+}
+
+fn find_latest_retryable_version(dataset_root: &std::path::Path) -> Option<String> {
+    let mut dirs: Vec<_> = std::fs::read_dir(dataset_root)
+        .ok()?
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.path().is_dir()
+                && e.path().join("failed_segments.jsonl").exists()
+                && count_jsonl_lines(&e.path().join("failed_segments.jsonl")) > 0
+        })
+        .collect();
+
+    dirs.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
+    dirs.first()
+        .map(|e| e.file_name().to_string_lossy().to_string())
 }

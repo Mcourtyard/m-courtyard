@@ -72,8 +72,8 @@
     "taskTraining": "训练模型"
   },
   "modelSelector": {
-    "modelCacheDir": "模型缓存目录",
-    "openModelCache": "打开模型缓存目录",
+    "modelCacheDir": "管理已下载模型",
+    "openModelCache": "管理已下载模型",
     "downloaded": "已下载",
     "pulled": "已下载",
     "more": "更多",
@@ -156,7 +156,6 @@
     "openFolderTitle": "打开 {{source}} 文件夹",
     "openFolder": "打开文件夹",
     "downloadSources": "模型下载来源",
-    "manageDownloaded": "管理已下载模型",
     "downloadBtn": "下载",
     "downloading": "下载中...",
     "downloadProgress": "{{percent}}%",
