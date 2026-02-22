@@ -232,7 +232,7 @@ export function DataPrepPage() {
   const [validationHint, setValidationHint] = useState<string | null>(null);
   const validationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [segmentPreview, setSegmentPreview] = useState<SegmentPreviewResponse | null>(null);
-  const [segmentPreviewLoading, setSegmentPreviewLoading] = useState(false);
+  const [_segmentPreviewLoading, setSegmentPreviewLoading] = useState(false);
   const datasetSectionRef = useRef<HTMLDivElement>(null);
   const [datasetPage, setDatasetPage] = useState(0);
   const DATASETS_PER_PAGE = 10;
@@ -246,6 +246,7 @@ export function DataPrepPage() {
   const FILES_PER_PAGE = 10;
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
   const [retryingVersion, setRetryingVersion] = useState<string | null>(null);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   // Show scrollbar on scroll, hide after 3 seconds of inactivity
   useEffect(() => {
@@ -811,7 +812,7 @@ export function DataPrepPage() {
   // Collapsible step states
   const [step1Open, setStep1Open] = useState(true);
   const [step2Open, setStep2Open] = useState(true);
-  const [step3Open, setStep3Open] = useState(true);
+  const [_step3Open, _setStep3Open] = useState(true);
 
   const methodDone = genSource === "builtin" || (genSource === "ollama" && !!genModel);
   const typeDone = !!genMode;
@@ -1076,68 +1077,6 @@ export function DataPrepPage() {
                         {t("addFolder")}
                       </button>
                     </div>
-                    <div className="mt-4 rounded-md border border-border/80 bg-muted/20">
-                      <button
-                        onClick={() => {
-                          const el = document.getElementById("advSettings1");
-                          if (el) el.classList.toggle("hidden");
-                          const icon = document.getElementById("advSettingsIcon1");
-                          if (icon) icon.classList.toggle("rotate-180");
-                        }}
-                        className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent/50 transition-colors rounded-md"
-                      >
-                        {t("generate.advancedSettings")}
-                        <ChevronDown id="advSettingsIcon1" size={14} className="text-muted-foreground transition-transform duration-200" />
-                      </button>
-                      <div id="advSettings1" className="hidden border-t border-border/50 p-3 space-y-2">
-                        <label className="flex items-start gap-2 text-xs">
-                          <input
-                            type="checkbox"
-                            className="mt-0.5 h-3.5 w-3.5 rounded border-border"
-                            checked={enablePrivacyFilter}
-                            onChange={(e) => setEnablePrivacyFilter(e.target.checked)}
-                            disabled={generating || cleaning}
-                          />
-                          <span className="text-foreground">
-                            {t("generate.privacyFilter")}
-                            <span className="ml-1 text-muted-foreground">{t("generate.privacyFilterHint")}</span>
-                          </span>
-                        </label>
-
-                        <label className="flex items-start gap-2 text-xs">
-                          <input
-                            type="checkbox"
-                            className="mt-0.5 h-3.5 w-3.5 rounded border-border"
-                            checked={enableFuzzyDedup}
-                            onChange={(e) => setEnableFuzzyDedup(e.target.checked)}
-                            disabled={generating || cleaning}
-                          />
-                          <span className="text-foreground">
-                            {t("generate.fuzzyDedup")}
-                            <span className="ml-1 text-muted-foreground">{t("generate.fuzzyDedupHint")}</span>
-                          </span>
-                        </label>
-
-                        {enableFuzzyDedup && (
-                          <div className="space-y-1 pl-6">
-                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                              <span>{t("generate.fuzzyThreshold")}</span>
-                              <span>{fuzzyDedupThreshold.toFixed(2)}</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0.5}
-                              max={1.0}
-                              step={0.05}
-                              value={fuzzyDedupThreshold}
-                              onChange={(e) => setFuzzyDedupThreshold(Number(e.target.value))}
-                              disabled={generating || cleaning}
-                              className="w-full"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -1239,36 +1178,6 @@ export function DataPrepPage() {
                     </div>
                   )}
 
-                  <div className="mt-4 rounded-md border border-border/80 bg-muted/20">
-                    <button
-                      onClick={() => {
-                        const el = document.getElementById("advSettings2");
-                        if (el) el.classList.toggle("hidden");
-                        const icon = document.getElementById("advSettingsIcon2");
-                        if (icon) icon.classList.toggle("rotate-180");
-                      }}
-                      className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent/50 transition-colors rounded-md"
-                    >
-                      {t("generate.advancedSettings")}
-                      <ChevronDown id="advSettingsIcon2" size={14} className="text-muted-foreground transition-transform duration-200" />
-                    </button>
-                    <div id="advSettings2" className="hidden border-t border-border/50 p-3 space-y-2">
-                      <label className="flex items-start gap-2 text-xs">
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 h-3.5 w-3.5 rounded border-border"
-                          checked={enableQualityScoring}
-                          onChange={(e) => setEnableQualityScoring(e.target.checked)}
-                          disabled={generating || cleaning}
-                        />
-                        <span className="text-foreground">
-                          {t("generate.qualityScoring")}
-                          <span className="ml-1 text-muted-foreground">{t("generate.qualityScoringHint")}</span>
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-
                   {/* 1.3 Generation type */}
                   <h3 className="flex items-center gap-2 text-base font-semibold text-foreground pt-1">
                     <span className="flex items-center gap-1.5">
@@ -1315,69 +1224,42 @@ export function DataPrepPage() {
                     </p>
                   )}
 
-                  <div className="rounded-md border border-border/80 bg-muted/20 p-3 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-foreground">{t("segment.title")}</p>
-                      <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-foreground">
-                        {t("segment.strategyLabel", {
-                          strategy: getStrategyLabel(segmentPreview?.summary.primary_strategy || "paragraph_balanced"),
-                        })}
+                  {/* Advanced Settings */}
+                  <div className="rounded-md border border-border/60">
+                    <button
+                      onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                      className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium transition-colors hover:bg-accent/50"
+                    >
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <Settings size={12} />
+                        {t("generate.advancedSettings")}
                       </span>
-                    </div>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground">{t("segment.hint")}</p>
-
-                    {segmentPreviewLoading ? (
-                      <p className="text-xs text-muted-foreground">{t("segment.loading")}</p>
-                    ) : !segmentPreview || segmentPreview.summary.total_segments === 0 ? (
-                      <p className="text-xs text-muted-foreground">{t("segment.empty")}</p>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-2 gap-2 text-[11px]">
-                          <div className="rounded-md border border-border bg-card/60 px-2 py-1.5">
-                            <p className="text-muted-foreground">{t("segment.summary.total")}</p>
-                            <p className="font-medium text-foreground">{segmentPreview.summary.total_segments}</p>
-                          </div>
-                          <div className="rounded-md border border-border bg-card/60 px-2 py-1.5">
-                            <p className="text-muted-foreground">{t("segment.summary.avg")}</p>
-                            <p className="font-medium text-foreground">{segmentPreview.summary.avg_chars}</p>
-                          </div>
-                          <div className="rounded-md border border-border bg-card/60 px-2 py-1.5">
-                            <p className="text-muted-foreground">{t("segment.summary.range")}</p>
-                            <p className="font-medium text-foreground">{segmentPreview.summary.min_chars} - {segmentPreview.summary.max_chars}</p>
-                          </div>
-                          <div className="rounded-md border border-border bg-card/60 px-2 py-1.5">
-                            <p className="text-muted-foreground">{t("segment.summary.tooShort")} / {t("segment.summary.tooLong")}</p>
-                            <p className="font-medium text-foreground">{segmentPreview.summary.short_segments} / {segmentPreview.summary.long_segments}</p>
-                          </div>
-                        </div>
-
-                        <div className="max-h-44 space-y-1.5 overflow-auto pr-1">
-                          {segmentPreview.items.map((item) => (
-                            <div key={`${item.id}-${item.source_file}`} className="rounded-md border border-border bg-card/60 px-2 py-1.5 text-[11px]">
-                              <div className="mb-1 flex items-center justify-between gap-2">
-                                <span className="font-medium text-foreground">
-                                  {t("segment.itemLabel", { id: item.id })}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {t("segment.chars", { count: item.char_count })} · {t("segment.lines", { count: item.line_count })}
-                                </span>
-                              </div>
-                              <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                                <div
-                                  className="h-full rounded-full bg-primary/70"
-                                  style={{ width: `${Math.max(8, Math.round((item.char_count / segmentMaxChars) * 100))}%` }}
-                                />
-                              </div>
-                              <p className="line-clamp-2 text-muted-foreground">{item.text_preview}</p>
-                              {item.source_file && (
-                                <p className="mt-1 text-[10px] text-muted-foreground/90">
-                                  {t("segment.source", { name: item.source_file })}
-                                </p>
-                              )}
+                      {showAdvancedSettings ? <ChevronDown size={12} className="text-muted-foreground" /> : <ChevronRight size={12} className="text-muted-foreground" />}
+                    </button>
+                    {showAdvancedSettings && (
+                      <div className="border-t border-border/50 p-3 space-y-2">
+                        <label className="flex items-start gap-2 text-xs">
+                          <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 rounded border-border" checked={enablePrivacyFilter} onChange={(e) => setEnablePrivacyFilter(e.target.checked)} disabled={generating || cleaning} />
+                          <span className="text-foreground">{t("generate.privacyFilter")}<span className="ml-1 text-muted-foreground">{t("generate.privacyFilterHint")}</span></span>
+                        </label>
+                        <label className="flex items-start gap-2 text-xs">
+                          <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 rounded border-border" checked={enableFuzzyDedup} onChange={(e) => setEnableFuzzyDedup(e.target.checked)} disabled={generating || cleaning} />
+                          <span className="text-foreground">{t("generate.fuzzyDedup")}<span className="ml-1 text-muted-foreground">{t("generate.fuzzyDedupHint")}</span></span>
+                        </label>
+                        {enableFuzzyDedup && (
+                          <div className="space-y-1 pl-6">
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                              <span>{t("generate.fuzzyThreshold")}</span>
+                              <span>{fuzzyDedupThreshold.toFixed(2)}</span>
                             </div>
-                          ))}
-                        </div>
-                      </>
+                            <input type="range" min={0.5} max={1.0} step={0.05} value={fuzzyDedupThreshold} onChange={(e) => setFuzzyDedupThreshold(Number(e.target.value))} disabled={generating || cleaning} className="w-full" />
+                          </div>
+                        )}
+                        <label className="flex items-start gap-2 text-xs">
+                          <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 rounded border-border" checked={enableQualityScoring} onChange={(e) => setEnableQualityScoring(e.target.checked)} disabled={generating || cleaning} />
+                          <span className="text-foreground">{t("generate.qualityScoring")}<span className="ml-1 text-muted-foreground">{t("generate.qualityScoringHint")}</span></span>
+                        </label>
+                      </div>
                     )}
                   </div>
 
@@ -1439,174 +1321,6 @@ export function DataPrepPage() {
               )}
             </div>
 
-          {/* 1.4 Generated datasets - collapsible card */}
-          <div ref={datasetSectionRef} className="rounded-lg border border-border bg-card">
-            <button
-              onClick={() => setStep3Open(!step3Open)}
-              className="flex w-full items-center justify-between p-4"
-            >
-              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-                {step3Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="flex items-center gap-1.5">
-                  {datasetVersions.length > 0 ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-                  1.4 {t("section.datasets")} ({datasetVersions.length})
-                </span>
-              </h3>
-              <button
-                onClick={(e) => { e.stopPropagation(); invoke("open_dataset_folder", { projectId: currentProject?.id }); }}
-                className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
-              >
-                <FolderOpen size={12} />
-                {tc("openFolder")}
-              </button>
-            </button>
-            {step3Open && (
-              <div className="border-t border-border p-4">
-                {datasetVersions.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-border py-6 text-center">
-                    <p className="text-xs text-muted-foreground">{t("dataset.noVersions")}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      {(() => {
-                        const totalPages = Math.ceil(datasetVersions.length / DATASETS_PER_PAGE);
-                        const paged = datasetVersions.slice(datasetPage * DATASETS_PER_PAGE, (datasetPage + 1) * DATASETS_PER_PAGE);
-                        return (
-                          <>
-                            {paged.map((v) => {
-                              const isNew = newVersionIds.includes(v.version);
-                              const isExpanded = expandedDataset === v.version;
-                              return (
-                                <div key={v.version} className="rounded-md border border-border text-xs">
-                                  <button
-                                    onClick={() => setExpandedDataset(isExpanded ? null : v.version)}
-                                    className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent/30 transition-colors"
-                                  >
-                                    {isExpanded ? <ChevronDown size={12} className="shrink-0 text-muted-foreground" /> : <ChevronRight size={12} className="shrink-0 text-muted-foreground" />}
-                                    <CheckCircle2 size={14} className="shrink-0 text-success" />
-                                    <span className="shrink-0 whitespace-nowrap font-medium text-foreground">{v.version === "legacy" ? t("dataset.legacy") : v.created}</span>
-                                    {isNew && (
-                                      <span className="rounded-sm bg-success/15 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-success">
-                                        {t("dataset.new")}
-                                      </span>
-                                    )}
-                                    {v.quality_scoring_enabled && v.quality_grade && (
-                                      <span className={`rounded-sm border px-1.5 py-0.5 text-[9px] font-bold leading-none ${getQualityGradeTone(v.quality_grade)}`}>
-                                        {`Q-${v.quality_grade.toUpperCase()}`}
-                                      </span>
-                                    )}
-                                    {v.failed_count > 0 && (
-                                      <span className="rounded-sm border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[9px] font-medium leading-none text-warning">
-                                        {t("dataset.failedCount", { count: v.failed_count })}
-                                      </span>
-                                    )}
-                                    <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground/60">{formatSize(v.train_size + v.valid_size)}</span>
-                                  </button>
-                                  {isExpanded && (
-                                    <div className="border-t border-border/50 bg-muted/10 px-4 py-2 space-y-1 text-[11px]">
-                                      <div className="flex gap-2">
-                                        <span className="shrink-0 text-muted-foreground">{t("dataset.trainSet")}:</span>
-                                        <span className="text-foreground">{t("dataset.samples", { count: v.train_count })}</span>
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <span className="shrink-0 text-muted-foreground">{t("dataset.validSet")}:</span>
-                                        <span className="text-foreground">{t("dataset.samples", { count: v.valid_count })}</span>
-                                      </div>
-                                      {v.raw_files.length > 0 && (
-                                        <div className="flex gap-2">
-                                          <span className="shrink-0 text-muted-foreground">{t("dataset.sourceFiles")}:</span>
-                                          <span className="text-foreground">{v.raw_files.join(", ")}</span>
-                                        </div>
-                                      )}
-                                      {v.mode && (
-                                        <div className="flex gap-2">
-                                          <span className="shrink-0 text-muted-foreground">{t("dataset.genType")}:</span>
-                                          <span className="text-foreground">{MODE_LABELS[v.mode] || v.mode}</span>
-                                        </div>
-                                      )}
-                                      {v.source && (
-                                        <div className="flex gap-2">
-                                          <span className="shrink-0 text-muted-foreground">{t("dataset.genMethod")}:</span>
-                                          <span className="text-foreground">
-                                            {v.source === "ollama" ? t("dataset.methodOllama", { model: v.model || "?" }) : t("dataset.methodBuiltin")}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {v.quality_scoring_enabled && (
-                                        <div className="flex items-center gap-2">
-                                          <span className="shrink-0 text-muted-foreground">{t("dataset.quality")}:</span>
-                                          <span className={`rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold leading-none ${getQualityGradeTone(v.quality_grade)}`}>
-                                            {(v.quality_grade || "-").toUpperCase()}
-                                          </span>
-                                          {typeof v.quality_score === "number" && (
-                                            <span className="text-foreground">
-                                              {t("dataset.qualityScore", { score: v.quality_score.toFixed(1) })}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                      {v.failed_count > 0 && (
-                                        <div className="pt-1">
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleRetryFailed(v.version);
-                                            }}
-                                            disabled={generating || cleaning || !!retryingVersion}
-                                            className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-medium text-warning transition-colors hover:bg-warning/15 disabled:opacity-50"
-                                          >
-                                            {retryingVersion === v.version
-                                              ? t("dataset.retryingFailed")
-                                              : t("dataset.retryFailed", { count: v.failed_count })}
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                            {totalPages > 1 && (
-                              <div className="flex items-center justify-between pt-1">
-                                <button
-                                  disabled={datasetPage === 0}
-                                  onClick={() => setDatasetPage((p) => Math.max(0, p - 1))}
-                                  className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40"
-                                >
-                                  <ChevronLeft size={12} />
-                                  {t("dataset.prevPage")}
-                                </button>
-                                <span className="text-[11px] text-muted-foreground">
-                                  {t("dataset.page", { current: datasetPage + 1, total: totalPages })}
-                                </span>
-                                <button
-                                  disabled={datasetPage >= totalPages - 1}
-                                  onClick={() => setDatasetPage((p) => Math.min(totalPages - 1, p + 1))}
-                                  className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40"
-                                >
-                                  {t("dataset.nextPage")}
-                                  <ChevronRight size={12} />
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                    {/* Next Step: Go to Training */}
-                    <button
-                      onClick={() => navigate("/training")}
-                      className="flex w-full items-center justify-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2.5 text-sm font-medium text-success transition-colors hover:bg-success/20"
-                    >
-                      {t("datasetReady")}
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Preview Panel / AI Log Panel — outer border aligned with left 1.1 card */}
@@ -1701,6 +1415,164 @@ export function DataPrepPage() {
                       : 100
                   })}
                 </span>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Segment Preview Panel ─── */}
+          {!generating && segmentPreview && segmentPreview.summary.total_segments > 0 && (
+            <div className="rounded-lg border border-border bg-card">
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-foreground">{t("segment.title")}</p>
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-foreground">
+                    {t("segment.strategyLabel", { strategy: getStrategyLabel(segmentPreview.summary.primary_strategy || "paragraph_balanced") })}
+                  </span>
+                </div>
+              </div>
+              <div className="border-t border-border px-4 pb-3">
+                <p className="text-[11px] leading-relaxed text-muted-foreground mt-2">{t("segment.hint")}</p>
+                <div className="grid grid-cols-2 gap-2 text-[11px] mt-2">
+                  <div className="rounded-md border border-border bg-card/60 px-2 py-1.5">
+                    <p className="text-muted-foreground">{t("segment.summary.total")}</p>
+                    <p className="font-medium text-foreground">{segmentPreview.summary.total_segments}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-card/60 px-2 py-1.5">
+                    <p className="text-muted-foreground">{t("segment.summary.avg")}</p>
+                    <p className="font-medium text-foreground">{segmentPreview.summary.avg_chars}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-card/60 px-2 py-1.5">
+                    <p className="text-muted-foreground">{t("segment.summary.range")}</p>
+                    <p className="font-medium text-foreground">{segmentPreview.summary.min_chars} - {segmentPreview.summary.max_chars}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-card/60 px-2 py-1.5">
+                    <p className="text-muted-foreground">{t("segment.summary.tooShort")} / {t("segment.summary.tooLong")}</p>
+                    <p className="font-medium text-foreground">{segmentPreview.summary.short_segments} / {segmentPreview.summary.long_segments}</p>
+                  </div>
+                </div>
+                <div className="mt-2 max-h-36 space-y-1.5 overflow-auto pr-1">
+                  {segmentPreview.items.map((item) => (
+                    <div key={`${item.id}-${item.source_file}`} className="rounded-md border border-border bg-card/60 px-2 py-1.5 text-[11px]">
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <span className="font-medium text-foreground">{t("segment.itemLabel", { id: item.id })}</span>
+                        <span className="text-muted-foreground">{t("segment.chars", { count: item.char_count })} · {t("segment.lines", { count: item.line_count })}</span>
+                      </div>
+                      <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-primary/70" style={{ width: `${Math.max(8, Math.round((item.char_count / segmentMaxChars) * 100))}%` }} />
+                      </div>
+                      <p className="line-clamp-2 text-muted-foreground">{item.text_preview}</p>
+                      {item.source_file && (
+                        <p className="mt-1 text-[10px] text-muted-foreground/90">{t("segment.source", { name: item.source_file })}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Generated Datasets Panel ─── */}
+          {datasetVersions.length > 0 && (
+            <div ref={datasetSectionRef} className="rounded-lg border border-border bg-card">
+              <div className="flex items-center justify-between p-4">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <CheckCircle2 size={16} className="text-success" />
+                  {t("section.datasets")}
+                  <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">{datasetVersions.length}</span>
+                </h3>
+                <button
+                  onClick={() => invoke("open_dataset_folder", { projectId: currentProject?.id })}
+                  className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
+                >
+                  <FolderOpen size={12} />
+                  {tc("openFolder")}
+                </button>
+              </div>
+              <div className="border-t border-border p-4 space-y-2">
+                <div className="space-y-1">
+                  {(() => {
+                    const totalPages = Math.ceil(datasetVersions.length / DATASETS_PER_PAGE);
+                    const paged = datasetVersions.slice(datasetPage * DATASETS_PER_PAGE, (datasetPage + 1) * DATASETS_PER_PAGE);
+                    return (
+                      <>
+                        {paged.map((v) => {
+                          const isNew = newVersionIds.includes(v.version);
+                          const isExpanded = expandedDataset === v.version;
+                          return (
+                            <div key={v.version} className="rounded-md border border-border text-xs">
+                              <button
+                                onClick={() => setExpandedDataset(isExpanded ? null : v.version)}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent/30 transition-colors"
+                              >
+                                {isExpanded ? <ChevronDown size={12} className="shrink-0 text-muted-foreground" /> : <ChevronRight size={12} className="shrink-0 text-muted-foreground" />}
+                                <CheckCircle2 size={14} className="shrink-0 text-success" />
+                                <span className="shrink-0 whitespace-nowrap font-medium text-foreground">{v.version === "legacy" ? t("dataset.legacy") : v.created}</span>
+                                {isNew && <span className="rounded-sm bg-success/15 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-success">{t("dataset.new")}</span>}
+                                {v.quality_scoring_enabled && v.quality_grade && (
+                                  <span className={`rounded-sm border px-1.5 py-0.5 text-[9px] font-bold leading-none ${getQualityGradeTone(v.quality_grade)}`}>{`Q-${v.quality_grade.toUpperCase()}`}</span>
+                                )}
+                                {v.failed_count > 0 && (
+                                  <span className="rounded-sm border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[9px] font-medium leading-none text-warning">{t("dataset.failedCount", { count: v.failed_count })}</span>
+                                )}
+                                <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground/60">{formatSize(v.train_size + v.valid_size)}</span>
+                              </button>
+                              {isExpanded && (
+                                <div className="border-t border-border/50 bg-muted/10 px-4 py-2 space-y-1 text-[11px]">
+                                  <div className="flex gap-2"><span className="shrink-0 text-muted-foreground">{t("dataset.trainSet")}:</span><span className="text-foreground">{t("dataset.samples", { count: v.train_count })}</span></div>
+                                  <div className="flex gap-2"><span className="shrink-0 text-muted-foreground">{t("dataset.validSet")}:</span><span className="text-foreground">{t("dataset.samples", { count: v.valid_count })}</span></div>
+                                  {v.raw_files.length > 0 && <div className="flex gap-2"><span className="shrink-0 text-muted-foreground">{t("dataset.sourceFiles")}:</span><span className="text-foreground">{v.raw_files.join(", ")}</span></div>}
+                                  {v.mode && <div className="flex gap-2"><span className="shrink-0 text-muted-foreground">{t("dataset.genType")}:</span><span className="text-foreground">{MODE_LABELS[v.mode] || v.mode}</span></div>}
+                                  {v.source && (
+                                    <div className="flex gap-2">
+                                      <span className="shrink-0 text-muted-foreground">{t("dataset.genMethod")}:</span>
+                                      <span className="text-foreground">{v.source === "ollama" ? t("dataset.methodOllama", { model: v.model || "?" }) : t("dataset.methodBuiltin")}</span>
+                                    </div>
+                                  )}
+                                  {v.quality_scoring_enabled && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="shrink-0 text-muted-foreground">{t("dataset.quality")}:</span>
+                                      <span className={`rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold leading-none ${getQualityGradeTone(v.quality_grade)}`}>{(v.quality_grade || "-").toUpperCase()}</span>
+                                      {typeof v.quality_score === "number" && <span className="text-foreground">{t("dataset.qualityScore", { score: v.quality_score.toFixed(1) })}</span>}
+                                    </div>
+                                  )}
+                                  {v.failed_count > 0 && (
+                                    <div className="pt-1">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleRetryFailed(v.version); }}
+                                        disabled={generating || cleaning || !!retryingVersion}
+                                        className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-medium text-warning transition-colors hover:bg-warning/15 disabled:opacity-50"
+                                      >
+                                        {retryingVersion === v.version ? t("dataset.retryingFailed") : t("dataset.retryFailed", { count: v.failed_count })}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-between pt-1">
+                            <button disabled={datasetPage === 0} onClick={() => setDatasetPage((p) => Math.max(0, p - 1))} className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40">
+                              <ChevronLeft size={12} />{t("dataset.prevPage")}
+                            </button>
+                            <span className="text-[11px] text-muted-foreground">{t("dataset.page", { current: datasetPage + 1, total: totalPages })}</span>
+                            <button disabled={datasetPage >= totalPages - 1} onClick={() => setDatasetPage((p) => Math.min(totalPages - 1, p + 1))} className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40">
+                              {t("dataset.nextPage")}<ChevronRight size={12} />
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+                <button
+                  onClick={() => navigate("/training")}
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2.5 text-sm font-medium text-success transition-colors hover:bg-success/20"
+                >
+                  {t("datasetReady")}
+                  <ArrowRight size={14} />
+                </button>
               </div>
             </div>
           )}
