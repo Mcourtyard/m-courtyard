@@ -2,6 +2,7 @@ use serde::Serialize;
 use tauri::Emitter;
 use crate::python::PythonExecutor;
 use crate::fs::ProjectDirManager;
+use crate::commands::config::resolve_ollama_bin_status_from_config;
 use std::path::PathBuf;
 
 #[derive(Clone, Serialize)]
@@ -64,7 +65,7 @@ pub async fn check_environment() -> Result<EnvironmentStatus, String> {
         }
     }
 
-    let ollama_installed = PythonExecutor::find_ollama().is_some();
+    let (_, ollama_installed) = resolve_ollama_bin_status_from_config();
 
     Ok(EnvironmentStatus {
         python_ready: executor.is_ready(),
@@ -180,20 +181,24 @@ pub async fn install_uv(app: tauri::AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn check_ollama_status() -> Result<OllamaStatus, String> {
-    let ollama_bin = PythonExecutor::find_ollama();
-    let installed = ollama_bin.is_some();
-    let mut running = false;
-
-    if let Some(ref bin) = ollama_bin {
-        if let Ok(output) = std::process::Command::new(bin)
-            .arg("list")
-            .output()
-        {
-            running = output.status.success();
-        }
+    let (ollama_bin, installed) = resolve_ollama_bin_status_from_config();
+    if !installed {
+        return Ok(OllamaStatus {
+            installed: false,
+            running: false,
+        });
     }
 
-    Ok(OllamaStatus { installed, running })
+    let running = std::process::Command::new(&ollama_bin)
+        .arg("list")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false);
+
+    Ok(OllamaStatus {
+        installed: true,
+        running,
+    })
 }
 
 fn get_chip_name() -> String {
@@ -455,10 +460,10 @@ pub fn get_ollama_path_info() -> Result<OllamaPathInfo, String> {
 
 #[tauri::command]
 pub async fn list_ollama_models() -> Result<Vec<OllamaModel>, String> {
-    let ollama_bin = match PythonExecutor::find_ollama() {
-        Some(bin) => bin,
-        None => return Ok(vec![]),
-    };
+    let (ollama_bin, installed) = resolve_ollama_bin_status_from_config();
+    if !installed {
+        return Ok(vec![]);
+    }
 
     // `ollama list` communicates with the running daemon via HTTP (/api/tags).
     // The OLLAMA_MODELS env var has no effect on this call — the daemon uses

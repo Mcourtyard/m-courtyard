@@ -97,14 +97,13 @@ pub struct AppConfigResponse {
 pub fn get_app_config() -> Result<AppConfigResponse, String> {
     let config = load_config();
     let resolved = resolve_model_paths();
-    let ollama_installed = PythonExecutor::find_ollama().is_some();
+    let (ollama_bin_path, ollama_installed) = resolve_ollama_bin_status(&config);
     let default_export_root = ProjectDirManager::new()
         .project_path("__template__")
         .parent()
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_else(|| "./projects".to_string());
     let ollama_bin_custom = config.ollama_bin.is_some();
-    let ollama_bin_path = resolve_ollama_bin_path(&config);
 
     Ok(AppConfigResponse {
         huggingface: resolved.huggingface.to_string_lossy().to_string(),
@@ -156,13 +155,37 @@ pub fn set_hf_source(source: String) -> Result<(), String> {
 pub fn resolve_ollama_bin_path(config: &AppConfig) -> String {
     if let Some(ref custom) = config.ollama_bin {
         let p = std::path::Path::new(custom);
-        if p.exists() {
+        if p.exists() && is_ollama_bin_available(custom) {
             return custom.clone();
         }
     }
     PythonExecutor::find_ollama()
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_else(|| "ollama".to_string())
+}
+
+/// Lightweight check for whether the given ollama binary can actually execute.
+pub fn is_ollama_bin_available(bin_path: &str) -> bool {
+    std::process::Command::new(bin_path)
+        .arg("--version")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+/// Resolve ollama binary path and whether it is runnable.
+pub fn resolve_ollama_bin_status(config: &AppConfig) -> (String, bool) {
+    let path = resolve_ollama_bin_path(config);
+    let installed = is_ollama_bin_available(&path);
+    (path, installed)
+}
+
+/// Convenience wrapper for commands that read from app config directly.
+pub fn resolve_ollama_bin_status_from_config() -> (String, bool) {
+    let config = load_config();
+    resolve_ollama_bin_status(&config)
 }
 
 #[tauri::command]

@@ -1,7 +1,7 @@
 use tauri::Emitter;
 use crate::python::PythonExecutor;
 use crate::fs::ProjectDirManager;
-use crate::commands::config::load_config;
+use crate::commands::config::{load_config, resolve_ollama_bin_path, resolve_ollama_bin_status_from_config};
 use crate::commands::environment::{
     apply_ollama_models_dir_and_restart,
     default_ollama_models_dir,
@@ -167,8 +167,14 @@ This usually means stale or duplicate safetensors shards were imported. Please r
 
 #[tauri::command]
 pub async fn verify_export_model(model_name: String) -> Result<VerifyResult, String> {
-    let ollama_bin = PythonExecutor::find_ollama()
-        .unwrap_or_else(|| std::path::PathBuf::from("ollama"));
+    let (ollama_bin, installed) = resolve_ollama_bin_status_from_config();
+    if !installed {
+        return Ok(VerifyResult {
+            ok: false,
+            preview: String::new(),
+            error: Some("Ollama binary not found. Please set Ollama Binary Path in Settings.".into()),
+        });
+    }
     let ollama_models_dir_str = resolve_ollama_models_dir().to_string_lossy().to_string();
 
     // 1) Fast existence/manifest check first.
@@ -314,7 +320,7 @@ pub async fn export_to_ollama(
 
     // Resolve ollama binary path so the Python script doesn't rely on PATH
     let app_config = load_config();
-    let ollama_bin_str = crate::commands::config::resolve_ollama_bin_path(&app_config);
+    let ollama_bin_str = resolve_ollama_bin_path(&app_config);
 
     let (ollama_models_dir, path_fallback_info) = resolve_ollama_models_dir_for_export();
     if let Some((configured, fallback)) = path_fallback_info {
