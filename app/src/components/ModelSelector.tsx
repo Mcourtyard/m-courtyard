@@ -68,9 +68,9 @@ const SOURCE_LABELS_STATIC: Record<string, string> = {
   ollama: "Ollama",
 };
 const SOURCE_COLORS: Record<string, string> = {
-  huggingface: "text-tag-hf bg-tag-hf/15",
+  huggingface: "text-orange-400/90 bg-orange-400/10",
   modelscope: "text-tag-ms bg-tag-ms/15",
-  ollama: "text-success bg-success/15",
+  ollama: "text-sky-400/90 bg-sky-400/10",
   trained: "text-tag-trained bg-tag-trained/15",
 };
 const HF_ONLINE_GROUPS: OnlineModelBrandGroup[] = sortOnlineGroupsByRelease([
@@ -239,6 +239,13 @@ const HF_DOWNLOAD_LINKS = [
   { labelKey: "hfLinks.modelscope", url: "https://modelscope.cn/models?nameContains=mlx" },
   { labelKey: "hfLinks.allModels", url: "https://huggingface.co/mlx-community/models" },
 ];
+
+function isSourceUsableInMode(source: string, mode: ModelSelectorMode): boolean {
+  if (mode === "dataprep") return source === "ollama";
+  if (mode === "training") return source !== "ollama" && source !== "trained";
+  if (mode === "export") return source === "trained";
+  return true;
+}
 
 function isModelUsable(
   source: string,
@@ -605,7 +612,7 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                   </div>
                 ) : (
                   <div ref={listRef} onScroll={handleListScroll} className="max-h-64 space-y-1 overflow-y-auto overflow-x-hidden log-scroll-container">
-                    {sortedSources.map((source) => {
+                    {sortedSources.filter((source) => isSourceUsableInMode(source, mode)).map((source) => {
                       const models = grouped[source];
                       const expanded = expandedSources.has(source);
                       const usableCount = models.filter((m) => isModelUsable(m.source, mode, m.name, ollamaModels)).length;
@@ -621,7 +628,11 @@ export function ModelSelector({ mode, selectedModel, onSelect, disabled, project
                               className="flex items-center gap-2 text-xs font-medium text-foreground transition-colors hover:bg-accent rounded-md px-1 py-0.5"
                             >
                               {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                              <span className={`rounded px-1.5 py-0.5 text-[10px] ${SOURCE_COLORS[source] || "bg-muted text-muted-foreground"}`}>
+                              <span className={`rounded px-1.5 py-0.5 text-[10px] ${
+                                (source === "ollama" || source === "huggingface")
+                                  ? (usableCount > 0 ? "text-sky-400/90 bg-sky-400/10" : "text-orange-400/90 bg-orange-400/10")
+                                  : (SOURCE_COLORS[source] || "bg-muted text-muted-foreground")
+                              }`}>
                                 {sourceLabel(source)}
                               </span>
                               <span className="text-muted-foreground">

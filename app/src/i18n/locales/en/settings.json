@@ -42,7 +42,14 @@
     "nebula": "Nebula",
     "nebulaDesc": "Cosmic violet tones",
     "light": "Light",
-    "lightDesc": "Clean light theme"
+    "lightDesc": "Clean bright theme"
+  },
+  "uiScale": {
+    "title": "UI Scale (Font Size)",
+    "small": "Small",
+    "normal": "Normal (Default)",
+    "large": "Large",
+    "extraLarge": "Extra Large"
   },
   "language": {
     "title": "Language",

@@ -7,7 +7,7 @@ use commands::config::{get_app_config, set_model_source_path, set_export_path, s
 use commands::environment::{check_environment, setup_environment, install_uv, check_ollama_status, list_ollama_models, get_ollama_path_info, fix_ollama_models_path, reset_ollama_models_path};
 use commands::project::{create_project, delete_project, list_projects};
 use commands::training::{start_training, stop_training, open_project_folder, list_adapters, delete_adapter, open_adapter_folder, scan_local_models, open_model_cache, validate_model_path};
-use commands::files::{import_files, list_project_files, read_file_content, delete_file};
+use commands::files::{import_files, list_project_files, read_file_content, delete_file, clear_project_data};
 use commands::dataset::{start_cleaning, generate_dataset, get_dataset_preview, stop_generation, list_dataset_versions, open_dataset_folder, sample_raw_files, preview_clean_segments};
 use commands::inference::start_inference;
 use commands::export::{export_to_ollama, export_to_gguf, export_to_mlx, verify_export_model, start_mlx_server, stop_mlx_server, get_mlx_server_status, MlxServerState};
@@ -46,6 +46,7 @@ pub fn run() {
             list_project_files,
             read_file_content,
             delete_file,
+            clear_project_data,
             start_cleaning,
             generate_dataset,
             get_dataset_preview,

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 import { useLocation } from "react-router-dom";
-import { Monitor, Languages, Info, FolderOpen, RefreshCw, Download, RotateCcw, Globe, Palette, Trash2, HardDrive } from "lucide-react";
+import { Monitor, Info, Download, RefreshCw, FolderOpen, Palette, Languages, Globe, Type, HardDrive, Trash2, RotateCcw } from "lucide-react";
 import { checkEnvironment, setupEnvironment, installUv, type EnvironmentStatus } from "@/services/environment";
 import { useThemeStore, type ThemeId } from "@/stores/themeStore";
 import { useTaskStore } from "@/stores/taskStore";
@@ -280,7 +280,7 @@ export function SettingsPage() {
     }
   };
 
-  const { theme, setTheme } = useThemeStore();
+  const { theme, setTheme, uiScale, setUiScale } = useThemeStore();
 
   const setLanguage = (lang: string) => {
     i18n.changeLanguage(lang);
@@ -295,7 +295,7 @@ export function SettingsPage() {
   ];
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-8 max-w-4xl">
       <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
 
       {/* Environment Section */}
@@ -314,44 +314,48 @@ export function SettingsPage() {
             {t("environment.refreshButton")}
           </button>
         </div>
-        <div className="rounded-lg border border-border divide-y divide-border">
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">{t("environment.chip")}</span>
-            <span className="text-sm font-medium text-foreground">{env?.chip || "..."}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-lg border border-border bg-card shadow-sm divide-y divide-border transition-all duration-300">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">{t("environment.chip")}</span>
+              <span className="text-sm font-medium text-foreground">{env?.chip || "..."}</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">{t("environment.memory")}</span>
+              <span className="text-sm font-medium text-foreground">
+                {env ? `${env.memory_gb.toFixed(0)} GB` : "..."}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">{t("environment.os")}</span>
+              <span className="text-sm font-medium text-foreground">{env?.os_version || "..."}</span>
+            </div>
           </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">{t("environment.memory")}</span>
-            <span className="text-sm font-medium text-foreground">
-              {env ? `${env.memory_gb.toFixed(0)} GB` : "..."}
-            </span>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">{t("environment.os")}</span>
-            <span className="text-sm font-medium text-foreground">{env?.os_version || "..."}</span>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">{t("environment.python")}</span>
-            <span className={`text-sm font-medium ${env?.python_ready ? "text-success" : "text-warning"}`}>
-              {env ? (env.python_ready ? t("environment.pythonReady") : t("environment.pythonNotReady")) : "..."}
-            </span>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">{t("environment.mlxLm")}</span>
-            <span className={`text-sm font-medium ${env?.mlx_lm_ready ? "text-success" : "text-warning"}`}>
-              {env ? (env.mlx_lm_ready ? t("environment.mlxLmReady", { version: env.mlx_lm_version || "?" }) : t("environment.mlxLmNotReady")) : "..."}
-            </span>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">{t("environment.uv")}</span>
-            <span className={`text-sm font-medium ${env?.uv_available ? "text-success" : "text-warning"}`}>
-              {env ? (env.uv_available ? t("environment.uvReady") : t("environment.uvNotReady")) : "..."}
-            </span>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">{t("environment.ollama")}</span>
-            <span className={`text-sm font-medium ${env?.ollama_installed ? "text-success" : "text-muted-foreground"}`}>
-              {env ? (env.ollama_installed ? t("environment.ollamaReady") : t("environment.ollamaNotReady")) : "..."}
-            </span>
+          <div className="rounded-lg border border-border bg-card shadow-sm divide-y divide-border transition-all duration-300">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">{t("environment.python")}</span>
+              <span className={`text-sm font-medium ${env?.python_ready ? "text-success" : "text-warning"}`}>
+                {env ? (env.python_ready ? t("environment.pythonReady") : t("environment.pythonNotReady")) : "..."}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">{t("environment.mlxLm")}</span>
+              <span className={`text-sm font-medium ${env?.mlx_lm_ready ? "text-success" : "text-warning"}`}>
+                {env ? (env.mlx_lm_ready ? t("environment.mlxLmReady", { version: env.mlx_lm_version || "?" }) : t("environment.mlxLmNotReady")) : "..."}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">{t("environment.uv")}</span>
+              <span className={`text-sm font-medium ${env?.uv_available ? "text-success" : "text-warning"}`}>
+                {env ? (env.uv_available ? t("environment.uvReady") : t("environment.uvNotReady")) : "..."}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">{t("environment.ollama")}</span>
+              <span className={`text-sm font-medium ${env?.ollama_installed ? "text-success" : "text-muted-foreground"}`}>
+                {env ? (env.ollama_installed ? t("environment.ollamaReady") : t("environment.ollamaNotReady")) : "..."}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -414,10 +418,10 @@ export function SettingsPage() {
             <button
               key={th.id}
               onClick={() => setTheme(th.id)}
-              className={`flex-1 rounded-lg border px-3 py-3 text-left transition-colors ${
+              className={`flex-1 rounded-lg border bg-card px-3 py-3 text-left shadow-sm transition-all duration-300 ${
                 theme === th.id
-                  ? "border-primary bg-primary/10"
-                  : "border-border hover:bg-accent"
+                  ? "border-primary bg-primary/5 shadow-primary/5"
+                  : "border-border hover:border-border/80 hover:bg-muted/30"
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
@@ -435,6 +439,34 @@ export function SettingsPage() {
         </div>
       </section>
 
+      {/* UI Scale Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Type size={18} className="text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            {t("uiScale.title")}
+          </h2>
+        </div>
+        <div className="flex gap-3">
+          {(["small", "normal", "large", "extraLarge"] as const).map((scale) => {
+            const storeKey = scale === "extraLarge" ? "extra-large" : scale;
+            return (
+              <button
+                key={scale}
+                onClick={() => setUiScale(storeKey as any)}
+                className={`flex-1 rounded-lg border bg-card px-4 py-3 text-sm font-medium shadow-sm transition-all duration-300 ${
+                  uiScale === storeKey
+                    ? "border-primary bg-primary/5 shadow-primary/5 text-primary"
+                    : "border-border text-muted-foreground hover:border-border/80 hover:bg-muted/30"
+                }`}
+              >
+                {t(`uiScale.${scale}`)}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Language Section */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
@@ -446,20 +478,20 @@ export function SettingsPage() {
         <div className="flex gap-3">
           <button
             onClick={() => setLanguage("en")}
-            className={`flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-lg border bg-card px-4 py-3 text-sm font-medium shadow-sm transition-all duration-300 ${
               i18n.language === "en"
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground hover:bg-accent"
+                ? "border-primary bg-primary/5 shadow-primary/5 text-primary"
+                : "border-border text-muted-foreground hover:border-border/80 hover:bg-muted/30"
             }`}
           >
-            {t("language.en")}
+            English
           </button>
           <button
             onClick={() => setLanguage("zh-CN")}
-            className={`flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-lg border bg-card px-4 py-3 text-sm font-medium shadow-sm transition-all duration-300 ${
               i18n.language === "zh-CN"
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground hover:bg-accent"
+                ? "border-primary bg-primary/5 shadow-primary/5 text-primary"
+                : "border-border text-muted-foreground hover:border-border/80 hover:bg-muted/30"
             }`}
           >
             {t("language.zhCN")}

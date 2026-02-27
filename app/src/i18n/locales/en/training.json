@@ -72,10 +72,14 @@
     "failed": "Training failed"
   },
   "section": {
-    "selectModel": "Select Training Model",
+    "selectModel": "Select Model to Train",
+    "selectModelHint": "Choose the base large model you want to fine-tune (i.e., teach new knowledge or skills). The base model is the starting point — training adds new capabilities on top without modifying the original model. Supports HuggingFace repo IDs or local paths. For first-time users, quantized models under mlx-community/ are recommended for fast, low-memory training.",
     "selectDataset": "Select Dataset",
+    "selectDatasetHint": "Select the training dataset you generated in the Data Prep stage. The dataset determines what the model will learn — quality matters more than quantity. If you have multiple versions, choose the one with the most samples and the highest quality score (Q-A/B).",
     "method": "Training Method",
-    "params": "Training Parameters"
+    "methodHint": "Choose your fine-tuning approach: LoRA is the most popular method — trains only a small set of adapter parameters, fast and low-memory, suitable for nearly all use cases; DoRA is an enhanced LoRA with slightly better results but slower; Full trains all model parameters for maximum performance but requires enormous memory — not recommended for most users. When in doubt, choose LoRA.",
+    "params": "Training Parameters",
+    "paramsHint": "Training parameters determine the rhythm and depth of the model's learning. Beginners can directly select the preset options on the left, which are already optimized. If you want to dive deeper: Epochs control how many times the model sees the data, Batch Size controls how many samples it sees at once, and Learning Rate controls the step size of each learning update. Click below to expand advanced parameters."
   },
   "completedBanner": "Training complete! Model adapter saved.",
   "savedAt": "Saved at: ",
@@ -108,12 +112,14 @@
   "initializing": "Initializing...",
   "eta": {
     "title": "Estimated Time Left",
+    "hint": "Estimated time to completion (ETA) based on current iteration speed. Early estimates may be inaccurate and will stabilize as training progresses. Treat as a rough guide — actual time may vary with system load.",
     "estimating": "Estimating...",
     "done": "Completed",
     "format": "~ {{time}}"
   },
   "health": {
     "title": "Training Health",
+    "hint": "Real-time overview of training health. Green = all good; Yellow = something needs attention (e.g., loss fluctuating, temperature elevated); Red = serious issue detected (e.g., out of memory, training stalled). Check the Smart Alerts section below for details.",
     "level": {
       "green": "Healthy",
       "yellow": "Attention Needed",
@@ -127,9 +133,10 @@
   },
   "trend": {
     "title": "Loss Trend",
-    "good": "Training is converging well",
-    "stable": "Loss is mostly stable, keep monitoring",
-    "warning": "Loss is volatile, attention recommended"
+    "hint": "Real-time direction of loss change: consistently decreasing = the model is still learning effectively; stable = approaching convergence, training nearly done; consistently increasing = something may be wrong — stop and try a lower learning rate.",
+    "good": "Converging — training is going well",
+    "stable": "Stable — approaching convergence",
+    "warning": "Fluctuating — keep an eye on it"
   },
   "alerts": {
     "title": "Smart Alerts",
@@ -179,13 +186,17 @@
   "summary": {
     "title": "Training Summary",
     "duration": "Duration",
+    "durationHint": "Total time taken for this training run. Use this as a reference when tuning parameters — if it takes too long, consider fewer iterations or a quick preset.",
     "finalTrainLoss": "Final Train Loss",
+    "trainLossHint": "Training Loss measures how well the model has learned the training data. Lower is better, but too low may indicate overfitting — memorizing data instead of truly understanding it.",
     "finalValLoss": "Final Val Loss",
+    "valLossHint": "Validation Loss measures how well the model generalizes to unseen data. Slightly higher than training loss is normal. If it's much higher, overfitting may have occurred — try reducing iterations.",
     "totalIters": "Total Iterations",
     "baseModel": "Base Model",
     "adapterPath": "Adapter Saved To",
     "keyParams": "Key Parameters",
     "lossImprove": "Loss Improvement",
+    "lossImproveHint": "Percentage change in loss from start to finish. ↓ means loss decreased (training was effective); larger values indicate more improvement. If it shows ↑ increase, consider adjusting the learning rate or reviewing data quality.",
     "goToExport": "Export Model",
     "noData": "N/A",
     "report": {

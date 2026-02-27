@@ -44,6 +44,13 @@
     "light": "浅色",
     "lightDesc": "清爽浅色主题"
   },
+  "uiScale": {
+    "title": "界面缩放 (字号)",
+    "small": "小",
+    "normal": "中 (默认)",
+    "large": "大",
+    "extraLarge": "特大"
+  },
   "language": {
     "title": "语言",
     "current": "当前语言",

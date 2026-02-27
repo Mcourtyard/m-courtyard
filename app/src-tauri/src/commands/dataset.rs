@@ -745,6 +745,7 @@ pub fn preview_clean_segments(
     let mut raw_names: HashSet<String> = HashSet::new();
     let mut raw_signatures: Vec<(String, u64, u64)> = Vec::new();
     let mut newest_raw_modified = 0u64;
+    let mut valid_raw_names: HashSet<String> = HashSet::new();
 
     if raw_dir.exists() {
         if let Ok(entries) = std::fs::read_dir(&raw_dir) {
@@ -800,7 +801,7 @@ pub fn preview_clean_segments(
             return Ok(SegmentPreviewResponse::empty());
         };
 
-        let mut manifest_signatures: Vec<(String, u64, u64)> = Vec::new();
+        let mut manifest_signatures: HashMap<String, (u64, u64)> = HashMap::new();
         for file in files {
             let Some(name) = file.get("name").and_then(|v| v.as_str()) else {
                 continue;
@@ -816,15 +817,29 @@ pub fn preview_clean_segments(
                 .get("modified_ts")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(0);
-            manifest_signatures.push((name.to_string(), size_bytes, modified_ts));
+            manifest_signatures.insert(name.to_string(), (size_bytes, modified_ts));
         }
-        manifest_signatures.sort_by(|a, b| a.0.cmp(&b.0));
 
-        if manifest_signatures != raw_signatures {
+        // Keep preview after partial raw-file deletion:
+        // if a currently existing raw file still matches manifest signature,
+        // segments from that file remain previewable.
+        for (name, size_bytes, modified_ts) in &raw_signatures {
+            if let Some((manifest_size, manifest_modified)) = manifest_signatures.get(name) {
+                if *manifest_size == *size_bytes && *manifest_modified == *modified_ts {
+                    valid_raw_names.insert(name.clone());
+                }
+            }
+        }
+
+        if valid_raw_names.is_empty() {
             return Ok(SegmentPreviewResponse::empty());
         }
     } else if newest_raw_modified > segments_modified {
         return Ok(SegmentPreviewResponse::empty());
+    } else {
+        // Backward compatibility (no manifest): once timestamp check passes,
+        // allow all current raw file names.
+        valid_raw_names = raw_names.clone();
     }
 
     let content = std::fs::read_to_string(&segments_path)
@@ -866,7 +881,7 @@ pub fn preview_clean_segments(
             .unwrap_or("")
             .trim()
             .to_string();
-        if source_file.is_empty() || !raw_names.contains(source_file.as_str()) {
+        if source_file.is_empty() || !valid_raw_names.contains(source_file.as_str()) {
             continue;
         }
 

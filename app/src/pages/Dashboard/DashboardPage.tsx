@@ -106,7 +106,7 @@ export function DashboardPage() {
       {/* Status Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         {/* Projects count */}
-        <div className="rounded-lg border border-border p-4">
+        <div className="rounded-lg border border-border bg-card p-4 shadow-sm transition-all duration-300">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("nav:projects")}
           </p>
@@ -114,7 +114,7 @@ export function DashboardPage() {
         </div>
 
         {/* Environment */}
-        <div className="rounded-lg border border-border p-4">
+        <div className="rounded-lg border border-border bg-card p-4 shadow-sm transition-all duration-300">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("common:environment")}
           </p>
@@ -137,7 +137,7 @@ export function DashboardPage() {
         </div>
 
         {/* Hardware */}
-        <div className="rounded-lg border border-border p-4">
+        <div className="rounded-lg border border-border bg-card p-4 shadow-sm transition-all duration-300">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("common:hardware")}
           </p>
@@ -153,7 +153,7 @@ export function DashboardPage() {
         </div>
 
         {/* Cache */}
-        <div className="flex flex-col rounded-lg border border-border p-4">
+        <div className="flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-all duration-300">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <HardDrive size={14} />
             {t("settings:storage.cleanableCache")}
@@ -207,18 +207,18 @@ export function DashboardPage() {
               key={action.label}
               onClick={action.onClick}
               disabled={action.disabled}
-              className={`flex flex-col items-start gap-3 rounded-lg border border-border p-5 text-left transition-colors ${
+              className={`flex flex-col items-start gap-3 rounded-lg border border-border bg-card p-5 text-left shadow-sm transition-all duration-300 ${
                 action.disabled
                   ? "cursor-not-allowed opacity-40"
-                  : "hover:bg-accent"
+                  : "hover:border-border/80 hover:bg-muted/30"
               }`}
             >
               <div className="text-muted-foreground">{action.icon}</div>
               <div>
-                <p className="text-sm font-medium text-foreground">
+                <p className="text-base font-semibold text-foreground">
                   {action.label}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
                   {action.description}
                 </p>
               </div>

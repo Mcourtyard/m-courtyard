@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { Play, Square, Gauge, Layers, Target, Gem, BarChart3, FileText, FolderOpen, Copy, Check, ArrowRight, Trash2, ChevronDown, ChevronRight, ChevronLeft, X, CheckCircle2, Circle, Trophy, Upload, Clock, TrendingDown, AlertTriangle, ListPlus } from "lucide-react";
+import { Play, Square, Gauge, Layers, Target, Gem, BarChart3, FileText, FolderOpen, Copy, Check, ArrowRight, Trash2, ChevronDown, ChevronRight, ChevronLeft, X, CheckCircle2, Circle, Trophy, Upload, Clock, TrendingDown, AlertTriangle, ListPlus, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
 import { useTrainingStore } from "@/stores/trainingStore";
@@ -871,16 +872,22 @@ export function TrainingPage() {
           onClick={() => setStep1Open(!step1Open)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <span className="flex items-center gap-1.5">
-              {params.model ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-              2.1 {t("section.selectModel")}
-              {validationHint === "validation.needModel" && (
-                <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
-              )}
-            </span>
-          </h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <span className="flex items-center gap-1.5">
+                  {params.model ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                  2.1 {t("section.selectModel")}
+                  {validationHint === "validation.needModel" && (
+                    <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
+                  )}
+                  <Info size={13} className="text-muted-foreground/50" />
+                </span>
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("section.selectModelHint")}</TooltipContent>
+          </Tooltip>
           {/* Show selected model summary when collapsed */}
           {!step1Open && params.model && (
             <span className="truncate max-w-xs text-xs text-primary">{params.model}</span>
@@ -930,22 +937,28 @@ export function TrainingPage() {
           onClick={() => setStep2Open(!step2Open)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <span className="flex items-center gap-1.5">
-              {selectedDataset ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-              2.2 {t("section.selectDataset")}
-              {validationHint === "validation.needDataset" && (
-                <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
-              )}
-            </span>
-          </h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <span className="flex items-center gap-1.5">
+                  {selectedDataset ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                  2.2 {t("section.selectDataset")}
+                  {validationHint === "validation.needDataset" && (
+                    <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
+                  )}
+                  <Info size={13} className="text-muted-foreground/50" />
+                </span>
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("section.selectDatasetHint")}</TooltipContent>
+          </Tooltip>
           {selectedDataset && (
             <button
               onClick={(e) => { e.stopPropagation(); invoke("open_dataset_folder", { projectId: currentProject.id }); }}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <FolderOpen size={10} />
+              <FolderOpen size={12} />
               {tc("openFolder")}
             </button>
           )}
@@ -1074,16 +1087,22 @@ export function TrainingPage() {
           onClick={() => setStep3MethodOpen(!step3MethodOpen)}
           className="flex w-full items-center justify-between p-4"
         >
-          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            {step3MethodOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <span className="flex items-center gap-1.5">
-              {methodDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-              2.3 {t("section.method")}
-              {validationHint === "validation.needMethod" && (
-                <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
-              )}
-            </span>
-          </h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step3MethodOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <span className="flex items-center gap-1.5">
+                  {methodDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                  2.3 {t("section.method")}
+                  {validationHint === "validation.needMethod" && (
+                    <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
+                  )}
+                  <Info size={13} className="text-muted-foreground/50" />
+                </span>
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("section.methodHint")}</TooltipContent>
+          </Tooltip>
           {!step3MethodOpen && methodDone && (
             <span className="text-xs text-primary font-medium">{t(`method.${params.fine_tune_type}`)}</span>
           )}
@@ -1117,18 +1136,24 @@ export function TrainingPage() {
       </div>
 
       {/* ===== Step 4: Training Parameters (collapsible) ===== */}
-      <div className="rounded-lg border border-border bg-card">
+      <div className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
         <button
           onClick={() => setStep4Open(!step4Open)}
-          className="flex w-full items-center justify-between p-4"
+          className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
         >
-          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            {step4Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <span className="flex items-center gap-1.5">
-              {paramsDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-              2.4 {t("section.params")}
-            </span>
-          </h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step4Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <span className="flex items-center gap-1.5">
+                  {paramsDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                  2.4 {t("section.params")}
+                  <Info size={13} className="text-muted-foreground/50" />
+                </span>
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("section.paramsHint")}</TooltipContent>
+          </Tooltip>
           {!step4Open && (
             <span className="text-xs text-muted-foreground">
               {t("paramsSummary", { iters: params.iters, batch: params.batch_size, method: t(`method.${params.fine_tune_type}`) + (isLoraLike ? ` R${params.lora_rank} L${params.lora_layers}` : "") })}

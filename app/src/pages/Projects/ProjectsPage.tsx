@@ -84,7 +84,7 @@ export function ProjectsPage() {
       )}
 
       {showCreateDialog && (
-        <div className="rounded-lg border border-border p-4">
+        <div className="rounded-lg border border-border bg-card p-5 shadow-sm transition-all duration-300">
           <h3 className="mb-3 text-sm font-semibold text-foreground">
             {t("createTitle")}
           </h3>
@@ -148,10 +148,10 @@ export function ProjectsPage() {
                   setCurrentProject(project);
                   navigate("/data-prep");
                 }}
-                className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors ${
+                className={`group flex cursor-pointer items-center justify-between rounded-lg border px-5 py-4 transition-all duration-300 shadow-sm ${
                   isCurrent
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-accent/50"
+                    ? "border-primary bg-primary/5 shadow-primary/5"
+                    : "border-border bg-card hover:border-border/80 hover:bg-muted/30"
                 }`}
               >
                 <div className="flex items-center gap-3">

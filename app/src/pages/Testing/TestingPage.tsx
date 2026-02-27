@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { Send, Trash2, MessageSquare, Settings, FolderOpen, ChevronDown, ChevronRight, CheckCircle2, Circle, GitCompare } from "lucide-react";
+import { Trash2, Send, FolderOpen, CheckCircle2, Circle, ChevronDown, ChevronRight, MessageSquare, GitCompare, Info, Settings } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useTestingStore } from "@/stores/testingStore";
 
@@ -65,6 +66,7 @@ export function TestingPage() {
   const [advancedABOpen, setAdvancedABOpen] = useState(false);
   const [adapters, setAdapters] = useState<AdapterInfo[]>([]);
   const [adapterDropdownOpen, setAdapterDropdownOpen] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
   const selectAdapter = (adapter: AdapterInfo | null) => {
@@ -318,7 +320,7 @@ export function TestingPage() {
             <Settings size={16} />
           </button>
           <button
-            onClick={() => resetTestingState()}
+            onClick={() => setShowResetDialog(true)}
             className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent"
           >
             <Trash2 size={14} />
@@ -328,24 +330,30 @@ export function TestingPage() {
       </div>
 
       {/* Adapter - collapsible card */}
-      <div className="mb-3 rounded-lg border border-border bg-card">
+      <div className="mb-3 rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
         <button
           onClick={() => setStep1Open(!step1Open)}
-          className="flex w-full items-center justify-between p-4"
+          className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
         >
-          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <span className="flex items-center gap-1.5">
-              {adapterValid ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground" />}
-              {t("section.selectAdapter")}
-            </span>
-          </h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <span className="flex items-center gap-1.5">
+                  {adapterValid ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground" />}
+                  3.1 {t("section.selectAdapter")}
+                  <Info size={13} className="text-muted-foreground/50" />
+                </span>
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("section.selectAdapterHint")}</TooltipContent>
+          </Tooltip>
           {selectedAdapter && (
             <button
               onClick={(e) => { e.stopPropagation(); invoke("open_adapter_folder", { adapterPath: selectedAdapter }); }}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <FolderOpen size={10} />
+              <FolderOpen size={12} />
               {tc("openFolder")}
             </button>
           )}
@@ -463,7 +471,7 @@ export function TestingPage() {
       {/* Chat Messages */}
       <div
         ref={chatRef}
-        className="flex-1 min-h-[360px] overflow-y-auto space-y-4 rounded-lg border border-border bg-card p-4"
+        className="flex-1 min-h-[360px] overflow-y-auto space-y-4 rounded-lg border border-border bg-card shadow-sm p-4"
       >
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center py-16">
@@ -524,16 +532,22 @@ export function TestingPage() {
       </div>
 
       {/* Advanced A/B (on-demand) */}
-      <div className="mt-3 rounded-lg border border-border bg-card">
+      <div className="mt-3 rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
         <button
           onClick={() => setAdvancedABOpen(!advancedABOpen)}
-          className="flex w-full items-center justify-between p-4"
+          className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
         >
-          <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            {advancedABOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <GitCompare size={16} />
-            {t("ab.advancedTitle")}
-          </h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                {advancedABOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <GitCompare size={16} />
+                {t("ab.advancedTitle")}
+                <Info size={13} className="text-muted-foreground/50" />
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("ab.advancedHint")}</TooltipContent>
+          </Tooltip>
           <span className="text-[11px] text-muted-foreground">{t("ab.advancedTip")}</span>
         </button>
 
@@ -622,6 +636,22 @@ export function TestingPage() {
           </div>
         )}
       </div>
+      {showResetDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-lg">
+            <h3 className="text-sm font-semibold text-foreground">{tc("clearConfirmTitle")}</h3>
+            <p className="mt-2 text-xs text-muted-foreground">{tc("clearConfirmTestingMsg")}</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setShowResetDialog(false)} className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
+                {tc("cancel")}
+              </button>
+              <button onClick={() => { resetTestingState(); setShowResetDialog(false); }} className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive/90">
+                {tc("confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

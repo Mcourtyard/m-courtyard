@@ -15,6 +15,8 @@ import { useExportStore } from "@/stores/exportStore";
 import { useExportGgufStore } from "@/stores/exportGgufStore";
 import { useTestingStore } from "@/stores/testingStore";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 function App() {
   const { currentProject } = useProjectStore();
   const prevProjectIdRef = useRef<string | undefined>(undefined);
@@ -47,19 +49,21 @@ function App() {
   }, [currentProject?.id]);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/data-prep" element={<DataPrepPage />} />
-          <Route path="/training" element={<TrainingPage />} />
-          <Route path="/testing" element={<TestingPage />} />
-          <Route path="/export" element={<ExportPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <TooltipProvider delayDuration={300}>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/data-prep" element={<DataPrepPage />} />
+            <Route path="/training" element={<TrainingPage />} />
+            <Route path="/testing" element={<TestingPage />} />
+            <Route path="/export" element={<ExportPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
   );
 }
 

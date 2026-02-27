@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8] - 2026-02-28
+
+Comprehensive UI/UX polish release — 12 feature improvements and 19 bug fixes across all four workflow pages. Focus areas: global Tooltip system, UI consistency, export path correctness, and DataPrep layout overhaul.
+
+### Added
+- **Global Hover Tooltip System (FEAT-001 → FEAT-012)**: Deployed a unified Tooltip architecture across the entire application:
+  - DataPrep: 1.1/1.2/1.3 section headers, Data Preview tab, Smart Segmentation tab, generated dataset titles, segmentation strategy cards — all support full-area hover tooltips with bilingual i18n (FEAT-005/010)
+  - Training: 2.1/2.2/2.3 section headers, 3 progress metric cards (ETA/Health/Trend), 4 summary metric cards (Duration/TrainLoss/ValLoss/Improvement) — all upgraded to full-area hover tooltips; removed legacy static hint text from 2.3 (FEAT-012)
+  - Export: 4.1/4.2/4.3 section headers upgraded from Info-icon trigger to full-area h3 hover; GGUF/MLX/Inference Server cards converted description text to title hover tooltips; removed inline subtitles from expanded sections (FEAT-006/011)
+  - Advanced Settings: 5 tooltip trigger zones expanded from Info icon to entire label row (FEAT-003)
+- **UI Scale Customization (FEAT-002)**: Added "UI Scale" setting (Small/Normal/Large/Extra Large) in Settings; fixed hardcoded pixel font sizes (`text-[10px]`/`text-[11px]`) across Training/DataPrep/Export pages to `rem`-based values for proper scaling
+- **Removed Redundant Checkboxes (FEAT-004)**: Removed duplicate "Smart Segmentation" and "Merge Datasets" checkboxes from 1.1 file list footer (already in Advanced Settings)
+
+### Fixed
+- **Export "Open Folder" Path Correctness (BUG-133/134)**: Ollama export main button now opens the actual Ollama models directory (`ollamaDir`) instead of the intermediate working directory (`outputDir`) which may be empty after cleanup; fused model button now opens `fusedDir` directly where the MLX/LM Studio files actually reside
+- **Unified "Open Folder" Button Style (BUG-135)**: Standardized all "Open Folder" buttons across Export, Training, Testing, and DataPrep pages to a consistent capsule style (`inline-flex items-center gap-1.5 rounded-md border ...`)
+- **Export 4.4 i18n Key Leak**: Fixed `exportOllama.title` → `ollama.title`, added missing i18n keys `section.exportModelHint` and `step.run` in both locales
+- **Export 4.4 Redesign**: Rewritten as a collapsible card consistent with 4.1/4.2/4.3; moved `keepFused` checkbox below export button; progress panel stays visible when section is collapsed
+- **Training Tooltips Restored**: Restored missing tooltips on Training 2.1 (Select Model), 2.2 (Select Dataset), 2.3 (Training Method) with Info icons and bilingual content
+- **Tooltip Styling Unified**: Global `TooltipContent` upgraded to `text-sm`, `leading-relaxed`, `px-3.5`, `py-2` with `max-w-[450px]` for consistent readability
+- **DataPrep Smart Segmentation Preview (BUG-128–132)**: Fixed stats not refreshing per file; fixed partial file deletion clearing all previews; removed redundant filename display; fixed English truncation of strategy names
+- **DataPrep Clear Data (BUG-124–127)**: Added `clear_project_data` Rust command for true disk deletion; added confirmation dialogs on all four pages; fixed segmentPreview not clearing
+- **DataPrep Layout (BUG-118–123)**: Refactored 1.2/1.3/Advanced Settings into independent collapsible cards; fixed 1.3 invisible when step2Open=false; fixed auto-expand timing; fixed clear-all button style
+- **ModelSelector UX (BUG-117/121/122)**: Dynamic source tag colors; auto-expand to Ollama on file upload; hide unusable sources per mode
+
+### Changed
+- Export success card "Open Folder" priority: `ollamaDir` → `manifestDir` → `outputDir` → parent of `fusedDir` (was `outputDir` first)
+- Removed redundant base model info line from Export 4.1 section
+
 ## [0.4.7] - 2026-02-25
 
 Feature release delivering the **Multi-Target Export** cluster (E-5 · E-6 · E-7) and a GGUF error experience improvement.

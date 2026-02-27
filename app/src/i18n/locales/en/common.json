@@ -57,6 +57,11 @@
   "selectProjectHint": "Please select a project from the sidebar first",
   "resetDefaults": "Reset to Defaults",
   "clearAll": "Clear All",
+  "clearConfirmTitle": "Confirm Clear",
+  "clearConfirmDataPrepMsg": "This will permanently delete all raw files, cleaned data, and training datasets for this project. This action cannot be undone.",
+  "clearConfirmTrainingMsg": "This will clear all training records and parameter settings. This action cannot be undone.",
+  "clearConfirmTestingMsg": "This will clear all test message history. This action cannot be undone.",
+  "clearConfirmExportMsg": "This will clear all export records and logs. Exported model files will not be deleted. This action cannot be undone.",
   "openFinderTitle": "Open project folder in Finder",
   "firstSetup": {
     "title": "Setting up for the first time...",
