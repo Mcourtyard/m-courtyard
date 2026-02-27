@@ -234,3 +234,19 @@ pub async fn read_file_content(path: String) -> Result<String, String> {
 pub async fn delete_file(path: String) -> Result<(), String> {
     fs::remove_file(&path).map_err(|e| format!("Failed to delete file: {}", e))
 }
+
+#[tauri::command]
+pub async fn clear_project_data(project_id: String) -> Result<(), String> {
+    let dir_manager = crate::fs::ProjectDirManager::new();
+    let project_path = dir_manager.project_path(&project_id);
+    for subdir in &["raw", "cleaned", "dataset"] {
+        let dir = project_path.join(subdir);
+        if dir.exists() {
+            std::fs::remove_dir_all(&dir)
+                .map_err(|e| format!("Failed to clear {}: {}", subdir, e))?;
+        }
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| format!("Failed to recreate {}: {}", subdir, e))?;
+    }
+    Ok(())
+}

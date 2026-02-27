@@ -5,6 +5,7 @@
   "noModel": "No trained model found. Complete training first.",
   "ollama": {
     "title": "Export to Ollama",
+    "hint": "Ollama is a minimal tool for running large models locally. Once packed and imported into Ollama with one click, you can easily chat with your custom model directly in the terminal or with various client software! If you haven't installed Ollama, simply download it from ollama.com.",
     "description": "Convert your fine-tuned LoRA adapters into a standalone Ollama model for easy local use.",
     "modelName": "Ollama Model Name",
     "modelNameHint": "Name for the model in Ollama (e.g. my-custom-model)",
@@ -13,7 +14,8 @@
     "adapter": "Select Adapter (fine-tuned result)",
     "adapterHint": "Select the training adapter to export, base model will be auto-filled",
     "noAdapter": "No trained adapter found. Complete training first.",
-    "quantization": "Quantization",
+    "quantization": "Select Quantization",
+    "quantizationHint": "Quantization is the process of 'compressing' a large model. It significantly reduces the model's file size with minimal loss in intelligence, thereby lowering memory/VRAM requirements and speeding up execution. 4-bit offers maximum compression and speed; 8-bit is a balanced choice. If unsure, just stick with the default 4-bit.",
     "q4": "4-bit (smallest, fastest)",
     "q8": "8-bit (balanced)",
     "f16": "16-bit (highest quality)",
@@ -48,8 +50,16 @@
   },
   "section": {
     "selectAdapter": "Select Adapter (Training Result)",
+    "selectAdapterDesc": "An adapter is the fine-tuned weight file generated after training — it contains what the model learned.",
+    "selectAdapterHint": "Choose the adapter file you just trained. Think of this as a special skill pack added to the base model, letting it demonstrate the new abilities you taught it during the training phase.",
     "modelName": "Model Name",
-    "quantization": "Quantization"
+    "modelNameDesc": "After export, use this name to run your model in Ollama (e.g. ollama run your-name).",
+    "modelNameHint": "Give your new model a great name! This name will be used to identify your model in Ollama or other tools later. It's recommended to include the original model name and your fine-tuning task, e.g., 'Qwen-MyTask-v1'.",
+    "quantization": "Select Quantization",
+    "quantizationDesc": "Quantization controls model file size and speed. Higher precision means better quality but more memory.",
+    "quantizationHint": "Quantization is the process of 'compressing' a large model. It significantly reduces the model's file size with minimal loss in intelligence, thereby lowering memory/VRAM requirements and speeding up execution. 4-bit offers maximum compression and speed; 8-bit is a balanced choice. If unsure, just stick with the default 4-bit.",
+    "exportModel": "Export Model",
+    "exportModelHint": "Once you've completed the above configuration, you can export your model here with one click. Supports exporting to Ollama (most common), or choose GGUF/MLX formats below. After export, you can use your custom model in various tools."
   },
   "selectAdapterPlaceholder": "Select an adapter",
   "confirmDelete": "Confirm Delete",
@@ -68,7 +78,8 @@
   "step": {
     "export": "Export",
     "name": "Name",
-    "size": "Size"
+    "size": "Size",
+    "run": "Run"
   },
   "validation": {
     "needAdapter": "Please select an adapter first",

@@ -18,7 +18,8 @@
     "repetitionPenalty": "重复惩罚"
   },
   "section": {
-    "selectAdapter": "选择适配器（训练成果）"
+    "selectAdapter": "选择适配器（训练成果）",
+    "selectAdapterHint": "选择你刚训练好的适配器文件。这就像是给原始模型加上了特定技能包，让它展现出你在训练阶段教给它的新能力。"
   },
   "noAdapter": "暂无训练好的适配器，请先完成训练",
   "noAdapterOption": "不使用适配器（原始模型）",
@@ -28,6 +29,7 @@
     "title": "A/B 对比测试",
     "advancedTitle": "高级 A/B 对比",
     "advancedTip": "可选",
+    "advancedHint": "在这里，你可以用同一个问题，同时考一考原始的基础模型和加上适配器后的微调模型。这能让你直观地看到：经过你的训练，模型到底有了多大的长进！",
     "hint": "用同一条提示词对比基础模型与微调模型，适合做进阶效果分析。",
     "promptPlaceholder": "输入用于并排对比的一条提示词...",
     "modeLabel": "模式",

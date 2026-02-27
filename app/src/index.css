@@ -3,30 +3,30 @@
 @theme {
   --color-background: #09090b;
   --color-foreground: #fafafa;
-  --color-card: #09090b;
+  --color-card: #111113;
   --color-card-foreground: #fafafa;
-  --color-popover: #09090b;
+  --color-popover: #111113;
   --color-popover-foreground: #fafafa;
   --color-primary: #fafafa;
   --color-primary-foreground: #18181b;
   --color-secondary: #27272a;
   --color-secondary-foreground: #fafafa;
-  --color-muted: #27272a;
-  --color-muted-foreground: #e4e4e7;
-  --color-accent: #27272a;
+  --color-muted: #1c1c1f;
+  --color-muted-foreground: #a1a1aa;
+  --color-accent: #1c1c1f;
   --color-accent-foreground: #fafafa;
   --color-destructive: #7f1d1d;
   --color-destructive-foreground: #fafafa;
-  --color-border: #27272a;
-  --color-input: #27272a;
+  --color-border: #222226;
+  --color-input: #222226;
   --color-ring: #d4d4d8;
   --color-sidebar-background: #09090b;
   --color-sidebar-foreground: #fafafa;
   --color-sidebar-primary: #fafafa;
   --color-sidebar-primary-foreground: #18181b;
-  --color-sidebar-accent: #27272a;
+  --color-sidebar-accent: #1c1c1f;
   --color-sidebar-accent-foreground: #fafafa;
-  --color-sidebar-border: #27272a;
+  --color-sidebar-border: #222226;
   --color-sidebar-ring: #d4d4d8;
   --color-success: #22c55e;
   --color-info: #3b82f6;
@@ -198,7 +198,33 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow: hidden;
+  }
+
+  /* Custom Scrollbar for all themes */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted-foreground);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  /* Prevent body text selection globally if needed, or remove this if not wanted */
+  .no-select {
     user-select: none;
   }
 }

@@ -57,6 +57,11 @@
   "selectProjectHint": "请先在左侧「项目」中选择一个项目",
   "resetDefaults": "恢复默认参数",
   "clearAll": "清空",
+  "clearConfirmTitle": "确认清空",
+  "clearConfirmDataPrepMsg": "将删除该项目的所有原始文件、清洗数据和训练数据集，此操作不可恢复。",
+  "clearConfirmTrainingMsg": "将清除所有训练记录和参数配置，此操作不可恢复。",
+  "clearConfirmTestingMsg": "将清除所有测试消息记录，此操作不可恢复。",
+  "clearConfirmExportMsg": "将清除所有导出记录和日志（已导出的模型文件不会被删除），此操作不可恢复。",
   "openFinderTitle": "在 Finder 中打开项目文件夹",
   "firstSetup": {
     "title": "首次设置中...",

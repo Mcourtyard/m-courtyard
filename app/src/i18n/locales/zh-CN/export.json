@@ -5,6 +5,7 @@
   "noModel": "暂无已训练模型。请先完成训练。",
   "ollama": {
     "title": "导出到 Ollama",
+    "hint": "Ollama 是一款极简的本地大模型运行工具。将你的模型一键打包并导入 Ollama 后，你就可以直接在命令行或配合各种客户端软件轻松与你的专属模型对话了！如果没装 Ollama，去 ollama.com 下载一个即可。",
     "description": "将微调后的 LoRA 适配器转换为独立的 Ollama 模型，方便本地使用。",
     "modelName": "Ollama 模型名称",
     "modelNameHint": "在 Ollama 中的模型名称（如 my-custom-model）",
@@ -48,8 +49,16 @@
   },
   "section": {
     "selectAdapter": "选择适配器（训练成果）",
+    "selectAdapterDesc": "适配器是训练完成后生成的微调权重文件，包含了模型学到的新知识。",
+    "selectAdapterHint": "训练完成后，系统会自动生成一个适配器（Adapter）。它不是完整的模型，而是一组轻量级的权重差异，需要叠加在基础模型上才能运行。导出时会将适配器与基础模型融合，生成一个独立可用的模型。",
     "modelName": "保存模型名称",
-    "quantization": "量化"
+    "modelNameDesc": "导出后，通过这个名称在 Ollama 中调用您的模型（如：ollama run 你的名称）。",
+    "modelNameHint": "为导出的模型起一个易记的名称，只能包含字母、数字和连字符，例如 my-lora-model。名称确定后可通过 ollama run <名称> 在终端直接运行。",
+    "quantization": "量化",
+    "quantizationDesc": "量化决定模型文件大小与运行速度，精度越高质量越好，但占用内存越多。",
+    "quantizationHint": "4-bit（Q4）：文件最小、速度最快，适合内存有限的设备，质量略有损失。8-bit（Q8）：均衡方案，大多数场景首选。16-bit（F16）：最接近原始质量，但文件较大、运行需要更多内存。",
+    "exportModel": "导出模型",
+    "exportModelHint": "完成前面的配置后，就可以在这里一键导出你的模型了。支持导出到 Ollama（最常用），也可以选择下方的 GGUF 或 MLX 格式。导出后即可在各种工具中使用你训练好的专属模型。"
   },
   "selectAdapterPlaceholder": "请选择适配器",
   "confirmDelete": "确认删除",
@@ -68,7 +77,8 @@
   "step": {
     "export": "导出",
     "name": "命名",
-    "size": "大小"
+    "size": "大小",
+    "run": "运行"
   },
   "validation": {
     "needAdapter": "请先选择适配器",

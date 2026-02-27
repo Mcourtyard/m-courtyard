@@ -18,16 +18,18 @@
     "repetitionPenalty": "Repetition Penalty"
   },
   "section": {
-    "selectAdapter": "Select Adapter (Training Result)"
+    "selectAdapter": "Select Adapter (Training Result)",
+    "selectAdapterHint": "Choose the adapter file you just trained. Think of this as a special skill pack added to the base model, letting it demonstrate the new abilities you taught it during the training phase."
   },
   "noAdapter": "No trained adapters available. Complete training first.",
   "noAdapterOption": "No adapter (base model only)",
   "baseModel": "Base model: ",
   "adapterLoaded": "Adapter loaded. Send a message to test your fine-tuned model.",
   "ab": {
-    "title": "A/B Comparison",
-    "advancedTitle": "Advanced A/B Comparison",
+    "title": "A/B Testing",
+    "advancedTitle": "Advanced A/B Testing",
     "advancedTip": "Optional",
+    "advancedHint": "Here, you can ask the same question to both the original base model and your fine-tuned model (base model + adapter) side-by-side. This gives you a clear, intuitive view of exactly how much the model has improved after your training!",
     "hint": "Run the same prompt on base model and tuned model for advanced side-by-side analysis.",
     "promptPlaceholder": "Enter one prompt for side-by-side comparison...",
     "modeLabel": "Mode",

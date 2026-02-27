@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { Upload, AlertCircle, AlertTriangle, CheckCircle2, XCircle, FolderOpen, ChevronDown, ChevronRight, Circle, Loader2, Copy, Check, Trash2, Play, Square, BookOpen } from "lucide-react";
+import { Upload, AlertCircle, AlertTriangle, CheckCircle2, XCircle, FolderOpen, ChevronDown, ChevronRight, Circle, Loader2, Copy, Check, Trash2, Play, Square, BookOpen, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProjectStore } from "@/stores/projectStore";
 import { useExportStore } from "@/stores/exportStore";
 import { useExportGgufStore } from "@/stores/exportGgufStore";
@@ -71,6 +72,7 @@ export function ExportPage() {
   const [quantization, setQuantization] = useState("");
   const [quantEdited, setQuantEdited] = useState(false);
   const [keepFused, setKeepFused] = useState(true);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const [copied, setCopied] = useState(false);
   const [ggufCopied, setGgufCopied] = useState(false);
   const [mlxCopied, setMlxCopied] = useState(false);
@@ -170,6 +172,14 @@ export function ExportPage() {
   const isSuccess = result?.startsWith("__success__:");
   const isError = result?.startsWith("Error");
   const successModelName = isSuccess ? result!.replace("__success__:", "") : "";
+  const getParentDir = (p?: string | null): string | null => {
+    if (!p) return null;
+    const idx = p.lastIndexOf("/");
+    return idx > 0 ? p.slice(0, idx) : p;
+  };
+  // Ollama export: actual model lives in ollamaDir, not outputDir (intermediate working dir).
+  // Prioritize ollamaDir so the main "open folder" button leads to the real export location.
+  const exportRootDir = ollamaDir || manifestDir || outputDir || getParentDir(fusedDir) || null;
   const ollamaPathType: "default" | "custom" | null = (() => {
     if (!ollamaDir || !ollamaPathInfo) return null;
     if (ollamaPathInfo.configured_path && ollamaDir === ollamaPathInfo.configured_path) return "custom";
@@ -378,9 +388,11 @@ export function ExportPage() {
   const [step1Open, setStep1Open] = useState(true);
   const [step2Open, setStep2Open] = useState(true);
   const [step3Open, setStep3Open] = useState(true);
+  const [step4Open, setStep4Open] = useState(true);
   const sectionStep1Ref = useRef<HTMLDivElement>(null);
   const sectionStep2Ref = useRef<HTMLDivElement>(null);
   const sectionStep3Ref = useRef<HTMLDivElement>(null);
+  const sectionStep4Ref = useRef<HTMLDivElement>(null);
   const [validationHint, setValidationHint] = useState<string | null>(null);
   const validationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -388,6 +400,7 @@ export function ExportPage() {
     { key: "export", label: t("step.export"), done: !!selectedAdapter },
     { key: "name", label: t("step.name"), done: !!modelName.trim() },
     { key: "size", label: t("step.size"), done: quantDone },
+    { key: "run", label: t("step.run"), done: !!isSuccess },
   ];
 
   // Show a validation hint on the first incomplete section, auto-dismiss after 3s
@@ -438,8 +451,9 @@ export function ExportPage() {
           </p>
         </div>
         <button
-          onClick={() => { setSelectedAdapter(""); setModelName(""); setBaseModel(""); setQuantization(""); setQuantEdited(false); clearExportState(); }}
-          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent"
+          onClick={() => setShowResetDialog(true)}
+          disabled={isExporting || isGgufExporting || isMlxExporting}
+          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
         >
           <Trash2 size={14} />
           {tc("clearAll")}
@@ -453,23 +467,28 @@ export function ExportPage() {
       <section className="space-y-4">
         <p className="text-sm text-muted-foreground">{t("ollama.description")}</p>
 
-        <div className="space-y-3">
-          {/* 4.1 Adapter Selection - Collapsible Card */}
-          <div ref={sectionStep1Ref} className="rounded-lg border border-border bg-card">
-            <button
-              onClick={() => setStep1Open(!step1Open)}
-              className="flex w-full items-center justify-between p-4"
-            >
-              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-                {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="flex items-center gap-1.5">
-                  {selectedAdapter ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-                  4.1 {t("section.selectAdapter")}
-                  {validationHint === "validation.needAdapter" && (
-                    <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
-                  )}
-                </span>
-              </h3>
+      {/* 4.1 Adapter Selection - Collapsible Card */}
+      <div ref={sectionStep1Ref} className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
+        <button
+          onClick={() => setStep1Open(!step1Open)}
+          className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
+        >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                    {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    <span className="flex items-center gap-1.5">
+                      {selectedAdapter ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                      4.1 {t("section.selectAdapter")}
+                      {validationHint === "validation.needAdapter" && (
+                        <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[0.6875rem] font-medium text-destructive-foreground">{t(validationHint)}</span>
+                      )}
+                      <Info size={13} className="text-muted-foreground/50" />
+                    </span>
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[450px]">{t("section.selectAdapterHint")}</TooltipContent>
+              </Tooltip>
               {currentProject && (
                 <button
                   onClick={(e) => {
@@ -482,7 +501,7 @@ export function ExportPage() {
                       invoke("open_project_folder", { projectId: currentProject.id });
                     }
                   }}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <FolderOpen size={10} />
                   {tc("openFolder")}
@@ -508,9 +527,9 @@ export function ExportPage() {
                     {selectedAdapterInfo ? (
                       <>
                         <span className="font-medium text-foreground">{selectedAdapterInfo.created}</span>
-                        <span className="ml-1.5 text-muted-foreground/50">{selectedAdapterInfo.name.slice(0, 8)}</span>
+                        <span className="ml-1.5 text-muted-foreground/50 text-sm">{selectedAdapterInfo.name.slice(0, 8)}</span>
                         {selectedAdapterInfo.base_model && (
-                          <span className="ml-1.5 text-muted-foreground/40">· {selectedAdapterInfo.base_model}</span>
+                          <span className="ml-1.5 text-muted-foreground/40 text-sm">· {selectedAdapterInfo.base_model}</span>
                         )}
                       </>
                     ) : (
@@ -544,15 +563,15 @@ export function ExportPage() {
                             : <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${canSelect ? "border-muted-foreground/70" : "border-muted-foreground/40"}`} />}
                           <div className="min-w-0 flex-1">
                             <span className={`font-medium ${canSelect ? "text-foreground" : "text-muted-foreground"}`}>{a.created}</span>
-                            <span className="ml-1.5 text-muted-foreground">{a.name.slice(0, 8)}</span>
-                            {a.base_model && <span className="ml-1.5 text-muted-foreground">· {a.base_model}</span>}
+                            <span className="ml-1.5 text-muted-foreground text-sm">{a.name.slice(0, 8)}</span>
+                            {a.base_model && <span className="ml-1.5 text-muted-foreground text-sm">· {a.base_model}</span>}
                             {!a.has_weights && (
-                              <span className="ml-1.5 rounded bg-warning/20 px-1 py-0.5 text-[10px] text-warning">{t("noWeights")}</span>
+                              <span className="ml-1.5 rounded bg-warning/20 px-1 py-0.5 text-[0.625rem] text-warning">{t("noWeights")}</span>
                             )}
                           </div>
                           <button
                             onClick={(e) => handleDeleteAdapter(a, e)}
-                            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] transition-colors ${
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[0.625rem] transition-colors ${
                               confirmingDelete
                                 ? "bg-destructive text-destructive-foreground"
                                 : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -569,14 +588,14 @@ export function ExportPage() {
                       <div className="border-t border-border/50 pt-1 mt-1">
                         {deletingPath === "__all__" ? (
                           <div className="flex items-center gap-2 px-1">
-                            <span className="text-[10px] text-destructive flex-1">{t("confirmDelete")}?</span>
-                            <button onClick={confirmDeleteAll} className="rounded bg-destructive px-2 py-0.5 text-[10px] text-destructive-foreground">{t("confirmDelete")}</button>
-                            <button onClick={() => setDeletingPath(null)} className="rounded border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-accent">✕</button>
+                            <span className="text-[0.625rem] text-destructive flex-1">{t("confirmDelete")}?</span>
+                            <button onClick={confirmDeleteAll} className="rounded bg-destructive px-2 py-0.5 text-[0.625rem] text-destructive-foreground">{t("confirmDelete")}</button>
+                            <button onClick={() => setDeletingPath(null)} className="rounded border border-border px-2 py-0.5 text-[0.625rem] text-muted-foreground hover:bg-accent">✕</button>
                           </div>
                         ) : (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteAll(); }}
-                            className="flex w-full items-center gap-1 rounded px-2 py-1 text-[10px] text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            className="flex w-full items-center gap-1 rounded px-2 py-1 text-[0.625rem] text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
                           >
                             <Trash2 size={10} />
                             {t("deleteAll")}
@@ -588,38 +607,38 @@ export function ExportPage() {
                 )}
               </div>
             )}
-            {/* Base model info (read-only, auto from adapter) */}
-            {baseModel && (
-              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                {t("baseModel")}{baseModel}
-              </p>
-            )}
             </div>
             )}
           </div>
 
-          {/* 4.2 Model Name - Collapsible Card */}
-          <div ref={sectionStep2Ref} className="rounded-lg border border-border bg-card">
-            <button
-              onClick={() => setStep2Open(!step2Open)}
-              className="flex w-full items-center justify-between p-4"
-            >
-              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-                {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="flex items-center gap-1.5">
-                  {modelName.trim() ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-                  4.2 {t("section.modelName")}
-                  {validationHint === "validation.needModelName" && (
-                    <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
-                  )}
-                </span>
-              </h3>
+      {/* 4.2 Model Name - Collapsible Card */}
+      <div ref={sectionStep2Ref} className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
+        <button
+          onClick={() => setStep2Open(!step2Open)}
+          className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
+        >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                    {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    <span className="flex items-center gap-1.5">
+                      {modelName.trim() ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                      4.2 {t("section.modelName")}
+                      {validationHint === "validation.needModelName" && (
+                        <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[0.6875rem] font-medium text-destructive-foreground">{t(validationHint)}</span>
+                      )}
+                      <Info size={13} className="text-muted-foreground/50" />
+                    </span>
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[450px]">{t("section.modelNameHint")}</TooltipContent>
+              </Tooltip>
               {!step2Open && modelName.trim() && (
                 <span className="text-xs text-primary truncate max-w-xs">{modelName}</span>
               )}
             </button>
             {step2Open && (
-            <div className="border-t border-border p-4">
+            <div className="border-t border-border p-4 space-y-2">
             <input
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
@@ -631,28 +650,34 @@ export function ExportPage() {
             )}
           </div>
 
-          {/* 4.3 Quantization - Collapsible Card */}
-          <div ref={sectionStep3Ref} className="rounded-lg border border-border bg-card">
-            <button
-              onClick={() => setStep3Open(!step3Open)}
-              className="flex w-full items-center justify-between p-4"
-            >
-              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-                {step3Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="flex items-center gap-1.5">
-                  {quantDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-                  4.3 {t("section.quantization")}
-                  {validationHint === "validation.needQuantization" && (
-                    <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
-                  )}
-                </span>
-              </h3>
+      {/* 4.3 Quantization - Collapsible Card */}
+      <div ref={sectionStep3Ref} className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
+        <button
+          onClick={() => setStep3Open(!step3Open)}
+          className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
+        >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                    {step3Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    <span className="flex items-center gap-1.5">
+                      {quantDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                      4.3 {t("section.quantization")}
+                      {validationHint === "validation.needQuantization" && (
+                        <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[0.6875rem] font-medium text-destructive-foreground">{t(validationHint)}</span>
+                      )}
+                      <Info size={13} className="text-muted-foreground/50" />
+                    </span>
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[450px]">{t("section.quantizationHint")}</TooltipContent>
+              </Tooltip>
               {!step3Open && (
                 <span className="text-xs text-muted-foreground">{t(`ollama.${quantization}`)}</span>
               )}
             </button>
             {step3Open && (
-            <div className="border-t border-border p-4">
+            <div className="border-t border-border p-4 space-y-3">
             <div className="flex gap-2">
               {(["q4", "q8", "f16"] as const).map((q) => (
                 <button
@@ -690,38 +715,76 @@ export function ExportPage() {
             </div>
           )}
 
-          {/* E-5: Keep fused MLX model option */}
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={keepFused}
-              onChange={(e) => setKeepFused(e.target.checked)}
-              disabled={isExporting || isMlxExporting}
-              className="h-4 w-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
-            />
-            <span className="text-sm text-foreground">{t("keepFused.label")}</span>
-            <span className="text-[10px] text-muted-foreground">({t("keepFused.hint")})</span>
-          </label>
+          {/* 4.4 Export Model - Collapsible Card (matches 4.1/4.2/4.3) */}
+          <div ref={sectionStep4Ref} className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
+            <button
+              onClick={() => setStep4Open(!step4Open)}
+              className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                    {step4Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    <span className="flex items-center gap-1.5">
+                      {isSuccess ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                      4.4 {t("section.exportModel")}
+                      <Info size={13} className="text-muted-foreground/50" />
+                    </span>
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[450px]">{t("section.exportModelHint")}</TooltipContent>
+              </Tooltip>
+            </button>
+            {step4Open && (
+            <div className="border-t border-border p-4 space-y-4">
+              {/* Ollama Export Box */}
+              <div className="rounded-lg border border-border bg-background/30 p-4 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-default">
+                        {t("ollama.title")}
+                        <Info size={13} className="text-muted-foreground/50" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[450px]">{t("ollama.hint")}</TooltipContent>
+                  </Tooltip>
+                </div>
 
-          <button
-            onClick={handleExportWithValidation}
-            disabled={isExporting || isGgufExporting || isMlxExporting || !modelName.trim() || !baseModel.trim() || !quantization || adapters.length === 0 || ollamaInstalled === false}
-            className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
-              isExporting || isGgufExporting || isMlxExporting || !modelName.trim() || !baseModel.trim() || !quantization || adapters.length === 0 || ollamaInstalled === false
-                ? "bg-primary/50 text-primary-foreground/70 cursor-not-allowed"
-                : "bg-primary text-primary-foreground hover:bg-primary/90"
-            }`}
-          >
-            <Upload size={16} />
-            {isExporting ? t("ollama.exporting") : t("ollama.exportButton")}
-          </button>
+                <button
+                  onClick={handleExportWithValidation}
+                  disabled={isExporting || isGgufExporting || isMlxExporting || !modelName.trim() || !baseModel.trim() || !quantization || adapters.length === 0 || ollamaInstalled === false}
+                  className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isExporting || isGgufExporting || isMlxExporting || !modelName.trim() || !baseModel.trim() || !quantization || adapters.length === 0 || ollamaInstalled === false
+                      ? "bg-primary/50 text-primary-foreground/70 cursor-not-allowed"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  }`}
+                >
+                  <Upload size={16} />
+                  {isExporting ? t("ollama.exporting") : t("ollama.exportButton")}
+                </button>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={keepFused}
+                    onChange={(e) => setKeepFused(e.target.checked)}
+                    disabled={isExporting || isMlxExporting}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                  />
+                  <span className="text-sm text-foreground">{t("keepFused.label")}</span>
+                  <span className="text-[0.625rem] text-muted-foreground">({t("keepFused.hint")})</span>
+                </label>
+              </div>
+            </div>
+            )}
 
           {/* Export Progress Panel */}
           {(isExporting || exportLogs.length > 0) && (
             <div className="space-y-3">
               {/* Step Progress Bar */}
               {isExporting && (
-                <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+                <div className="rounded-lg border border-border bg-card p-4 space-y-3 shadow-sm">
                   {/* Step indicators */}
                   <div className="flex items-center gap-1">
                     {EXPORT_STEPS.map((s, i) => {
@@ -735,7 +798,7 @@ export function ExportPage() {
                       const isActive = stepIdx === i;
                       return (
                         <div key={s.key} className="flex items-center gap-1 flex-1">
-                          <div className={`flex items-center gap-1 text-[10px] font-medium truncate ${
+                          <div className={`flex items-center gap-1 text-[0.625rem] font-medium truncate ${
                             isDone ? "text-success" : isActive ? "text-primary" : "text-muted-foreground/40"
                           }`}>
                             {isDone ? (
@@ -827,10 +890,10 @@ export function ExportPage() {
                   <CheckCircle2 size={20} className="text-success shrink-0" />
                   <span className="text-base font-bold text-success">{t("ollama.success")}</span>
                 </div>
-                {(fusedDir || outputDir || manifestDir || ollamaDir) && (
+                {exportRootDir && (
                   <button
-                    onClick={() => invoke("open_adapter_folder", { adapterPath: fusedDir || outputDir || manifestDir || ollamaDir })}
-                    className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20 transition-colors"
+                    onClick={() => invoke("open_adapter_folder", { adapterPath: exportRootDir })}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
                     <FolderOpen size={14} />
                     {tc("openFolder")}
@@ -838,7 +901,7 @@ export function ExportPage() {
                 )}
               </div>
               {/* Path details */}
-              <div className="overflow-hidden rounded-lg border border-border bg-card divide-y divide-border">
+              <div className="overflow-hidden rounded-lg border border-border bg-card divide-y divide-border shadow-sm">
                 {outputDir && (
                   <div className="p-3.5 space-y-1.5 hover:bg-muted/30 transition-colors">
                     <p className="text-xs font-semibold text-foreground/80 tracking-wide">{t("ollama.outputLocation")}</p>
@@ -851,7 +914,7 @@ export function ExportPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-semibold text-foreground/80 tracking-wide">{t("ollama.ollamaModelsDir")}</p>
                       {ollamaPathType && (
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${ollamaPathType === "custom" ? "bg-tag-trained/15 text-tag-trained border border-tag-trained/20" : "bg-muted text-muted-foreground border border-border"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-[0.625rem] font-medium ${ollamaPathType === "custom" ? "bg-tag-trained/15 text-tag-trained border border-tag-trained/20" : "bg-muted text-muted-foreground border border-border"}`}>
                           {ollamaPathType === "custom" ? t("ollama.pathCustom") : t("ollama.pathDefault")}
                         </span>
                       )}
@@ -872,11 +935,11 @@ export function ExportPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <p className="text-xs font-semibold text-primary/90 tracking-wide">{t("fusedDir.label")}</p>
-                        <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary tracking-wide hidden sm:inline-block">MLX / LM Studio</span>
+                        <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[0.625rem] font-medium text-primary tracking-wide hidden sm:inline-block">MLX / LM Studio</span>
                       </div>
                       <button
                         onClick={() => invoke("open_adapter_folder", { adapterPath: fusedDir })}
-                        className="flex items-center gap-1 text-xs font-medium text-primary/70 hover:text-primary transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       >
                         <FolderOpen size={12} />
                         {t("fusedDir.openFolder")}
@@ -933,7 +996,7 @@ export function ExportPage() {
                     {verifyState === "failed" && (
                       <button
                         onClick={() => runVerify(successModelName)}
-                        className="text-[10px] text-muted-foreground hover:text-foreground border border-border rounded px-1.5 py-0.5"
+                        className="text-[0.625rem] text-muted-foreground hover:text-foreground border border-border rounded px-1.5 py-0.5"
                       >
                         {t("verify.retry")}
                       </button>
@@ -951,22 +1014,28 @@ export function ExportPage() {
               )}
             </div>
           )}
-        </div>
+          </div>
       </section>
 
       {/* GGUF Export */}
-      <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+      <div className="rounded-lg border border-border bg-card p-5 space-y-4 shadow-sm transition-all duration-300">
         <div>
-          <h3 className="text-base font-semibold text-foreground">{t("gguf.title")}</h3>
-          <p className="text-xs text-muted-foreground mt-1">{t("gguf.description")}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{t("gguf.archNote")}</p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="flex items-center gap-1.5 text-base font-semibold text-foreground cursor-default">
+                {t("gguf.title")}
+                <Info size={13} className="text-muted-foreground/50" />
+              </h3>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("gguf.description")} {t("gguf.archNote")}</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* GGUF path warning */}
         {ggufPathWarning && (
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
             <AlertTriangle size={13} className="text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-300 leading-relaxed">
+            <p className="text-[0.6875rem] text-amber-300 leading-relaxed">
               {t("pathWarning", { configuredPath: ggufPathWarning.configuredPath, fallbackPath: ggufPathWarning.fallbackPath })}
             </p>
           </div>
@@ -1003,7 +1072,7 @@ export function ExportPage() {
                   <span className="text-xs font-semibold text-foreground">{t("exportLog")}</span>
                   <button
                     onClick={() => { navigator.clipboard.writeText(ggufLogs.join("\n")); setGgufCopied(true); setTimeout(() => setGgufCopied(false), 3000); }}
-                    className="flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent"
+                    className="flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[0.6875rem] text-muted-foreground hover:bg-accent"
                   >
                     {ggufCopied ? <Check size={11} className="text-success" /> : <Copy size={11} />}
                     {ggufCopied ? tc("copied") : tc("copyLog")}
@@ -1034,7 +1103,7 @@ export function ExportPage() {
               {ggufOutputDir && (
                 <button
                   onClick={() => invoke("open_adapter_folder", { adapterPath: ggufOutputDir })}
-                  className="flex items-center gap-1 text-[11px] text-success/60 hover:text-success transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <FolderOpen size={12} />
                   {t("gguf.openFile")}
@@ -1056,10 +1125,17 @@ export function ExportPage() {
       </div>
 
       {/* ═══════ MLX Export Section ═══════ */}
-      <div className="rounded-xl border border-border bg-card/50 p-5 space-y-4">
+      <div className="rounded-lg border border-border bg-card p-5 space-y-4 shadow-sm transition-all duration-300">
         <div>
-          <h2 className="text-lg font-bold text-foreground">{t("mlx.title")}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">{t("mlx.description")}</p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h2 className="flex items-center gap-1.5 text-lg font-bold text-foreground cursor-default">
+                {t("mlx.title")}
+                <Info size={14} className="text-muted-foreground/50" />
+              </h2>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("mlx.description")}</TooltipContent>
+          </Tooltip>
         </div>
 
         <button
@@ -1092,7 +1168,7 @@ export function ExportPage() {
                   <span className="text-xs font-semibold text-foreground">{t("exportLog")}</span>
                   <button
                     onClick={() => { navigator.clipboard.writeText(mlxLogs.join("\n")); setMlxCopied(true); setTimeout(() => setMlxCopied(false), 3000); }}
-                    className="flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent"
+                    className="flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[0.6875rem] text-muted-foreground hover:bg-accent"
                   >
                     {mlxCopied ? <Check size={11} className="text-success" /> : <Copy size={11} />}
                     {mlxCopied ? tc("copied") : tc("copyLog")}
@@ -1123,7 +1199,7 @@ export function ExportPage() {
               {mlxOutputDir && (
                 <button
                   onClick={() => invoke("open_adapter_folder", { adapterPath: mlxOutputDir })}
-                  className="flex items-center gap-1 text-[11px] text-success/60 hover:text-success transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <FolderOpen size={12} />
                   {t("mlx.openFolder")}
@@ -1136,7 +1212,7 @@ export function ExportPage() {
               </p>
             )}
             {mlxSizeMb > 0 && (
-              <p className="text-[11px] text-success/50">{t("mlx.sizeHint", { size: mlxSizeMb })}</p>
+              <p className="text-[0.6875rem] text-success/50">{t("mlx.sizeHint", { size: mlxSizeMb })}</p>
             )}
           </div>
         )}
@@ -1148,10 +1224,17 @@ export function ExportPage() {
       </div>
 
       {/* ═══════ Local Inference Server Section ═══════ */}
-      <div className="rounded-xl border border-border bg-card/50 p-5 space-y-4">
+      <div className="rounded-lg border border-border bg-card p-5 space-y-4 shadow-sm transition-all duration-300">
         <div>
-          <h2 className="text-lg font-bold text-foreground">{t("server.title")}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">{t("server.description")}</p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h2 className="flex items-center gap-1.5 text-lg font-bold text-foreground cursor-default">
+                {t("server.title")}
+                <Info size={14} className="text-muted-foreground/50" />
+              </h2>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[450px]">{t("server.description")}</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* No MLX model available */}
@@ -1183,7 +1266,7 @@ export function ExportPage() {
 
                 {/* Endpoint display with copy */}
                 <div className="rounded-md bg-background/50 border border-success/20 px-3 py-2 space-y-1">
-                  <p className="text-[10px] text-success/50 font-medium uppercase tracking-wide">{t("server.endpoint")}</p>
+                  <p className="text-[0.625rem] text-success/50 font-medium uppercase tracking-wide">{t("server.endpoint")}</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-xs text-success font-mono select-all break-all">{serverStatus.endpoint}</code>
                     <button
@@ -1224,10 +1307,10 @@ export function ExportPage() {
       </div>
 
       {/* ═══════ Connection Guide Section ═══════ */}
-      <div className="rounded-xl border border-border bg-card/50">
+      <div className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
         <button
           onClick={() => setGuideOpen(!guideOpen)}
-          className="flex w-full items-center justify-between p-5"
+          className="flex w-full items-center justify-between p-5 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
         >
           <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
             <BookOpen size={18} />
@@ -1284,6 +1367,22 @@ export function ExportPage() {
           </div>
         )}
       </div>
+      {showResetDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-lg">
+            <h3 className="text-sm font-semibold text-foreground">{tc("clearConfirmTitle")}</h3>
+            <p className="mt-2 text-xs text-muted-foreground">{tc("clearConfirmExportMsg")}</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setShowResetDialog(false)} className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent">
+                {tc("cancel")}
+              </button>
+              <button onClick={() => { setSelectedAdapter(""); setModelName(""); setBaseModel(""); setQuantization(""); setQuantEdited(false); clearExportState(); clearGgufState(); clearMlxState(); setShowResetDialog(false); }} className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive/90">
+                {tc("confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

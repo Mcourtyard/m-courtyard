@@ -88,9 +88,13 @@
   },
   "section": {
     "selectFiles": "Select Raw Data Files",
+    "selectFilesHint": "Import the raw documents you want to use for training (supports txt, md, docx, pdf, JSON, and more). After import, the system auto-cleans the text and segments it into chunks, then uses AI to generate structured training data pairs. This is step one — higher quality source files lead to better training results.",
     "genMethod": "Generation Method",
+    "genMethodHint": "Choose how to turn your documents into training data: AI generation (Ollama) uses a local large model to understand your content and produce high-quality Q&A/dialogue pairs — great for quality-sensitive use cases; built-in rules are extremely fast with no AI needed, extracting structured content via rules — ideal for quick tests or well-formatted data.",
     "genType": "Generation Type",
-    "datasets": "Generated Datasets"
+    "genTypeHint": "Choose based on what you want the model to learn: Q&A — have the model master knowledge from your documents and answer questions; Style Imitation — replicate the writing style and tone of your documents; Multi-turn Chat — train a conversation assistant for continuous dialogues; Instruction Following — teach the model to complete specific tasks on demand.",
+    "datasets": "Generated Datasets",
+    "datasetsHint": "All generated training dataset versions are listed here. Each generation run creates a new version, making it easy to compare results with different settings. Expand a version to see sample count, source files, and quality scores. Once you've picked a version, click the button below to go to the Training page."
   },
   "dataset": {
     "versionCount": "{{count}} dataset version(s)",
@@ -153,7 +157,9 @@
   "aiLog": "Data Preview",
   "previewTab": {
     "data": "Data Preview",
-    "segment": "Smart Segmentation"
+    "dataHint": "The data preview shows AI-generated training samples in real time. During generation it streams live AI output logs so you can monitor quality; after generation, click any file in the left list to preview its raw content.",
+    "segment": "Smart Segments",
+    "segmentHint": "Smart segmentation is the prep step before generation: the system analyzes each file's type and structure, then splits long text into appropriately-sized chunks so the AI can process each piece efficiently. This tab shows segment count, character distribution, and the algorithm used — helping you verify the text is being split sensibly."
   },
   "autoSegment": {
     "label": "Smart Segmentation",
@@ -194,7 +200,9 @@
       "avg": "Average length",
       "range": "Length range",
       "tooShort": "Short",
-      "tooLong": "Long"
+      "tooLong": "Long",
+      "strategy": "Primary Strategy",
+      "strategyHint": "The system automatically selects the best segmentation algorithm based on file content: Markdown segmentation for document-style content, code-aware segmentation for files with code, paragraph-balanced for general text, and fixed-length for strict length control."
     },
     "strategy": {
       "markdown_recursive": "Markdown-aware chunking",

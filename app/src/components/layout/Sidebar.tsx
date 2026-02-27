@@ -47,49 +47,49 @@ export function Sidebar() {
         </span>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-2">
+      <nav className="flex-1 space-y-1.5 overflow-y-auto p-3">
         {/* Dashboard - top level */}
         <button
           onClick={() => navigate("/")}
-          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-lg font-medium transition-colors ${
+          className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
             location.pathname === "/"
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+              : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           }`}
         >
-          <LayoutDashboard size={20} />
+          <LayoutDashboard size={18} className={location.pathname === "/" ? "text-primary" : "text-muted-foreground group-hover:text-foreground"} />
           <span>{t("dashboard")}</span>
         </button>
 
         {/* Projects - top level with expandable sub-nav */}
-        <div>
+        <div className="pt-1">
           <button
             onClick={() => navigate("/projects")}
-            className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-lg font-medium transition-colors ${
+            className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
               isInProjectSection
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
             }`}
           >
-            <FolderOpen size={20} />
+            <FolderOpen size={18} className={isInProjectSection ? "text-primary" : "text-muted-foreground group-hover:text-foreground"} />
             <span className="flex-1 text-left">{t("projects")}</span>
             {projects.length > 0 && (
               isInProjectSection
-                ? <ChevronDown size={14} className="text-muted-foreground" />
-                : <ChevronRight size={14} className="text-muted-foreground" />
+                ? <ChevronDown size={14} className="text-muted-foreground/70" />
+                : <ChevronRight size={14} className="text-muted-foreground/70" />
             )}
           </button>
 
           {/* Current project indicator */}
           {currentProject && isInProjectSection && (
-            <div className="mx-3 mt-1 mb-1 truncate rounded bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
+            <div className="mx-3 mt-2 mb-2 truncate rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-[11px] font-medium text-primary shadow-sm">
               {currentProject.name}
             </div>
           )}
 
           {/* Sub-navigation items */}
           {isInProjectSection && (
-            <div className="mt-0.5 space-y-0.5 pl-2">
+            <div className="mt-1 space-y-0.5 pl-3 border-l border-border/50 ml-5">
               {subNavItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 const isDisabled = !hasProject;
@@ -98,12 +98,12 @@ export function Sidebar() {
                     key={item.key}
                     onClick={() => { if (!isDisabled) navigate(item.path); }}
                     disabled={isDisabled}
-                    className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-base transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all ${
                       isDisabled
-                        ? "cursor-not-allowed text-muted-foreground/30"
+                        ? "cursor-not-allowed opacity-40 grayscale"
                         : isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     }`}
                   >
                     {item.icon}
@@ -120,14 +120,14 @@ export function Sidebar() {
       <div className="space-y-1 border-t border-border p-2">
         <button
           onClick={toggleLanguage}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <Languages size={20} />
           <span>{i18n.language === "zh-CN" ? "English" : "中文"}</span>
         </button>
         <button
           onClick={() => navigate("/settings")}
-          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
             location.pathname === "/settings"
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
               : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"

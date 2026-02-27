@@ -4,13 +4,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { Upload, Trash2, Eye, ArrowRight, FolderOpen, Square, Play, ChevronDown, ChevronRight, CheckCircle2, Circle, AlertTriangle, Settings, Check, AlertCircle, ChevronLeft, ListPlus, X } from "lucide-react";
+import { Upload, Trash2, Eye, ArrowRight, FolderOpen, Square, Play, ChevronDown, ChevronRight, CheckCircle2, Circle, AlertTriangle, Settings, Check, AlertCircle, ChevronLeft, ListPlus, X, Info } from "lucide-react";
 import i18nGlobal from "@/i18n";
 import { useNavigate } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
 import { useGenerationStore } from "@/stores/generationStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useTrainingQueueStore } from "@/stores/trainingQueueStore";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ModelSelector } from "@/components/ModelSelector";
 import { StepProgress } from "@/components/StepProgress";
 
@@ -247,6 +248,7 @@ export function DataPrepPage() {
   const [filePage, setFilePage] = useState(0);
   const FILES_PER_PAGE = 10;
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const [retryingVersion, setRetryingVersion] = useState<string | null>(null);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
@@ -363,6 +365,7 @@ export function DataPrepPage() {
       setPipelineStage("idle");
     }
   }, [generating, cleaning]);
+
 
   // Drag-and-drop file import via Tauri webview window events
   useEffect(() => {
@@ -784,6 +787,27 @@ export function DataPrepPage() {
     }
   };
 
+  const handleResetProject = async () => {
+    if (!currentProject) return;
+    try {
+      await invoke("clear_project_data", { projectId: currentProject.id });
+    } catch (e) {
+      console.error("Clear project data failed:", e);
+    }
+    setRawFiles([]);
+    setCleanedFiles([]);
+    setDatasetVersions([]);
+    setDatasetPage(0);
+    setExpandedDataset(null);
+    setPreview(null);
+    setPreviewName("");
+    setSegmentPreview(null);
+    setPreviewTab("data");
+    useGenerationStore.getState().resetForm();
+    useGenerationStore.getState().resetGeneration();
+    setShowResetDialog(false);
+  };
+
   const handleClearAllFiles = async () => {
     if (!currentProject || rawFiles.length === 0) return;
     try {
@@ -876,8 +900,16 @@ export function DataPrepPage() {
 
   // Collapsible step states
   const [step1Open, setStep1Open] = useState(true);
-  const [step2Open, setStep2Open] = useState(true);
-  const [_step3Open, _setStep3Open] = useState(true);
+  const [step2Open, setStep2Open] = useState(false);
+  const [step3Open, setStep3Open] = useState(false);
+
+  // Auto-expand 1.2 and 1.3 when 1.1 is complete (files added or loaded)
+  useEffect(() => {
+    if (rawFiles.length > 0) {
+      setStep2Open(true);
+      setStep3Open(true);
+    }
+  }, [rawFiles.length]);
 
   const methodDone = genSource === "builtin" || (genSource === "ollama" && !!genModel);
   const typeDone = !!genMode;
@@ -892,42 +924,35 @@ export function DataPrepPage() {
   ].filter((s) => s.active || s.done || s.key !== "generating");
 
   const segmentMaxChars = Math.max(segmentPreview?.summary.max_chars || 1, 1);
+  const segmentFilteredItems = (previewName && segmentPreview)
+    ? segmentPreview.items.filter(item => !item.source_file || item.source_file === previewName)
+    : (segmentPreview?.items ?? []);
 
   return (
     <div className="space-y-4">
+      {/* ── Page header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("pageTitle")}</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("pageTitle")}</h1>
           <p className="mt-1 text-xs text-muted-foreground">
             {currentProject.name}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setRawFiles([]);
-              setCleanedFiles([]);
-              setDatasetVersions([]);
-              setDatasetPage(0);
-              setExpandedDataset(null);
-              setPreview(null);
-              setPreviewName("");
-              setGenModel("");
-              setGenMode("");
-              useGenerationStore.getState().resetForm();
-              useGenerationStore.getState().resetGeneration();
-            }}
-            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent"
+            onClick={() => setShowResetDialog(true)}
+            disabled={generating || cleaning}
+            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
           >
             <Trash2 size={14} />
             {tc("clearAll")}
           </button>
           <button
             onClick={() => invoke("open_project_folder", { projectId: currentProject.id })}
-            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             title={tc("openFinderTitle")}
           >
-            <FolderOpen size={14} />
+            <FolderOpen size={12} />
             {tc("openFolder")}
           </button>
         </div>
@@ -936,85 +961,58 @@ export function DataPrepPage() {
       {/* Unified Step Progress */}
       <StepProgress subSteps={dataPrepSubSteps} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 items-start">
         {/* File Lists */}
         <div className="space-y-4">
           {/* 1.1 Select raw data files - collapsible card with drag-drop */}
-          <div ref={sectionStep1Ref} className="relative rounded-lg border border-border bg-card">
+          <div ref={sectionStep1Ref} className="relative rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
             {/* Drag-and-drop overlay */}
             {isDragging && (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary bg-primary/10 backdrop-blur-sm">
-                <Upload size={32} className="mb-2 text-primary" />
-                <p className="text-sm font-medium text-primary">
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-2 border-dashed border-primary rounded-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-3"><Upload size={24} /></div>
+                <p className="text-base font-semibold text-foreground">
                   {dragFileCount > 0 ? t("dropZone.dropping", { count: dragFileCount }) : t("dropZone.hint")}
                 </p>
-                <p className="mt-2 text-sm font-medium text-primary/70">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {t("dropZone.supportedFormats")}
                 </p>
               </div>
             )}
+            
             <button
               onClick={() => setStep1Open(!step1Open)}
-              className="flex w-full items-center justify-between p-4"
+              className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
             >
-              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-                {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span className="flex items-center gap-1.5">
-                  {rawFiles.length > 0 ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-                  1.1 {t("section.selectFiles")} ({rawFiles.length})
-                  {validationHint === "validation.needFiles" && (
-                    <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
-                  )}
-                </span>
-              </h3>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                    {step1Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    <span className="flex items-center gap-1.5">
+                      {rawFiles.length > 0 ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                      1.1 {t("section.selectFiles")}
+                      {rawFiles.length > 0 && <span className="ml-1 text-muted-foreground font-normal text-xs">({rawFiles.length})</span>}
+                      {validationHint === "validation.needFiles" && (
+                        <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[0.6875rem] font-medium text-destructive-foreground">{t(validationHint)}</span>
+                      )}
+                      <Info size={13} className="text-muted-foreground/50" />
+                    </span>
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[450px]">{t("section.selectFilesHint")}</TooltipContent>
+              </Tooltip>
             </button>
             {step1Open && (
-              <div ref={dropZoneRef} className="border-t border-border p-4 space-y-3">
-                {/* Merge checkbox + Auto-segment checkbox + Clear all — toolbar row */}
-                {rawFiles.length > 0 && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <label
-                        className="flex items-center gap-2 cursor-pointer select-none"
-                        title={t("mergeToggle.hint")}
-                        onClick={() => setMergeMode(!mergeMode)}
-                      >
-                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${mergeMode ? "border-primary bg-primary" : "border-muted-foreground/40 bg-transparent"}`}>
-                          {mergeMode && <Check size={11} className="text-primary-foreground" />}
-                        </span>
-                        <span className="text-xs text-foreground">{t("mergeToggle.label")}</span>
-                      </label>
-                      <label
-                        className="flex items-center gap-2 cursor-pointer select-none"
-                        title={t("autoSegment.hint")}
-                        onClick={() => setAutoSegment(!autoSegment)}
-                      >
-                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${autoSegment ? "border-primary bg-primary" : "border-muted-foreground/40 bg-transparent"}`}>
-                          {autoSegment && <Check size={11} className="text-primary-foreground" />}
-                        </span>
-                        <span className="text-xs text-foreground">{t("autoSegment.label")}</span>
-                      </label>
-                    </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setShowClearAllDialog(true); }}
-                      disabled={cleaning || generating}
-                      className="p-1.5 rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
-                      title={t("clearAll")}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                )}
+              <div ref={dropZoneRef} className="border-t border-border p-4 space-y-4">
                 {rawFiles.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-border py-6 text-center">
-                    <p className="mb-3 text-sm text-muted-foreground">{t("files.empty")}</p>
-                    <p className="mb-1 text-xs text-muted-foreground">{t("dropZone.hint")}</p>
-                    <p className="mb-3 text-[11px] text-muted-foreground">{t("dropZone.supportedFormats")}</p>
+                  <div className="rounded-lg border border-dashed border-border bg-muted/20 py-8 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
+                    <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground"><Upload size={18} /></div>
+                    <p className="mb-1 text-sm font-medium text-foreground">{t("dropZone.hint")}</p>
+                    <p className="mb-5 text-xs text-muted-foreground">{t("dropZone.supportedFormats")}</p>
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={handleImport}
                         disabled={importing}
-                        className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-xs font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
                       >
                         <Upload size={14} />
                         {t("import.button")}
@@ -1022,7 +1020,7 @@ export function DataPrepPage() {
                       <button
                         onClick={handleImportFolder}
                         disabled={importing}
-                        className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
                       >
                         <FolderOpen size={14} />
                         {t("selectFolder")}
@@ -1043,7 +1041,7 @@ export function DataPrepPage() {
                           {cleaning ? t("generate.cleaningStatus") : (genFiles[genCurrentFileIdx]?.name ?? genFiles[0]?.name ?? "...")}
                         </span>
                         {!cleaning && genTotal > 0 && (
-                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                          <span className="shrink-0 text-[0.6875rem] text-muted-foreground">
                             {genStep}/{genTotal} {t("queue.segUnit")}
                             {genProgress && ` · ${genProgress}`}
                           </span>
@@ -1075,7 +1073,7 @@ export function DataPrepPage() {
                               <span className={`truncate ${isActive ? "font-medium text-foreground" : isDone ? "text-muted-foreground" : "text-muted-foreground/80"}`}>
                                 {f.name}
                               </span>
-                              <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                              <span className="ml-auto shrink-0 text-[0.625rem] text-muted-foreground">
                                 {formatSize(f.sizeBytes)}
                               </span>
                             </div>
@@ -1090,22 +1088,20 @@ export function DataPrepPage() {
                     {rawFiles.slice(filePage * FILES_PER_PAGE, (filePage + 1) * FILES_PER_PAGE).map((f) => (
                       <div
                         key={f.path}
-                        className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+                        onClick={() => handlePreview(f)}
+                        className={`group flex items-center justify-between rounded-md border px-3 py-2 cursor-pointer transition-colors ${previewName === f.name ? "border-primary/40 bg-primary/5" : "border-border hover:border-border/80 hover:bg-muted/30"}`}
                       >
-                        <button
-                          onClick={() => handlePreview(f)}
-                          className="flex items-center gap-2 text-left text-sm text-foreground hover:text-primary"
-                        >
+                        <div className="flex items-center gap-2 text-left text-sm text-foreground group-hover:text-primary">
                           <Eye size={14} className="text-muted-foreground" />
                           <span className="truncate max-w-48">{f.name}</span>
                           <span className="text-xs text-muted-foreground">
                             {formatSize(f.size_bytes)}
                           </span>
-                        </button>
+                        </div>
                         <div className="flex items-center gap-2">
                           {pipelineStage === "idle" && (
                             <button
-                              onClick={() => handleDeleteFile(f)}
+                              onClick={(e) => { e.stopPropagation(); handleDeleteFile(f); }}
                               className="p-1 text-muted-foreground hover:text-destructive"
                             >
                               <Trash2 size={14} />
@@ -1120,40 +1116,49 @@ export function DataPrepPage() {
                         <button
                           onClick={() => setFilePage(Math.max(0, filePage - 1))}
                           disabled={filePage === 0}
-                          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-30"
+                          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[0.6875rem] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-30"
                         >
                           <ChevronLeft size={12} />
                         </button>
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-[0.6875rem] text-muted-foreground">
                           {t("filePage", { current: filePage + 1, total: Math.ceil(rawFiles.length / FILES_PER_PAGE) })}
                         </span>
                         <button
                           onClick={() => setFilePage(Math.min(Math.ceil(rawFiles.length / FILES_PER_PAGE) - 1, filePage + 1))}
                           disabled={filePage >= Math.ceil(rawFiles.length / FILES_PER_PAGE) - 1}
-                          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-30"
+                          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[0.6875rem] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-30"
                         >
                           <ChevronRight size={12} />
                         </button>
                       </div>
                     )}
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={handleImport}
-                        disabled={importing}
-                        className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
-                      >
-                        <Upload size={12} />
-                        {t("addFile")}
-                      </button>
-                      <button
-                        onClick={handleImportFolder}
-                        disabled={importing}
-                        className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
-                      >
-                        <FolderOpen size={12} />
-                        {t("addFolder")}
-                      </button>
-                    </div>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={handleImport}
+                          disabled={importing}
+                          className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[0.6875rem] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                        >
+                          <Upload size={12} />
+                          {t("addFile")}
+                        </button>
+                        <button
+                          onClick={handleImportFolder}
+                          disabled={importing}
+                          className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[0.6875rem] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                        >
+                          <FolderOpen size={12} />
+                          {t("addFolder")}
+                        </button>
+                        {rawFiles.length > 1 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setShowClearAllDialog(true); }}
+                            disabled={cleaning || generating}
+                            className="flex items-center gap-1 rounded-md bg-destructive px-2.5 py-1.5 text-[0.6875rem] font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+                          >
+                            {t("clearAll")}
+                          </button>
+                        )}
+                      </div>
                   </div>
                 )}
               </div>
@@ -1161,21 +1166,27 @@ export function DataPrepPage() {
           </div>
 
           {/* 1.2 Generation method + 1.3 Generation type + Generate - collapsible card */}
-            <div ref={sectionStep2Ref} className="rounded-lg border border-border bg-card">
-              <button
-                onClick={() => setStep2Open(!step2Open)}
-                className="flex w-full items-center justify-between p-4"
-              >
-                <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-                  {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  <span className="flex items-center gap-1.5">
-                    {methodDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-                    1.2 {t("section.genMethod")}
-                    {(validationHint === "validation.needModel" || validationHint === "validation.needMode") && (
-                      <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[11px] font-medium text-destructive-foreground">{t(validationHint)}</span>
-                    )}
-                  </span>
-                </h3>
+            <div ref={sectionStep2Ref} className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
+            <button
+              onClick={() => setStep2Open(!step2Open)}
+              className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
+            >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                      {step2Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      <span className="flex items-center gap-1.5">
+                        {methodDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                        1.2 {t("section.genMethod")}
+                        {(validationHint === "validation.needModel" || validationHint === "validation.needMode") && (
+                          <span className="ml-2 animate-pulse rounded bg-destructive/90 px-2 py-0.5 text-[0.6875rem] font-medium text-destructive-foreground">{t(validationHint)}</span>
+                        )}
+                        <Info size={13} className="text-muted-foreground/50" />
+                      </span>
+                    </h3>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[450px]">{t("section.genMethodHint")}</TooltipContent>
+                </Tooltip>
                 {!step2Open && (
                   <span className="text-xs text-muted-foreground">
                     {genSource === "ollama" ? t("generate.source_ollama") : t("generate.source_builtin")}
@@ -1183,24 +1194,15 @@ export function DataPrepPage() {
                 )}
               </button>
               {step2Open && (
-                <div className="border-t border-border p-4 space-y-3">
-                  <p className="text-xs text-muted-foreground">
-                    {t("generate.hint")}
-                    {genSource === "ollama" && (
-                      <span className="ml-1 text-foreground/80">{t("generate.ollamaHint")}</span>
-                    )}
-                    {genSource === "builtin" && (
-                      <span className="ml-1 text-foreground/80">{t("generate.builtinHint")}</span>
-                    )}
-                  </p>
+                <div className="border-t border-border p-4 space-y-4">
                   <div className="flex gap-2">
                     <button
                       onClick={() => setGenSource("ollama")}
                       disabled={generating}
-                      className={`flex-1 rounded-md border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
+                      className={`flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
                         genSource === "ollama"
                           ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border text-muted-foreground hover:bg-accent"
+                          : "border-input bg-background text-muted-foreground hover:bg-accent"
                       }`}
                     >
                       {t("generate.source_ollama")}
@@ -1208,10 +1210,10 @@ export function DataPrepPage() {
                     <button
                       onClick={() => setGenSource("builtin")}
                       disabled={generating}
-                      className={`flex-1 rounded-md border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
+                      className={`flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
                         genSource === "builtin"
                           ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border text-muted-foreground hover:bg-accent"
+                          : "border-input bg-background text-muted-foreground hover:bg-accent"
                       }`}
                     >
                       {t("generate.source_builtin")}
@@ -1219,7 +1221,7 @@ export function DataPrepPage() {
                   </div>
 
                   {genSource === "ollama" && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {ollamaReady === false ? (
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-warning">
@@ -1229,42 +1231,67 @@ export function DataPrepPage() {
                           <p className="text-xs text-muted-foreground">{t("generate.installOllamaHint")}</p>
                           <button
                             onClick={() => navigate("/settings")}
-                            className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-accent/50 px-3 py-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                            className="flex w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
                           >
                             <Settings size={14} />
                             {t("generate.envCheck")}
                           </button>
                         </div>
                       ) : (
-                        <>
+                        <div className="pt-1">
                           {genModel && (
-                            <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
-                              <span className="font-medium text-foreground">{genModel}</span>
+                            <div className="mb-2 flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                              <span className="truncate text-sm font-medium text-foreground">{genModel}</span>
+                              {!generating && (
+                                <button onClick={() => setGenModel("")} className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                                  <X size={14} />
+                                </button>
+                              )}
                             </div>
                           )}
-                          <ModelSelector
-                            mode="dataprep"
-                            selectedModel={genModel}
-                            onSelect={(modelId) => setGenModel(modelId)}
-                            disabled={generating}
-                            projectId={currentProject?.id}
-                            defaultOpen={true}
-                          />
-                        </>
+                          {!genModel && !generating && (
+                            <ModelSelector
+                              mode="dataprep"
+                              selectedModel={genModel}
+                              onSelect={(modelId) => setGenModel(modelId)}
+                              defaultOpen={true}
+                              disabled={generating}
+                              projectId={currentProject?.id}
+                            />
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
 
-                  {/* 1.3 Generation type */}
-                  <h3 className="flex items-center gap-2 text-base font-semibold text-foreground pt-1">
-                    <span className="flex items-center gap-1.5">
-                      {typeDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
-                      1.3 {t("section.genType")}
-                    </span>
-                  </h3>
+                </div>
+              )}
+            </div>
+
+          <div className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
+            <button
+              onClick={() => setStep3Open(!step3Open)}
+              className="flex w-full items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors rounded-t-lg"
+            >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                      {step3Open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      <span className="flex items-center gap-1.5">
+                        {typeDone ? <CheckCircle2 size={20} className="text-success drop-shadow-[0_0_3px_var(--success-glow)]" /> : <Circle size={20} className="text-muted-foreground/30" />}
+                        1.3 {t("section.genType")}
+                        <Info size={13} className="text-muted-foreground/50" />
+                      </span>
+                    </h3>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[450px]">{t("section.genTypeHint")}</TooltipContent>
+                </Tooltip>
+              </button>
+              {step3Open && (
+                <div className="border-t border-border p-4 space-y-3">
                   {/* Content-based mode detection hint */}
                   {rawFiles.length > 0 && modeCapabilityReady.current && (
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">{t(modeCapability.hintKey)}</p>
+                    <p className="text-[0.6875rem] text-muted-foreground leading-relaxed">{t(modeCapability.hintKey)}</p>
                   )}
                   <div className="flex gap-2">
                     {(["qa", "style", "chat", "instruct"] as const).map((m) => {
@@ -1300,7 +1327,11 @@ export function DataPrepPage() {
                       {t(`generate.mode_${genMode}_desc`)}
                     </p>
                   )}
+                </div>
+              )}
+            </div>
 
+          <div className="rounded-lg border border-border bg-card p-4 space-y-3 shadow-sm transition-all duration-300">
                   {/* Advanced Settings */}
                   <div className="rounded-md border border-border/60">
                     <button
@@ -1315,27 +1346,75 @@ export function DataPrepPage() {
                     </button>
                     {showAdvancedSettings && (
                       <div className="border-t border-border/50 p-3 space-y-2">
-                        <label className="flex items-start gap-2 text-xs">
-                          <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 rounded border-border" checked={enablePrivacyFilter} onChange={(e) => setEnablePrivacyFilter(e.target.checked)} disabled={generating || cleaning} />
-                          <span className="text-foreground">{t("generate.privacyFilter")}<span className="ml-1 text-muted-foreground">{t("generate.privacyFilterHint")}</span></span>
-                        </label>
-                        <label className="flex items-start gap-2 text-xs">
-                          <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 rounded border-border" checked={enableFuzzyDedup} onChange={(e) => setEnableFuzzyDedup(e.target.checked)} disabled={generating || cleaning} />
-                          <span className="text-foreground">{t("generate.fuzzyDedup")}<span className="ml-1 text-muted-foreground">{t("generate.fuzzyDedupHint")}</span></span>
-                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <label className="flex items-center justify-between gap-2 text-xs cursor-default">
+                              <div className="flex items-center gap-2">
+                                <input type="checkbox" className="h-3.5 w-3.5 rounded border-border" checked={enablePrivacyFilter} onChange={(e) => setEnablePrivacyFilter(e.target.checked)} disabled={generating || cleaning} />
+                                <span className="text-foreground">{t("generate.privacyFilter")}</span>
+                                <Info size={12} className="text-muted-foreground" />
+                              </div>
+                            </label>
+                          </TooltipTrigger>
+                          <TooltipContent>{t("generate.privacyFilterHint")}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <label className="flex items-center justify-between gap-2 text-xs cursor-default">
+                              <div className="flex items-center gap-2">
+                                <input type="checkbox" className="h-3.5 w-3.5 rounded border-border" checked={enableFuzzyDedup} onChange={(e) => setEnableFuzzyDedup(e.target.checked)} disabled={generating || cleaning} />
+                                <span className="text-foreground">{t("generate.fuzzyDedup")}</span>
+                                <Info size={12} className="text-muted-foreground" />
+                              </div>
+                            </label>
+                          </TooltipTrigger>
+                          <TooltipContent>{t("generate.fuzzyDedupHint")}</TooltipContent>
+                        </Tooltip>
                         {enableFuzzyDedup && (
                           <div className="space-y-1 pl-6">
-                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <div className="flex items-center justify-between text-[0.6875rem] text-muted-foreground">
                               <span>{t("generate.fuzzyThreshold")}</span>
                               <span>{fuzzyDedupThreshold.toFixed(2)}</span>
                             </div>
                             <input type="range" min={0.5} max={1.0} step={0.05} value={fuzzyDedupThreshold} onChange={(e) => setFuzzyDedupThreshold(Number(e.target.value))} disabled={generating || cleaning} className="w-full" />
                           </div>
                         )}
-                        <label className="flex items-start gap-2 text-xs">
-                          <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 rounded border-border" checked={enableQualityScoring} onChange={(e) => setEnableQualityScoring(e.target.checked)} disabled={generating || cleaning} />
-                          <span className="text-foreground">{t("generate.qualityScoring")}<span className="ml-1 text-muted-foreground">{t("generate.qualityScoringHint")}</span></span>
-                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <label className="flex items-center justify-between gap-2 text-xs cursor-default">
+                              <div className="flex items-center gap-2">
+                                <input type="checkbox" className="h-3.5 w-3.5 rounded border-border" checked={enableQualityScoring} onChange={(e) => setEnableQualityScoring(e.target.checked)} disabled={generating || cleaning} />
+                                <span className="text-foreground">{t("generate.qualityScoring")}</span>
+                                <Info size={12} className="text-muted-foreground" />
+                              </div>
+                            </label>
+                          </TooltipTrigger>
+                          <TooltipContent>{t("generate.qualityScoringHint")}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <label className="flex items-center justify-between gap-2 text-xs cursor-default">
+                              <div className="flex items-center gap-2">
+                                <input type="checkbox" className="h-3.5 w-3.5 rounded border-border" checked={autoSegment} onChange={(e) => setAutoSegment(e.target.checked)} disabled={generating || cleaning} />
+                                <span className="text-foreground">{t("autoSegment.label")}</span>
+                                <Info size={12} className="text-muted-foreground" />
+                              </div>
+                            </label>
+                          </TooltipTrigger>
+                          <TooltipContent>{t("autoSegment.hint")}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <label className="flex items-center justify-between gap-2 text-xs cursor-default">
+                              <div className="flex items-center gap-2">
+                                <input type="checkbox" className="h-3.5 w-3.5 rounded border-border" checked={mergeMode} onChange={(e) => setMergeMode(e.target.checked)} disabled={generating || cleaning} />
+                                <span className="text-foreground">{t("mergeToggle.label")}</span>
+                                <Info size={12} className="text-muted-foreground" />
+                              </div>
+                            </label>
+                          </TooltipTrigger>
+                          <TooltipContent>{t("mergeToggle.hint")}</TooltipContent>
+                        </Tooltip>
                       </div>
                     )}
                   </div>
@@ -1380,89 +1459,89 @@ export function DataPrepPage() {
                       </div>
                       <p className="text-muted-foreground mb-2">{t("ollamaPathMismatch.desc")}</p>
                       <p className="text-muted-foreground mb-1">{t("ollamaPathMismatch.terminalHint")}</p>
-                      <pre className="rounded bg-muted/60 px-2 py-1.5 font-mono text-[11px] text-foreground select-all mb-2 overflow-x-auto whitespace-pre">{t("ollamaPathMismatch.commandExample")}</pre>
+                      <pre className="rounded bg-muted/60 px-2 py-1.5 font-mono text-[0.6875rem] text-foreground select-all mb-2 overflow-x-auto whitespace-pre">{t("ollamaPathMismatch.commandExample")}</pre>
                       {autoFixMsg ? (
-                        <p className={`text-[11px] ${autoFixOk ? "text-success" : "text-red-400"}`}>{autoFixMsg}</p>
+                        <p className={`text-[0.6875rem] ${autoFixOk ? "text-success" : "text-red-400"}`}>{autoFixMsg}</p>
                       ) : (
                         <button
                           onClick={handleAutoFixOllamaPath}
                           disabled={autoFixing}
-                          className="mt-1 rounded-md border border-amber-500/50 bg-amber-500/20 px-3 py-1.5 text-[11px] font-medium text-amber-300 hover:bg-amber-500/30 transition-colors disabled:opacity-50"
+                          className="mt-1 rounded-md border border-amber-500/50 bg-amber-500/20 px-3 py-1.5 text-[0.6875rem] font-medium text-amber-300 hover:bg-amber-500/30 transition-colors disabled:opacity-50"
                         >
                           {autoFixing ? t("ollamaPathMismatch.autoFixing") : t("ollamaPathMismatch.autoFix")}
                         </button>
                       )}
                     </div>
                   )}
-                </div>
-              )}
             </div>
 
         </div>
 
         {/* Preview Panel / AI Log Panel — outer border aligned with left 1.1 card */}
         <div ref={previewPanelRef} className="sticky top-4 space-y-4">
-          <div className="rounded-lg border border-border bg-card">
+          <div className="rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
             {/* ─── Tab header: Data Preview / Smart Segmentation ─── */}
-            <div className="flex items-center justify-between p-4">
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-t-lg border-b border-border/50">
               <div className="flex items-center gap-1">
                 {/* During generation, only show data tab; otherwise show both */}
-                <button
-                  onClick={() => setPreviewTab("data")}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                    (generating || cleaning || previewTab === "data")
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  }`}
-                >
-                  {t("previewTab.data")}
-                  {generating && <span className="ml-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-success" />}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setPreviewTab("data")}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                        (generating || cleaning || previewTab === "data")
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {t("previewTab.data")}
+                      {generating && <span className="ml-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-success" />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[450px]">{t("previewTab.dataHint")}</TooltipContent>
+                </Tooltip>
                 {!generating && !cleaning && (
-                  <button
-                    onClick={() => setPreviewTab("segment")}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                      previewTab === "segment"
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {t("previewTab.segment")}
-                    {segmentPreview && segmentPreview.summary.total_segments > 0 && (
-                      <span className="ml-1.5 rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                        {segmentPreview.summary.total_segments}
-                      </span>
-                    )}
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setPreviewTab("segment")}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                          previewTab === "segment"
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {t("previewTab.segment")}
+                        {segmentPreview && segmentPreview.summary.total_segments > 0 && (
+                          <span className="ml-1.5 rounded-full bg-primary/20 px-1.5 py-0.5 text-[0.625rem] font-medium text-primary">
+                            {previewName
+                              ? segmentPreview.items.filter(i => !i.source_file || i.source_file === previewName).length
+                              : segmentPreview.summary.total_segments}
+                          </span>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[450px]">{t("previewTab.segmentHint")}</TooltipContent>
+                  </Tooltip>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {previewTab === "data" && !generating && previewName && !(aiLogs.length > 0) && (
-                  <span className="text-xs font-normal text-muted-foreground truncate max-w-[120px]">
-                    {previewName}
-                  </span>
-                )}
                 {previewTab === "data" && !generating && aiLogs.length > 0 && (
                   <button
                     onClick={() => clearLogs()}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-[0.6875rem] text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {tc("clearLogs")}
                   </button>
                 )}
-                {previewTab === "segment" && segmentPreview && (
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-foreground">
-                    {t("segment.strategyLabel", { strategy: getStrategyLabel(segmentPreview.summary.primary_strategy || "paragraph_balanced") })}
-                  </span>
-                )}
               </div>
             </div>
-            <div className="border-t border-border px-4 pb-4 pt-0">
+            <div className="px-4 pb-4 pt-0">
               {/* ─── Data Preview tab content ─── */}
               {(generating || cleaning || previewTab === "data") && (
-                <div ref={logScrollRef} className="log-scroll-container min-h-[560px] max-h-[calc(100vh-240px)] overflow-auto rounded-md border border-border/60 bg-muted/10 p-3 mt-3">
+                <div ref={logScrollRef} className="log-scroll-container h-[480px] overflow-auto rounded-md border border-border bg-background p-3 mt-3">
                   {(generating || aiLogs.length > 0) ? (
-                    <div className="space-y-0.5 font-mono text-sm leading-loose">
+                    <div className="space-y-0.5 font-mono text-xs leading-loose">
                       {aiLogs.length === 0 && generating && (
                         <p className="text-muted-foreground">{t("connectingAI")}</p>
                       )}
@@ -1485,44 +1564,75 @@ export function DataPrepPage() {
                       <div ref={logEndRef} />
                     </div>
                   ) : preview ? (
-                    <pre className="whitespace-pre-wrap text-sm text-foreground font-mono leading-loose">
+                    <pre className="whitespace-pre-wrap text-xs text-foreground font-mono leading-relaxed">
                       {preview}
                     </pre>
                   ) : (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      {t("preview.noContent")}
-                    </p>
+                    <div className="flex h-full flex-col items-center justify-center text-center">
+                      <p className="text-sm font-medium text-foreground">{t("preview.noContent")}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">选择左侧文件以预览内容</p>
+                    </div>
                   )}
                 </div>
               )}
               {/* ─── Smart Segmentation tab content ─── */}
               {!generating && !cleaning && previewTab === "segment" && (
-                <div className="min-h-[560px] max-h-[calc(100vh-240px)] overflow-auto rounded-md border border-border/60 bg-muted/10 p-3 mt-3">
+                <div className="h-[480px] overflow-auto rounded-md border border-border bg-background p-3 mt-3">
                   {segmentPreviewLoading ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">{t("segment.loading")}</p>
+                    <div className="flex h-full items-center justify-center">
+                      <p className="text-sm text-muted-foreground animate-pulse">{t("segment.loading")}</p>
+                    </div>
                   ) : segmentPreview && segmentPreview.summary.total_segments > 0 ? (
                     <div className="space-y-4">
-                      <p className="text-xs leading-relaxed text-muted-foreground">{t("segment.hint")}</p>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="rounded-md border border-border bg-card/60 px-3 py-2">
                           <p className="text-xs text-muted-foreground">{t("segment.summary.total")}</p>
-                          <p className="mt-0.5 text-base font-semibold text-foreground">{segmentPreview.summary.total_segments}</p>
+                          <p className="mt-0.5 text-base font-semibold text-foreground">
+                            {previewName
+                              ? segmentPreview.items.filter(i => !i.source_file || i.source_file === previewName).length
+                              : segmentPreview.summary.total_segments}
+                          </p>
                         </div>
                         <div className="rounded-md border border-border bg-card/60 px-3 py-2">
                           <p className="text-xs text-muted-foreground">{t("segment.summary.avg")}</p>
-                          <p className="mt-0.5 text-base font-semibold text-foreground">{segmentPreview.summary.avg_chars}</p>
+                          <p className="mt-0.5 text-base font-semibold text-foreground">
+                            {previewName
+                              ? (() => {
+                                  const items = segmentPreview.items.filter(i => !i.source_file || i.source_file === previewName);
+                                  return items.length > 0
+                                    ? Math.round(items.reduce((acc, curr) => acc + curr.char_count, 0) / items.length)
+                                    : 0;
+                                })()
+                              : segmentPreview.summary.avg_chars}
+                          </p>
                         </div>
                         <div className="rounded-md border border-border bg-card/60 px-3 py-2">
                           <p className="text-xs text-muted-foreground">{t("segment.summary.range")}</p>
-                          <p className="mt-0.5 text-sm font-medium text-foreground">{segmentPreview.summary.min_chars} - {segmentPreview.summary.max_chars}</p>
+                          <p className="mt-0.5 text-sm font-medium text-foreground">
+                            {previewName
+                              ? (() => {
+                                  const items = segmentPreview.items.filter(i => !i.source_file || i.source_file === previewName);
+                                  if (items.length === 0) return "0 - 0";
+                                  const chars = items.map(i => i.char_count);
+                                  return `${Math.min(...chars)} - ${Math.max(...chars)}`;
+                                })()
+                              : `${segmentPreview.summary.min_chars} - ${segmentPreview.summary.max_chars}`}
+                          </p>
                         </div>
-                        <div className="rounded-md border border-border bg-card/60 px-3 py-2">
-                          <p className="text-xs text-muted-foreground">{t("segment.summary.tooShort")} / {t("segment.summary.tooLong")}</p>
-                          <p className="mt-0.5 text-sm font-medium text-foreground">{segmentPreview.summary.short_segments} / {segmentPreview.summary.long_segments}</p>
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="rounded-md border border-border bg-card/60 px-3 py-2 flex flex-col justify-center cursor-default">
+                              <p className="text-[0.6875rem] text-muted-foreground">{t("segment.summary.strategy")}</p>
+                              <p className="mt-0.5 text-xs font-medium text-foreground leading-tight">
+                                {getStrategyLabel(segmentPreview.summary.primary_strategy || "paragraph_balanced")}
+                              </p>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[450px]">{t("segment.summary.strategyHint")}</TooltipContent>
+                        </Tooltip>
                       </div>
                       <div className="space-y-2">
-                        {segmentPreview.items.map((item) => (
+                        {segmentFilteredItems.map((item) => (
                           <div key={`${item.id}-${item.source_file}`} className="rounded-md border border-border bg-card/60 px-3 py-2.5">
                             <div className="mb-1.5 flex items-center justify-between gap-2">
                               <span className="text-sm font-semibold text-foreground">{t("segment.itemLabel", { id: item.id })}</span>
@@ -1560,7 +1670,7 @@ export function DataPrepPage() {
                 </span>
               </div>
               {/* Row 2: stats */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.6875rem] text-muted-foreground">
                 <span>
                   {t("stats.fileIndex", { current: genCurrentFileIdx + 1, total: genFiles.length })}
                 </span>
@@ -1590,14 +1700,20 @@ export function DataPrepPage() {
           {datasetVersions.length > 0 && (
             <div ref={datasetSectionRef} className="rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between p-4">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <CheckCircle2 size={16} className="text-success" />
-                  {t("section.datasets")}
-                  <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">{datasetVersions.length}</span>
-                </h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground cursor-default">
+                      <CheckCircle2 size={16} className="text-success" />
+                      {t("section.datasets")}
+                      <span className="rounded-full bg-success/10 px-2 py-0.5 text-[0.625rem] font-medium text-success">{datasetVersions.length}</span>
+                      <Info size={13} className="text-muted-foreground/50" />
+                    </h3>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[450px]">{t("section.datasetsHint")}</TooltipContent>
+                </Tooltip>
                 <button
                   onClick={() => invoke("open_dataset_folder", { projectId: currentProject?.id })}
-                  className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <FolderOpen size={12} />
                   {tc("openFolder")}
@@ -1632,7 +1748,7 @@ export function DataPrepPage() {
                                 <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground/60">{formatSize(v.train_size + v.valid_size)}</span>
                               </button>
                               {isExpanded && (
-                                <div className="border-t border-border/50 bg-muted/10 px-4 py-2 space-y-1 text-[11px]">
+                                <div className="border-t border-border/50 bg-muted/10 px-4 py-2 space-y-1 text-[0.6875rem]">
                                   <div className="flex gap-2"><span className="shrink-0 text-muted-foreground">{t("dataset.trainSet")}:</span><span className="text-foreground">{t("dataset.samples", { count: v.train_count })}</span></div>
                                   <div className="flex gap-2"><span className="shrink-0 text-muted-foreground">{t("dataset.validSet")}:</span><span className="text-foreground">{t("dataset.samples", { count: v.valid_count })}</span></div>
                                   {v.raw_files.length > 0 && <div className="flex gap-2"><span className="shrink-0 text-muted-foreground">{t("dataset.sourceFiles")}:</span><span className="text-foreground">{v.raw_files.join(", ")}</span></div>}
@@ -1646,7 +1762,7 @@ export function DataPrepPage() {
                                   {v.quality_scoring_enabled && (
                                     <div className="flex items-center gap-2">
                                       <span className="shrink-0 text-muted-foreground">{t("dataset.quality")}:</span>
-                                      <span className={`rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold leading-none ${getQualityGradeTone(v.quality_grade)}`}>{(v.quality_grade || "-").toUpperCase()}</span>
+                                      <span className={`rounded-sm border px-1.5 py-0.5 text-[0.625rem] font-semibold leading-none ${getQualityGradeTone(v.quality_grade)}`}>{(v.quality_grade || "-").toUpperCase()}</span>
                                       {typeof v.quality_score === "number" && <span className="text-foreground">{t("dataset.qualityScore", { score: v.quality_score.toFixed(1) })}</span>}
                                     </div>
                                   )}
@@ -1655,7 +1771,7 @@ export function DataPrepPage() {
                                       <button
                                         onClick={(e) => { e.stopPropagation(); handleRetryFailed(v.version); }}
                                         disabled={generating || cleaning || !!retryingVersion}
-                                        className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-medium text-warning transition-colors hover:bg-warning/15 disabled:opacity-50"
+                                        className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[0.6875rem] font-medium text-warning transition-colors hover:bg-warning/15 disabled:opacity-50"
                                       >
                                         {retryingVersion === v.version ? t("dataset.retryingFailed") : t("dataset.retryFailed", { count: v.failed_count })}
                                       </button>
@@ -1668,11 +1784,11 @@ export function DataPrepPage() {
                         })}
                         {totalPages > 1 && (
                           <div className="flex items-center justify-between pt-1">
-                            <button disabled={datasetPage === 0} onClick={() => setDatasetPage((p) => Math.max(0, p - 1))} className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40">
+                            <button disabled={datasetPage === 0} onClick={() => setDatasetPage((p) => Math.max(0, p - 1))} className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[0.6875rem] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40">
                               <ChevronLeft size={12} />{t("dataset.prevPage")}
                             </button>
-                            <span className="text-[11px] text-muted-foreground">{t("dataset.page", { current: datasetPage + 1, total: totalPages })}</span>
-                            <button disabled={datasetPage >= totalPages - 1} onClick={() => setDatasetPage((p) => Math.min(totalPages - 1, p + 1))} className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40">
+                            <span className="text-[0.6875rem] text-muted-foreground">{t("dataset.page", { current: datasetPage + 1, total: totalPages })}</span>
+                            <button disabled={datasetPage >= totalPages - 1} onClick={() => setDatasetPage((p) => Math.min(totalPages - 1, p + 1))} className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[0.6875rem] text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40">
                               {t("dataset.nextPage")}<ChevronRight size={12} />
                             </button>
                           </div>
@@ -1704,7 +1820,7 @@ export function DataPrepPage() {
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <ListPlus size={15} />
                 {tTrain("queue.title")}
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.625rem] font-medium text-primary">
                   {tTrain("queue.count", { count: queuedCount })}
                 </span>
               </h3>
@@ -1712,7 +1828,7 @@ export function DataPrepPage() {
                 {hasFinished && (
                   <button
                     onClick={() => clearTrainingQueue()}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-[0.6875rem] text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {tTrain("queue.clear")}
                   </button>
@@ -1734,7 +1850,7 @@ export function DataPrepPage() {
                   }`}
                 >
                   <span className="flex items-center gap-2 truncate">
-                    <span className="w-5 text-center text-[10px] text-muted-foreground font-mono">#{idx + 1}</span>
+                    <span className="w-5 text-center text-[0.625rem] text-muted-foreground font-mono">#{idx + 1}</span>
                     <span className="font-medium text-foreground">{job.projectName}</span>
                     <span className="text-muted-foreground">
                       {(() => { try { const p = JSON.parse(job.params); return `${p.iters} iters · ${p.fine_tune_type}`; } catch { return ""; } })()}
@@ -1744,7 +1860,7 @@ export function DataPrepPage() {
                     )}
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                    <span className={`rounded-full px-2 py-0.5 text-[0.625rem] font-medium ${
                       job.status === "running" ? "bg-primary/10 text-primary" :
                       job.status === "completed" ? "bg-success/10 text-success" :
                       job.status === "failed" ? "bg-destructive/10 text-destructive" :
@@ -1797,6 +1913,32 @@ export function DataPrepPage() {
                   }
                   setDeleteConfirm(null);
                 }}
+                className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive/90"
+              >
+                {tc("confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Project Confirmation Dialog */}
+      {showResetDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-lg">
+            <h3 className="text-sm font-semibold text-foreground">{tc("clearConfirmTitle")}</h3>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {tc("clearConfirmDataPrepMsg")}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowResetDialog(false)}
+                className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
+              >
+                {tc("cancel")}
+              </button>
+              <button
+                onClick={handleResetProject}
                 className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive/90"
               >
                 {tc("confirm")}
