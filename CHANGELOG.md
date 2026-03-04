@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.9] - 2026-03-04
 
+### Fixed
+- **Quantized Model + Full Fine-tuning Interception**: Attempting "Full" fine-tuning with a quantized model (4-bit / 8-bit) now fails early with a clear error message instead of crashing mid-training with an opaque MLX error (`[QuantizedMatmul::vjp] no gradient wrt the quantized weights`). The backend validates the combination before starting; the frontend adds a hover tooltip on the "Full" method tab and a proactive warning banner when a quantized model is selected alongside "Full". Bilingual (en / zh-CN).
+
 ### Added
 - **Custom JSONL Dataset Import (D-11)**: Power users can now import their own pre-formatted JSONL datasets directly from the Training page (step 2.2), bypassing the Data Preparation stage entirely.
   - New "Import Dataset" button in the 2.2 section header — works alongside existing dataset list.

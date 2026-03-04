@@ -52,6 +52,7 @@
     "doraDesc": "权重分解低秩自适应。增强版 LoRA，效果更好，计算量略增。",
     "full": "Full",
     "fullDesc": "全参数微调。训练所有模型权重，需要大量内存。",
+    "fullQuantizedTooltip": "⚠️ 量化模型（4-bit / 8-bit）不支持 Full 全参数微调。MLX 框架目前无法对量化权重计算梯度。请改用 LoRA 或 DoRA——两者均支持量化模型（即 QLoRA 方式）。",
     "hint": "请先选择模型和数据集，再选择训练方法。",
     "advancedTitle": "高级选项",
     "loraScaleStrategy": "LoRA 缩放策略",
@@ -174,6 +175,11 @@
       "title": "Loss 呈上升趋势",
       "detail": "近期训练损失有明显上升。",
       "action": "请检查数据质量，必要时降低学习率。"
+    },
+    "quantizedVjp": {
+      "title": "量化模型不支持 Full 全参数微调",
+      "detail": "MLX 报错：[QuantizedMatmul::vjp] no gradient wrt the quantized weights。",
+      "action": "请切换为 LoRA 或 DoRA——两者均支持量化模型的 QLoRA 微调方式。"
     }
   },
   "latestTrainLoss": "最新 Train Loss:",
@@ -227,6 +233,11 @@
     "success": "数据集导入成功",
     "errorNoTrain": "所选文件夹中未找到 train.jsonl。",
     "cancel": "取消"
+  },
+  "quantized": {
+    "warningTitle": "检测到量化模型 — Full 微调不受支持",
+    "warningDetail": "MLX 框架无法对量化权重计算梯度。请改用 LoRA 或 DoRA 进行微调。",
+    "warningAction": "切换为 LoRA"
   },
   "validation": {
     "needModel": "请先选择训练模型",

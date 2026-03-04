@@ -52,6 +52,7 @@
     "doraDesc": "Weight-Decomposed Low-Rank Adaptation. Enhanced LoRA with better performance, slightly more compute.",
     "full": "Full",
     "fullDesc": "Full parameter fine-tuning. Trains all model weights. Requires significantly more memory.",
+    "fullQuantizedTooltip": "⚠️ Quantized models (4-bit / 8-bit) are not supported for Full fine-tuning. MLX cannot compute gradients for quantized weights. Use LoRA or DoRA instead — both support quantized models via QLoRA.",
     "hint": "Select a method after choosing model and dataset.",
     "advancedTitle": "Advanced",
     "loraScaleStrategy": "LoRA Scaling Strategy",
@@ -174,6 +175,11 @@
       "title": "Loss is rising",
       "detail": "Recent train loss trend moved upward noticeably.",
       "action": "Review data quality and lower learning rate if needed."
+    },
+    "quantizedVjp": {
+      "title": "Quantized model — Full fine-tuning not supported",
+      "detail": "MLX error: [QuantizedMatmul::vjp] no gradient wrt the quantized weights.",
+      "action": "Switch to LoRA or DoRA — both support quantized models via QLoRA."
     }
   },
   "latestTrainLoss": "Latest Train Loss:",
@@ -227,6 +233,11 @@
     "success": "Dataset imported successfully",
     "errorNoTrain": "train.jsonl not found in the selected folder.",
     "cancel": "Cancel"
+  },
+  "quantized": {
+    "warningTitle": "Quantized model detected — Full fine-tuning not supported",
+    "warningDetail": "The MLX framework cannot compute gradients for quantized weights. Please switch to LoRA or DoRA to fine-tune this model.",
+    "warningAction": "Switch to LoRA"
   },
   "validation": {
     "needModel": "Please select a training model first",

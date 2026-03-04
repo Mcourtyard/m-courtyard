@@ -10,6 +10,15 @@ use crate::commands::config::{load_config, hf_endpoint_for_source};
 static TRAINING_PROCESSES: Lazy<Mutex<HashMap<String, u32>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
+/// Returns true when the model identifier indicates a quantized model.
+/// Checks common naming conventions used by mlx-community and other sources.
+fn is_quantized_model(model: &str) -> bool {
+    let lower = model.to_lowercase();
+    let patterns = ["4bit", "8bit", "4-bit", "8-bit", "-q4", "-q8", "q4_", "q8_",
+                    "quantized", "gptq", "awq", "gguf", "bnb"];
+    patterns.iter().any(|p| lower.contains(p))
+}
+
 #[tauri::command]
 pub async fn start_training(
     app: tauri::AppHandle,
@@ -46,6 +55,18 @@ pub async fn start_training(
     };
     let adapter_path = project_path.join("adapters").join(&job_id);
     let fine_tune_type = training_params["fine_tune_type"].as_str().unwrap_or("lora").to_string();
+
+    // Intercept: quantized model + full fine-tuning is unsupported by MLX
+    // (MLX raises [QuantizedMatmul::vjp] no gradient wrt the quantized weights)
+    if fine_tune_type == "full" && is_quantized_model(&model) {
+        return Err(
+            "Quantized models (4-bit / 8-bit) cannot be trained with Full fine-tuning. \
+             The MLX framework does not support gradient computation for quantized weights. \
+             Please switch to LoRA or DoRA — both support quantized models via QLoRA."
+                .into(),
+        );
+    }
+
     let optimizer = training_params["optimizer"].as_str().unwrap_or("adam").to_string();
     let iters = training_params["iters"].as_u64().unwrap_or(1000);
     let batch_size = training_params["batch_size"].as_u64().unwrap_or(4);

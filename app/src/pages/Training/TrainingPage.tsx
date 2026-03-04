@@ -17,7 +17,7 @@ type HealthLevel = "green" | "yellow" | "red";
 type AlertLevel = "warning" | "critical";
 
 interface SmartAlert {
-  id: "memory" | "runtime" | "thermal" | "stalled" | "lossRising";
+  id: "memory" | "runtime" | "thermal" | "stalled" | "lossRising" | "quantizedVjp";
   level: AlertLevel;
   titleKey: string;
   detailKey: string;
@@ -183,6 +183,21 @@ function deriveSmartAlerts({
       titleKey: "alerts.stalled.title",
       detailKey: "alerts.stalled.detail",
       actionKey: "alerts.stalled.action",
+    });
+  }
+
+  if (
+    containsAny([
+      "quantizedmatmul::vjp",
+      "no gradient wrt the quantized",
+    ])
+  ) {
+    pushAlert({
+      id: "quantizedVjp",
+      level: "critical",
+      titleKey: "alerts.quantizedVjp.title",
+      detailKey: "alerts.quantizedVjp.detail",
+      actionKey: "alerts.quantizedVjp.action",
     });
   }
 
@@ -431,6 +446,10 @@ export function TrainingPage() {
   // Method is considered done when model+dataset selected and a method is set
   const methodDone = !!(params.model && selectedDataset && params.fine_tune_type);
   const isLoraLike = params.fine_tune_type === "lora" || params.fine_tune_type === "dora";
+  const isQuantizedModel = !!params.model && [
+    "4bit", "8bit", "4-bit", "8-bit", "-q4", "-q8", "q4_", "q8_",
+    "quantized", "gptq", "awq", "gguf", "bnb",
+  ].some((p) => params.model.toLowerCase().includes(p));
 
   useEffect(() => {
     initListeners();
@@ -1154,24 +1173,53 @@ export function TrainingPage() {
               <p className="text-xs text-muted-foreground/70">{t("method.hint")}</p>
             )}
             <div className="flex gap-3">
-              {(["lora", "dora", "full"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => { updateParam("fine_tune_type", m); setParamsEdited(true); }}
-                  disabled={status === "running" || !(params.model && selectedDataset)}
-                  className={`flex-1 rounded-lg border px-3 py-3 text-left transition-colors disabled:opacity-40 ${
-                    params.fine_tune_type === m
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:bg-accent"
-                  }`}
-                >
-                  <span className={`block text-sm font-semibold ${
-                    params.fine_tune_type === m ? "text-foreground" : "text-muted-foreground"
-                  }`}>{t(`method.${m}`)}</span>
-                  <span className="block text-[10px] text-muted-foreground/70 mt-0.5">{t(`method.${m}Desc`)}</span>
-                </button>
-              ))}
+              {(["lora", "dora", "full"] as const).map((m) => {
+                const btn = (
+                  <button
+                    key={m}
+                    onClick={() => { updateParam("fine_tune_type", m); setParamsEdited(true); }}
+                    disabled={status === "running" || !(params.model && selectedDataset)}
+                    className={`flex-1 rounded-lg border px-3 py-3 text-left transition-colors disabled:opacity-40 ${
+                      params.fine_tune_type === m
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:bg-accent"
+                    }`}
+                  >
+                    <span className={`block text-sm font-semibold ${
+                      params.fine_tune_type === m ? "text-foreground" : "text-muted-foreground"
+                    }`}>{t(`method.${m}`)}</span>
+                    <span className="block text-[10px] text-muted-foreground/70 mt-0.5">{t(`method.${m}Desc`)}</span>
+                  </button>
+                );
+                if (m === "full") {
+                  return (
+                    <Tooltip key={m}>
+                      <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                      <TooltipContent className="max-w-[380px]">{t("method.fullQuantizedTooltip")}</TooltipContent>
+                    </Tooltip>
+                  );
+                }
+                return btn;
+              })}
             </div>
+
+            {/* Proactive warning: quantized model + full fine-tuning */}
+            {isQuantizedModel && params.fine_tune_type === "full" && (
+              <div className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0 text-destructive" />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold text-destructive">{t("quantized.warningTitle")}</p>
+                  <p className="text-[11px] text-foreground">{t("quantized.warningDetail")}</p>
+                  <button
+                    onClick={() => { updateParam("fine_tune_type", "lora"); setParamsEdited(true); }}
+                    disabled={status === "running"}
+                    className="mt-1 text-[11px] font-medium text-primary hover:underline disabled:opacity-40"
+                  >
+                    {t("quantized.warningAction")} →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* rsLoRA Advanced Options — only visible for LoRA / DoRA */}
             {isLoraLike && (
