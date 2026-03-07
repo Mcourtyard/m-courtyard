@@ -5,6 +5,8 @@
   "noModel": "No trained model found for this project. Complete training first.",
   "chat": {
     "placeholder": "Type a message to test the model...",
+    "inputTitle": "Chat Input",
+    "inputHint": "Ask a real question here. The cursor will focus here automatically when you open the testing page.",
     "send": "Send",
     "thinking": "Thinking...",
     "clear": "Clear Chat",
@@ -12,6 +14,7 @@
   },
   "config": {
     "title": "Generation Config",
+    "hint": "These settings affect only the testing page output. They do not change your training configuration.",
     "maxTokens": "Max Tokens",
     "temperature": "Temperature",
     "topP": "Top-p",

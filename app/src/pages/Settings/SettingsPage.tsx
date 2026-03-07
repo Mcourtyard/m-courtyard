@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
-import { useLocation } from "react-router-dom";
-import { Monitor, Info, Download, RefreshCw, FolderOpen, Palette, Languages, Globe, Type, HardDrive, Trash2, RotateCcw } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Monitor, Info, Download, RefreshCw, FolderOpen, Palette, Languages, Globe, Type, HardDrive, Trash2, RotateCcw, ArrowLeft } from "lucide-react";
 import { checkEnvironment, setupEnvironment, installUv, type EnvironmentStatus } from "@/services/environment";
 import { useThemeStore, type ThemeId } from "@/stores/themeStore";
 import { useTaskStore } from "@/stores/taskStore";
@@ -44,6 +44,8 @@ function formatBytes(bytes: number): string {
 export function SettingsPage() {
   const { t, i18n } = useTranslation("settings");
   const location = useLocation();
+  const navigate = useNavigate();
+  const from = (location.state as { from?: string } | null)?.from;
   const taskLocked = useTaskStore((s) => s.activeProjectId !== null);
   const isOllamaExporting = useExportStore((s) => s.isExporting);
   const isGgufExporting = useExportGgufStore((s) => s.isExporting);
@@ -300,9 +302,26 @@ export function SettingsPage() {
     { id: "light", dotColor: "#d4d4d8" },
   ];
 
+  const handleBack = () => {
+    if (from && from !== "/settings") {
+      navigate(from);
+    } else {
+      navigate(-1);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-4xl">
-      <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <ArrowLeft size={14} />
+          {t("backButton")}
+        </button>
+      </div>
 
       {/* Environment Section */}
       <section className="space-y-4">

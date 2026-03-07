@@ -126,7 +126,7 @@ export function Sidebar() {
           <span>{i18n.language === "zh-CN" ? "English" : "中文"}</span>
         </button>
         <button
-          onClick={() => navigate("/settings")}
+          onClick={() => navigate("/settings", { state: { from: location.pathname } })}
           className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
             location.pathname === "/settings"
               ? "bg-sidebar-accent text-sidebar-accent-foreground"

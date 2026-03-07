@@ -1,5 +1,12 @@
+use serde::{Deserialize, Serialize};
 use tauri::Emitter;
 use crate::python::PythonExecutor;
+
+#[derive(Deserialize, Serialize)]
+pub struct InferenceMessage {
+    pub role: String,
+    pub content: String,
+}
 
 #[tauri::command]
 pub async fn start_inference(
@@ -8,6 +15,7 @@ pub async fn start_inference(
     prompt: String,
     model: String,
     adapter_path: Option<String>,
+    messages: Option<Vec<InferenceMessage>>,
     max_tokens: Option<u32>,
     temperature: Option<f64>,
     lang: Option<String>,
@@ -25,9 +33,12 @@ pub async fn start_inference(
     }
 
     let resolved_adapter = adapter_path.filter(|p| !p.is_empty());
+    let messages_json = messages
+        .filter(|items| !items.is_empty())
+        .and_then(|items| serde_json::to_string(&items).ok());
 
     let python_bin = executor.python_bin().clone();
-    let max_tok = max_tokens.unwrap_or(512);
+    let max_tok = max_tokens.unwrap_or(1024);
     let temp = temperature.unwrap_or(0.7);
     let req_id = request_id.unwrap_or_default();
 
@@ -47,6 +58,10 @@ pub async fn start_inference(
         if let Some(adapter) = resolved_adapter {
             args.push("--adapter-path".to_string());
             args.push(adapter);
+        }
+        if let Some(messages) = messages_json {
+            args.push("--messages-json".to_string());
+            args.push(messages);
         }
         args.push("--lang".to_string());
         args.push(lang.unwrap_or_else(|| "en".to_string()));

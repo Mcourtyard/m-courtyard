@@ -15,6 +15,9 @@ import { StepProgress } from "@/components/StepProgress";
 
 type HealthLevel = "green" | "yellow" | "red";
 type AlertLevel = "warning" | "critical";
+type MaxSeqLengthMode = "preset" | "custom";
+
+const MAX_SEQ_LENGTH_PRESETS = [512, 1024, 2048, 4096, 8192] as const;
 
 interface SmartAlert {
   id: "memory" | "runtime" | "thermal" | "stalled" | "lossRising" | "quantizedVjp";
@@ -344,12 +347,15 @@ export function TrainingPage() {
   const [paramsEdited, setParamsEdited] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [maxSeqLengthMode, setMaxSeqLengthMode] = useState<MaxSeqLengthMode>("preset");
+  const [maxSeqLengthInput, setMaxSeqLengthInput] = useState("2048");
   const [nowTs, setNowTs] = useState(Date.now());
   const [lastIterChangeAt, setLastIterChangeAt] = useState<number | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importingDataset, setImportingDataset] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [methodAdvancedOpen, setMethodAdvancedOpen] = useState(false);
+  const maxSeqLengthInputRef = useRef<HTMLInputElement | null>(null);
 
   // Model-level validation (dataset selection is validated separately before start)
   const canStartTraining = !!(params.model && (modelValid !== false));
@@ -370,6 +376,20 @@ export function TrainingPage() {
     const timer = window.setInterval(() => setNowTs(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [status]);
+
+  useEffect(() => {
+    setMaxSeqLengthMode(MAX_SEQ_LENGTH_PRESETS.includes(params.max_seq_length as typeof MAX_SEQ_LENGTH_PRESETS[number]) ? "preset" : "custom");
+    setMaxSeqLengthInput(String(params.max_seq_length));
+  }, [params.max_seq_length]);
+
+  useEffect(() => {
+    if (maxSeqLengthMode !== "custom") return;
+    const rafId = window.requestAnimationFrame(() => {
+      maxSeqLengthInputRef.current?.focus();
+      maxSeqLengthInputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [maxSeqLengthMode]);
 
   useEffect(() => {
     if (status !== "running") {
@@ -587,6 +607,50 @@ export function TrainingPage() {
     : null;
   const modelShort = params.model.split("/").pop() || params.model;
 
+  const applyMaxSeqLengthInput = () => {
+    const parsed = Number.parseInt(maxSeqLengthInput.trim(), 10);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      setMaxSeqLengthInput(String(params.max_seq_length));
+      return;
+    }
+    setMaxSeqLengthMode("custom");
+    updateParam("max_seq_length", parsed);
+    setParamsEdited(true);
+    setMaxSeqLengthInput(String(parsed));
+  };
+
+  const syncEffectiveTrainingParams = (): TrainingParams => {
+    if (maxSeqLengthMode !== "custom") {
+      return params;
+    }
+    const parsed = Number.parseInt(maxSeqLengthInput.trim(), 10);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      return params;
+    }
+    if (parsed !== params.max_seq_length) {
+      updateParam("max_seq_length", parsed);
+      setParamsEdited(true);
+      setMaxSeqLengthInput(String(parsed));
+      return { ...params, max_seq_length: parsed };
+    }
+    return params;
+  };
+
+  const selectPresetMaxSeqLength = (value: number) => {
+    setMaxSeqLengthMode("preset");
+    updateParam("max_seq_length", value);
+    setParamsEdited(true);
+    setMaxSeqLengthInput(String(value));
+    setActiveDropdown(null);
+  };
+
+  const enableCustomMaxSeqLength = () => {
+    setMaxSeqLengthMode("custom");
+    setMaxSeqLengthInput(String(params.max_seq_length));
+    setParamsEdited(true);
+    setActiveDropdown(null);
+  };
+
   const buildTrainingCsv = () => {
     const byIter = new Map<number, { train?: number; val?: number }>();
     for (const [iter, loss] of trainLossData) {
@@ -729,10 +793,11 @@ export function TrainingPage() {
 
   const handleAddToQueue = () => {
     if (!currentProject || !params.model || !selectedDataset || !params.fine_tune_type) return;
+    const effectiveParams = syncEffectiveTrainingParams();
     addToQueue({
       projectId: currentProject.id,
       projectName: currentProject.name,
-      params: JSON.stringify(params),
+      params: JSON.stringify(effectiveParams),
       datasetPath: selectedDataset.path || "",
     });
     setQueueAdded(true);
@@ -744,6 +809,7 @@ export function TrainingPage() {
 
   const handleStart = async () => {
     if (!currentProject || !params.model || !selectedDataset) return;
+    const effectiveParams = syncEffectiveTrainingParams();
     // Check global task lock
     const check = taskCanStart(currentProject.id, "training");
     if (!check.allowed) return;
@@ -751,7 +817,7 @@ export function TrainingPage() {
     try {
       const jobId = await invoke<string>("start_training", {
         projectId: currentProject.id,
-        params: JSON.stringify(params),
+        params: JSON.stringify(effectiveParams),
         datasetPath: selectedDataset?.path || "",
       });
       startTraining(jobId);
@@ -1445,29 +1511,71 @@ export function TrainingPage() {
                 {/* Max Seq Length — custom dropdown */}
                 <div className="relative">
                   <label className="mb-1 block text-xs font-medium text-foreground">{t("params.maxSeqLength")}</label>
-                  <button
-                    onClick={() => setActiveDropdown(activeDropdown === "seqLength" ? null : "seqLength")}
-                    disabled={status === "running"}
-                    className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
-                  >
-                    <span>{params.max_seq_length}</span>
-                    <ChevronDown size={14} className={`text-muted-foreground transition-transform ${activeDropdown === "seqLength" ? "rotate-180" : ""}`} />
-                  </button>
+                  {maxSeqLengthMode === "custom" ? (
+                    <div className="flex rounded-md border border-input bg-background text-sm text-foreground focus-within:ring-1 focus-within:ring-ring disabled:opacity-50">
+                      <input
+                        ref={maxSeqLengthInputRef}
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={maxSeqLengthInput}
+                        onChange={(e) => setMaxSeqLengthInput(e.target.value)}
+                        onBlur={applyMaxSeqLengthInput}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            applyMaxSeqLengthInput();
+                            setActiveDropdown(null);
+                          }
+                        }}
+                        disabled={status === "running"}
+                        className="w-full rounded-l-md bg-transparent px-3 py-1.5 text-sm text-foreground focus:outline-none disabled:opacity-50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setActiveDropdown(activeDropdown === "seqLength" ? null : "seqLength")}
+                        disabled={status === "running"}
+                        className="flex items-center justify-center border-l border-input px-3 text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                      >
+                        <ChevronDown size={14} className={`transition-transform ${activeDropdown === "seqLength" ? "rotate-180" : ""}`} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setActiveDropdown(activeDropdown === "seqLength" ? null : "seqLength")}
+                      disabled={status === "running"}
+                      className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
+                    >
+                      <span>{params.max_seq_length}</span>
+                      <ChevronDown size={14} className={`text-muted-foreground transition-transform ${activeDropdown === "seqLength" ? "rotate-180" : ""}`} />
+                    </button>
+                  )}
                   {activeDropdown === "seqLength" && (
                     <div className="absolute left-0 right-0 top-full z-10 mt-1 space-y-1 rounded-lg border border-border bg-background p-2 shadow-lg">
-                      {[512, 1024, 2048, 4096].map((val) => (
+                      {MAX_SEQ_LENGTH_PRESETS.map((val) => (
                         <button key={val}
-                          onClick={() => { updateParam("max_seq_length", val); setParamsEdited(true); setActiveDropdown(null); }}
+                          onClick={() => selectPresetMaxSeqLength(val)}
                           className={`flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-left text-xs transition-colors ${
-                            params.max_seq_length === val ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-accent"
+                            maxSeqLengthMode === "preset" && params.max_seq_length === val ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-accent"
                           }`}
                         >
-                          {params.max_seq_length === val
+                          {maxSeqLengthMode === "preset" && params.max_seq_length === val
                             ? <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" /></span>
                             : <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-muted-foreground/30" />}
                           {val}
                         </button>
                       ))}
+                      <button
+                        onClick={enableCustomMaxSeqLength}
+                        className={`flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-left text-xs transition-colors ${
+                          maxSeqLengthMode === "custom" ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {maxSeqLengthMode === "custom"
+                          ? <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" /></span>
+                          : <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-muted-foreground/30" />}
+                        {t("params.maxSeqLengthCustom")}
+                      </button>
                     </div>
                   )}
                   <p className="mt-0.5 text-xs text-muted-foreground/70">{t("params.maxSeqLengthHint")}</p>

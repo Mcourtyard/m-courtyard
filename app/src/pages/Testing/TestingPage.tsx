@@ -25,6 +25,11 @@ interface InferenceErrorPayload {
   request_id?: string;
 }
 
+interface InferenceMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 type ABMode = "auto" | "sequential" | "parallel";
 type ResolvedABMode = "sequential" | "parallel";
 
@@ -57,7 +62,7 @@ export function TestingPage() {
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isABRunning, setIsABRunning] = useState(false);
-  const [maxTokens, setMaxTokens] = useState(512);
+  const [maxTokens, setMaxTokens] = useState(1024);
   const [temperature, setTemperature] = useState(0.7);
   const [showConfig, setShowConfig] = useState(false);
   const [abPrompt, setABPrompt] = useState("");
@@ -68,6 +73,7 @@ export function TestingPage() {
   const [adapterDropdownOpen, setAdapterDropdownOpen] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const selectAdapter = (adapter: AdapterInfo | null) => {
     if (adapter) {
@@ -112,15 +118,31 @@ export function TestingPage() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    if (!currentProject) return;
+    const rafId = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [currentProject?.id]);
+
+  useEffect(() => {
+    if (!inputRef.current) return;
+    inputRef.current.style.height = "auto";
+    inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 220)}px`;
+  }, [input]);
+
   const createRequestId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
   const runInference = async ({
     prompt,
     adapterPath,
+    messages,
     requestId,
   }: {
     prompt: string;
     adapterPath: string | null;
+    messages: InferenceMessage[];
     requestId: string;
   }): Promise<ABRunResult> => {
     const startedAt = performance.now();
@@ -178,6 +200,7 @@ export function TestingPage() {
             prompt,
             model: modelId,
             adapterPath,
+            messages,
             maxTokens,
             temperature,
             lang: i18n.language,
@@ -202,6 +225,10 @@ export function TestingPage() {
   const handleSend = async () => {
     if (!input.trim() || isGenerating || isABRunning || !currentProject) return;
     const userMsg = { role: "user" as const, content: input.trim() };
+    const conversationMessages: InferenceMessage[] = [...messages, userMsg].map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
     addMessage(userMsg);
     setInput("");
     setIsGenerating(true);
@@ -210,6 +237,7 @@ export function TestingPage() {
       const result = await runInference({
         prompt: userMsg.content,
         adapterPath: selectedAdapter || null,
+        messages: conversationMessages,
         requestId: createRequestId(),
       });
 
@@ -222,6 +250,7 @@ export function TestingPage() {
       addMessage({ role: "assistant", content: `Error: ${String(err)}` });
     } finally {
       setIsGenerating(false);
+      window.requestAnimationFrame(() => inputRef.current?.focus());
     }
   };
 
@@ -247,11 +276,13 @@ export function TestingPage() {
           runInference({
             prompt,
             adapterPath: null,
+            messages: [{ role: "user", content: prompt }],
             requestId: baseRequestId,
           }),
           runInference({
             prompt,
             adapterPath: selectedAdapter,
+            messages: [{ role: "user", content: prompt }],
             requestId: tunedRequestId,
           }),
         ]);
@@ -259,11 +290,13 @@ export function TestingPage() {
         baseResult = await runInference({
           prompt,
           adapterPath: null,
+          messages: [{ role: "user", content: prompt }],
           requestId: baseRequestId,
         });
         tunedResult = await runInference({
           prompt,
           adapterPath: selectedAdapter,
+          messages: [{ role: "user", content: prompt }],
           requestId: tunedRequestId,
         });
       }
@@ -328,6 +361,44 @@ export function TestingPage() {
           </button>
         </div>
       </div>
+
+      {showConfig && (
+        <div className="mb-3 rounded-lg border border-border bg-card p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <Settings size={15} className="text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">{t("config.title")}</h3>
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">{t("config.hint")}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">
+                {t("config.maxTokens")}
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(Math.max(1, Number(e.target.value) || 1))}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">
+                {t("config.temperature")}
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="2"
+                step="0.1"
+                value={temperature}
+                onChange={(e) => setTemperature(Number(e.target.value))}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Adapter - collapsible card */}
       <div className="mb-3 rounded-lg border border-border bg-card shadow-sm transition-all duration-300">
@@ -435,35 +506,6 @@ export function TestingPage() {
             {t("baseModel")}{modelId}
           </p>
         )}
-
-        {/* Advanced Config */}
-        {showConfig && (
-          <div className="grid grid-cols-2 gap-3 border-t border-border pt-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">
-                {t("config.maxTokens")}
-              </label>
-              <input
-                type="number"
-                value={maxTokens}
-                onChange={(e) => setMaxTokens(Number(e.target.value))}
-                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">
-                {t("config.temperature")}
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={temperature}
-                onChange={(e) => setTemperature(Number(e.target.value))}
-                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-          </div>
-        )}
           </div>
         )}
       </div>
@@ -513,34 +555,36 @@ export function TestingPage() {
       </div>
 
       {/* Input */}
-      <div className="mt-4 relative flex items-end w-full rounded-2xl border border-input bg-background overflow-hidden focus-within:ring-1 focus-within:ring-ring shadow-sm transition-shadow">
-        <textarea
-          ref={(el) => {
-            if (el) {
-              el.style.height = 'auto';
-              el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
-            }
-          }}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={t("chat.placeholder")}
-          rows={1}
-          style={{ minHeight: '56px', maxHeight: '200px' }}
-          className="flex-1 resize-none bg-transparent px-4 py-[18px] text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-        />
-        <div className="absolute right-3 bottom-3 flex items-center justify-center">
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isGenerating || isABRunning}
-            className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 ${
-              input.trim() && !isGenerating && !isABRunning
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-muted/50 text-muted-foreground cursor-not-allowed"
-            }`}
-          >
-            <Send size={15} className={input.trim() && !isGenerating && !isABRunning ? "-ml-[2px]" : "-ml-[2px]"} />
-          </button>
+      <div className="mt-4 rounded-xl border border-border bg-card p-3 shadow-sm">
+        <div className="mb-2 flex items-center gap-2">
+          <MessageSquare size={15} className="text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">{t("chat.inputTitle")}</h3>
+        </div>
+        <p className="mb-3 text-xs text-muted-foreground">{t("chat.inputHint")}</p>
+        <div className="relative flex items-end w-full rounded-2xl border border-input bg-background overflow-hidden shadow-sm transition-shadow focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t("chat.placeholder")}
+            rows={2}
+            style={{ minHeight: "72px", maxHeight: "220px" }}
+            className="flex-1 resize-none bg-transparent px-4 py-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          />
+          <div className="absolute right-3 bottom-3 flex items-center justify-center">
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isGenerating || isABRunning}
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 ${
+                input.trim() && !isGenerating && !isABRunning
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-muted/50 text-muted-foreground cursor-not-allowed"
+              }`}
+            >
+              <Send size={15} className="-ml-[2px]" />
+            </button>
+          </div>
         </div>
       </div>
 

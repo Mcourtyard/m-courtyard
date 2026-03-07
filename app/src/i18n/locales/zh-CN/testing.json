@@ -5,6 +5,8 @@
   "noModel": "该项目暂无已训练模型。请先完成训练。",
   "chat": {
     "placeholder": "输入消息来测试模型...",
+    "inputTitle": "测试输入框",
+    "inputHint": "在这里直接输入真实问题即可。进入测试模型页面后，光标会自动聚焦到这里。",
     "send": "发送",
     "thinking": "思考中...",
     "clear": "清空对话",
@@ -12,6 +14,7 @@
   },
   "config": {
     "title": "生成配置",
+    "hint": "这里的设置只影响测试页面的推理输出，不会修改训练参数。",
     "maxTokens": "最大 Token 数",
     "temperature": "温度",
     "topP": "Top-p",

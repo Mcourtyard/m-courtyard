@@ -22,7 +22,8 @@ def main():
     parser.add_argument("--model", required=True, help="Base model path or HF ID")
     parser.add_argument("--adapter-path", default="", help="LoRA adapter path")
     parser.add_argument("--prompt", required=True, help="User prompt text")
-    parser.add_argument("--max-tokens", type=int, default=512)
+    parser.add_argument("--messages-json", default="", help="Conversation messages JSON")
+    parser.add_argument("--max-tokens", type=int, default=1024)
     parser.add_argument("--temp", type=float, default=0.7)
     parser.add_argument("--top-p", type=float, default=0.9)
     add_lang_arg(parser)
@@ -69,14 +70,38 @@ def main():
 
         emit("status", message=t("inference.generating"))
 
+        messages = [{"role": "user", "content": args.prompt}]
+        if args.messages_json and args.messages_json.strip():
+            try:
+                parsed_messages = json.loads(args.messages_json)
+                if isinstance(parsed_messages, list):
+                    normalized_messages = []
+                    for item in parsed_messages:
+                        if not isinstance(item, dict):
+                            continue
+                        role = str(item.get("role", "user"))
+                        content = str(item.get("content", "")).strip()
+                        if not content:
+                            continue
+                        normalized_messages.append({"role": role, "content": content})
+                    if normalized_messages:
+                        messages = normalized_messages
+            except Exception:
+                pass
+
         # Build chat prompt using tokenizer's chat template if available
         if hasattr(tokenizer, "apply_chat_template"):
-            messages = [{"role": "user", "content": args.prompt}]
             prompt_text = tokenizer.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
             )
         else:
-            prompt_text = args.prompt
+            transcript = []
+            for message in messages:
+                role = "User" if message.get("role") == "user" else "Assistant"
+                transcript.append(f"{role}: {message.get('content', '')}")
+            if not messages or messages[-1].get("role") != "assistant":
+                transcript.append("Assistant:")
+            prompt_text = "\n".join(transcript).strip()
 
         # Try new API with sampler first (mlx-lm >= 0.19), fallback to legacy temp param
         gen_kwargs = dict(

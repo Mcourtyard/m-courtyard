@@ -14,7 +14,7 @@ export async function startInference(
     prompt,
     model,
     adapterPath: adapterPath || null,
-    maxTokens: maxTokens || 512,
+    maxTokens: maxTokens || 1024,
     temperature: temperature || 0.7,
     lang,
   });

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.10] - 2026-03-07
+
+### Fixed
+- **Training Max Sequence Length UX**: Reworked the Training page `max_seq_length` control into a clearer preset-or-custom flow. Users can now choose a preset value from the dropdown or switch the control into an editable custom input, and the latest custom value is submitted correctly when starting training or adding to queue.
+- **Testing Page Config Visibility + Multi-turn Context**: The Testing page settings button now shows its configuration panel independently instead of rendering inside a collapsed adapter section. Inference now sends the full conversation history instead of only the last user message, preventing false context-loss behaviour during chat testing.
+- **Testing Page Input Focus + Visual Hierarchy**: The chat input area is now visually more prominent and automatically receives focus when entering the Testing page, making the primary testing action clearer.
+- **Settings Return Navigation**: Added an explicit back button to the Settings page. When Settings is opened from a project subsection, the button returns to that exact page; otherwise it falls back to the previous route.
+- **Rust Inference Command Visibility**: Fixed the Tauri build error caused by `InferenceMessage` being private by making the struct public for command argument deserialization.
+
 ## [0.4.9] - 2026-03-04
 
 ### Fixed

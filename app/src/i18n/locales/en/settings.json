@@ -1,5 +1,6 @@
 {
   "title": "Settings",
+  "backButton": "Back",
   "environment": {
     "title": "Environment",
     "chip": "Chip",

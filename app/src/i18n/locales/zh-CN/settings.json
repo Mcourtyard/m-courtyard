@@ -1,5 +1,6 @@
 {
   "title": "设置",
+  "backButton": "返回",
   "environment": {
     "title": "运行环境",
     "chip": "芯片",
