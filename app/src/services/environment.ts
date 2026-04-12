@@ -4,6 +4,8 @@ export interface EnvironmentStatus {
   python_ready: boolean;
   mlx_lm_ready: boolean;
   mlx_lm_version: string | null;
+  mlx_lm_version_supported: boolean;
+  mlx_lm_min_version: string;
   chip: string;
   memory_gb: number;
   os_version: string;

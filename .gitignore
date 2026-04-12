@@ -46,6 +46,7 @@ app/.git-backup/
 
 # ── Internal docs & history (not for public repo) ──
 docs/
+.private-docs/
 userimg/
 history/
 *_temp.md

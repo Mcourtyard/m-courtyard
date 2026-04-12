@@ -6,6 +6,7 @@ use tauri::Emitter;
 use crate::fs::ProjectDirManager;
 use crate::python::PythonExecutor;
 use crate::commands::config::{load_config, hf_endpoint_for_source};
+use crate::commands::environment::ensure_mlx_lm_minimum_version;
 
 static TRAINING_PROCESSES: Lazy<Mutex<HashMap<String, u32>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
@@ -38,6 +39,7 @@ pub async fn start_training(
     if !executor.is_ready() {
         return Err("Python environment not ready. Please configure it in Settings.".into());
     }
+    ensure_mlx_lm_minimum_version(&executor)?;
 
     let dir_manager = ProjectDirManager::new();
     let project_path = dir_manager.project_path(&project_id);

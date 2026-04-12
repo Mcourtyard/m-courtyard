@@ -36,7 +36,7 @@
   "hardware": "Hardware",
   "quickActions": "Quick Actions",
   "setupHint": "Python environment not configured. Click here to set up.",
-  "mlxHint": "mlx-lm training framework not installed. Click here to install (Settings → Configure Python Environment).",
+  "mlxHint": "mlx-lm is missing or too old for Gemma 4. Click here to install or upgrade it in Settings.",
   "importAndClean": "Import files and clean data",
   "configAndTrain": "Configure parameters and train",
   "testModel": "Test your fine-tuned model",

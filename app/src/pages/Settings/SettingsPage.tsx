@@ -431,8 +431,14 @@ export function SettingsPage() {
             </div>
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-sm text-muted-foreground">{t("environment.mlxLm")}</span>
-              <span className={`text-sm font-medium ${env?.mlx_lm_ready ? "text-success" : "text-warning"}`}>
-                {env ? (env.mlx_lm_ready ? t("environment.mlxLmReady", { version: env.mlx_lm_version || "?" }) : t("environment.mlxLmNotReady")) : "..."}
+              <span className={`text-sm font-medium ${env?.mlx_lm_ready ? (env.mlx_lm_version_supported ? "text-success" : "text-warning") : "text-warning"}`}>
+                {env
+                  ? (env.mlx_lm_ready
+                      ? (env.mlx_lm_version_supported
+                          ? t("environment.mlxLmReady", { version: env.mlx_lm_version || "?" })
+                          : t("environment.mlxLmUpgradeRequired", { version: env.mlx_lm_version || "?", minVersion: env.mlx_lm_min_version }))
+                      : t("environment.mlxLmNotReady"))
+                  : "..."}
               </span>
             </div>
             <div className="flex items-center justify-between px-4 py-3">
@@ -474,7 +480,7 @@ export function SettingsPage() {
         )}
 
         {/* Setup Button - shown when uv is available but python/mlx-lm is not ready */}
-        {env && (!env.python_ready || !env.mlx_lm_ready) && env.uv_available && (
+        {env && (!env.python_ready || !env.mlx_lm_ready || !env.mlx_lm_version_supported) && env.uv_available && (
           <div className="space-y-2">
             <button
               onClick={handleSetup}
@@ -484,13 +490,15 @@ export function SettingsPage() {
               <Download size={16} />
               {setupLoading
                 ? t("environment.setupRunning")
-                : env.python_ready && !env.mlx_lm_ready
-                  ? t("environment.installMlxLm")
+                : env.python_ready && (!env.mlx_lm_ready || !env.mlx_lm_version_supported)
+                  ? (env.mlx_lm_ready ? t("environment.upgradeMlxLm") : t("environment.installMlxLm"))
                   : t("environment.setupButton")}
             </button>
             <p className="text-xs text-muted-foreground text-center">
-              {env.python_ready && !env.mlx_lm_ready
-                ? t("environment.installMlxLmDesc")
+              {env.python_ready && (!env.mlx_lm_ready || !env.mlx_lm_version_supported)
+                ? (env.mlx_lm_ready
+                    ? t("environment.upgradeMlxLmDesc", { minVersion: env.mlx_lm_min_version })
+                    : t("environment.installMlxLmDesc"))
                 : t("environment.setupDesc")}
             </p>
           </div>

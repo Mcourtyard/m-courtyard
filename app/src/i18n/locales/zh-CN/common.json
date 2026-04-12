@@ -36,7 +36,7 @@
   "hardware": "硬件信息",
   "quickActions": "快捷操作",
   "setupHint": "Python 环境未配置，点击此处进行设置。",
-  "mlxHint": "mlx-lm 训练框架未安装，点击此处一键安装（设置页→配置 Python 环境）。",
+  "mlxHint": "mlx-lm 未安装或版本过旧，暂不支持 Gemma 4。点击此处前往设置页安装或升级。",
   "importAndClean": "导入文件并清洗数据",
   "configAndTrain": "配置参数并开始训练",
   "testModel": "测试微调后的模型",
