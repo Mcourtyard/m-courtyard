@@ -5,11 +5,15 @@ use crate::fs::ProjectDirManager;
 use crate::commands::config::{resolve_ollama_bin_status_from_config, build_uv_env};
 use std::path::PathBuf;
 
+pub const MIN_MLX_LM_VERSION: &str = "0.31.2";
+
 #[derive(Clone, Serialize)]
 pub struct EnvironmentStatus {
     pub python_ready: bool,
     pub mlx_lm_ready: bool,
     pub mlx_lm_version: Option<String>,
+    pub mlx_lm_version_supported: bool,
+    pub mlx_lm_min_version: String,
     pub chip: String,
     pub memory_gb: f64,
     pub os_version: String,
@@ -38,6 +42,58 @@ pub struct OllamaPathInfo {
     pub configured_model_count: usize,
 }
 
+fn detect_mlx_lm_version(executor: &PythonExecutor) -> Option<String> {
+    if !executor.is_ready() {
+        return None;
+    }
+
+    std::process::Command::new(executor.python_bin())
+        .args(["-c", "import mlx_lm; print(mlx_lm.__version__)"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
+        .filter(|ver| !ver.is_empty())
+}
+
+fn parse_version_parts(version: &str) -> Vec<u32> {
+    let mut parts = version
+        .split(|c: char| !c.is_ascii_digit())
+        .filter(|part| !part.is_empty())
+        .take(3)
+        .map(|part| part.parse::<u32>().unwrap_or(0))
+        .collect::<Vec<_>>();
+
+    while parts.len() < 3 {
+        parts.push(0);
+    }
+
+    parts
+}
+
+pub fn is_mlx_lm_version_supported(version: &str) -> bool {
+    parse_version_parts(version) >= parse_version_parts(MIN_MLX_LM_VERSION)
+}
+
+pub fn ensure_mlx_lm_minimum_version(executor: &PythonExecutor) -> Result<String, String> {
+    if !executor.is_ready() {
+        return Err("Python environment not ready. Please configure it in Settings.".into());
+    }
+
+    let version = detect_mlx_lm_version(executor)
+        .ok_or_else(|| "mlx-lm is not installed. Please install it in Settings.".to_string())?;
+
+    if !is_mlx_lm_version_supported(&version) {
+        return Err(format!(
+            "mlx-lm v{} is too old. Gemma 4 support requires mlx-lm v{} or newer. Please open Settings and run the mlx-lm installation again to upgrade the environment.",
+            version,
+            MIN_MLX_LM_VERSION,
+        ));
+    }
+
+    Ok(version)
+}
+
 #[tauri::command]
 pub async fn check_environment() -> Result<EnvironmentStatus, String> {
     let executor = PythonExecutor::default();
@@ -46,24 +102,12 @@ pub async fn check_environment() -> Result<EnvironmentStatus, String> {
     let os_version = get_os_version();
     let uv_available = PythonExecutor::find_uv().is_some();
 
-    let mut mlx_lm_ready = false;
-    let mut mlx_lm_version = None;
-
-    // If python exists, check mlx-lm directly (no dependency on external script)
-    if executor.is_ready() {
-        if let Ok(output) = std::process::Command::new(executor.python_bin())
-            .args(["-c", "import mlx_lm; print(mlx_lm.__version__)"])
-            .output()
-        {
-            if output.status.success() {
-                let ver = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !ver.is_empty() {
-                    mlx_lm_ready = true;
-                    mlx_lm_version = Some(ver);
-                }
-            }
-        }
-    }
+    let mlx_lm_version = detect_mlx_lm_version(&executor);
+    let mlx_lm_ready = mlx_lm_version.is_some();
+    let mlx_lm_version_supported = mlx_lm_version
+        .as_deref()
+        .map(is_mlx_lm_version_supported)
+        .unwrap_or(false);
 
     let (_, ollama_installed) = resolve_ollama_bin_status_from_config();
 
@@ -71,6 +115,8 @@ pub async fn check_environment() -> Result<EnvironmentStatus, String> {
         python_ready: executor.is_ready(),
         mlx_lm_ready,
         mlx_lm_version,
+        mlx_lm_version_supported,
+        mlx_lm_min_version: MIN_MLX_LM_VERSION.to_string(),
         chip,
         memory_gb,
         os_version,
@@ -118,10 +164,9 @@ pub async fn setup_environment(app: tauri::AppHandle) -> Result<(), String> {
         "percent": 30
     }));
 
-    // Step 2: Install mlx-lm + document parsing deps (PyPDF2, python-docx)
     let pip_result = tokio::process::Command::new(&uv_path)
         .args([
-            "pip", "install", "mlx-lm[train]>=0.31.2", "PyPDF2", "python-docx",
+            "pip", "install", "--upgrade", "mlx-lm[train]>=0.31.2", "PyPDF2", "python-docx",
             "--python", &executor.python_bin().to_string_lossy(),
         ])
         .envs(build_uv_env())

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2026-04-12
+
+### Fixed
+- **mlx-lm Version Compatibility Check**: Existing user environments that upgraded to v0.5.3 but retained an older `mlx-lm` installation would still encounter `ValueError: Model type gemma4 not supported` during training or export. Added a minimum version gate (`>= 0.31.2`) that runs before training and all export paths, so affected users now receive a clear upgrade prompt instead of a cryptic Python error.
+- **Environment Setup Upgrade Path**: `setup_environment` now passes `--upgrade` to ensure re-running the setup in Settings actually upgrades an outdated `mlx-lm` in-place, rather than skipping it.
+- **Dashboard / Settings Status Indicator**: An installed but outdated `mlx-lm` is now shown as a warning state (orange) rather than green, and the Settings page surfaces a dedicated "Upgrade mlx-lm" button and description when a version below the minimum is detected.
+
 ## [0.5.3] - 2026-04-10
 
 ### Fixed

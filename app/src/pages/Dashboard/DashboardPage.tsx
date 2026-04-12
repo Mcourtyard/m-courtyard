@@ -140,7 +140,7 @@ export function DashboardPage() {
                 <StatusIcon ok={env.python_ready} /> Python
               </div>
               <div className="flex items-center gap-1.5 text-xs text-foreground">
-                <StatusIcon ok={env.mlx_lm_ready} /> mlx-lm
+                <StatusIcon ok={env.mlx_lm_ready && env.mlx_lm_version_supported} /> mlx-lm
                 {env.mlx_lm_version && <span className="text-muted-foreground">v{env.mlx_lm_version}</span>}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-foreground">
@@ -200,7 +200,7 @@ export function DashboardPage() {
           </p>
         </div>
       )}
-      {env && env.python_ready && !env.mlx_lm_ready && (
+      {env && env.python_ready && (!env.mlx_lm_ready || !env.mlx_lm_version_supported) && (
         <div
           onClick={() => navigate("/settings")}
           className="flex cursor-pointer items-center gap-3 rounded-lg border border-info/30 bg-info/10 px-4 py-3"

@@ -5,6 +5,7 @@ use crate::commands::config::{load_config, resolve_ollama_bin_path, resolve_olla
 use crate::commands::environment::{
     apply_ollama_models_dir_and_restart,
     default_ollama_models_dir,
+    ensure_mlx_lm_minimum_version,
     resolve_ollama_models_dir,
 };
 
@@ -278,6 +279,7 @@ pub async fn export_to_ollama(
     if !executor.is_ready() {
         return Err("Python environment is not ready.".into());
     }
+    ensure_mlx_lm_minimum_version(&executor)?;
 
     let scripts_dir = PythonExecutor::scripts_dir();
     let script = scripts_dir.join("export_ollama.py");
@@ -399,6 +401,7 @@ pub async fn export_to_gguf(
     if !executor.is_ready() {
         return Err("Python environment is not ready.".into());
     }
+    ensure_mlx_lm_minimum_version(&executor)?;
 
     let scripts_dir = PythonExecutor::scripts_dir();
     let script = scripts_dir.join("export_gguf.py");
@@ -499,6 +502,7 @@ pub async fn export_to_mlx(
     if !executor.is_ready() {
         return Err("Python environment is not ready.".into());
     }
+    ensure_mlx_lm_minimum_version(&executor)?;
 
     let scripts_dir = PythonExecutor::scripts_dir();
     let script = scripts_dir.join("export_mlx.py");
@@ -614,6 +618,7 @@ pub async fn start_mlx_server(
     if !executor.is_ready() {
         return Err("Python environment is not ready.".into());
     }
+    ensure_mlx_lm_minimum_version(&executor)?;
 
     let python_bin = executor.python_bin().clone();
 
