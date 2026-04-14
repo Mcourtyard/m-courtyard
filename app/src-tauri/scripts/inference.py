@@ -5,6 +5,7 @@ Streams tokens to stdout for the Rust backend to relay to the frontend.
 Input:  --model <path> --adapter-path <path> --prompt <text> --max-tokens <n> --temp <f>
 Output: JSON lines to stdout (token events + completion)
 """
+
 import argparse
 import json
 import sys
@@ -12,8 +13,8 @@ import sys
 from i18n import t, init_i18n, add_lang_arg
 
 
-def emit(event_type, **kwargs):
-    payload = {"type": event_type, **kwargs}
+def emit(event_type: str, **kwargs: str) -> None:
+    payload: dict[str, str] = {"type": event_type, **kwargs}
     print(json.dumps(payload, ensure_ascii=False), flush=True)
 
 
@@ -22,7 +23,9 @@ def main():
     parser.add_argument("--model", required=True, help="Base model path or HF ID")
     parser.add_argument("--adapter-path", default="", help="LoRA adapter path")
     parser.add_argument("--prompt", required=True, help="User prompt text")
-    parser.add_argument("--messages-json", default="", help="Conversation messages JSON")
+    parser.add_argument(
+        "--messages-json", default="", help="Conversation messages JSON"
+    )
     parser.add_argument("--max-tokens", type=int, default=1024)
     parser.add_argument("--temp", type=float, default=0.7)
     parser.add_argument("--top-p", type=float, default=0.9)
@@ -39,7 +42,11 @@ def main():
 
         # Pre-check model availability
         model_path = args.model
-        is_local_path = model_path.startswith("/") or model_path.startswith("~") or model_path.startswith(".")
+        is_local_path = (
+            model_path.startswith("/")
+            or model_path.startswith("~")
+            or model_path.startswith(".")
+        )
         if is_local_path:
             # Absolute or relative local path — verify it exists
             expanded = os.path.expanduser(model_path)
@@ -54,7 +61,9 @@ def main():
             # HuggingFace model ID (e.g. "mlx-community/Qwen2.5-3B-Instruct-4bit")
             # Check if it's in the local HF cache; if not, mlx_lm.load will try to download
             hf_cache = os.path.expanduser("~/.cache/huggingface/hub")
-            cache_dir = os.path.join(hf_cache, f"models--{model_path.replace('/', '--')}")
+            cache_dir = os.path.join(
+                hf_cache, f"models--{model_path.replace('/', '--')}"
+            )
             if not os.path.isdir(cache_dir):
                 emit("status", message=t("inference.not_cached", model=model_path))
 
@@ -62,7 +71,9 @@ def main():
         if args.adapter_path and args.adapter_path.strip():
             adapter_dir = args.adapter_path
             if not os.path.isdir(adapter_dir):
-                emit("error", message=t("inference.adapter_not_found", path=adapter_dir))
+                emit(
+                    "error", message=t("inference.adapter_not_found", path=adapter_dir)
+                )
                 sys.exit(1)
             load_kwargs["adapter_path"] = adapter_dir
 
@@ -111,6 +122,7 @@ def main():
         )
         try:
             from mlx_lm.sample_utils import make_sampler
+
             sampler = make_sampler(temp=args.temp, top_p=args.top_p)
             gen_kwargs["sampler"] = sampler
         except (ImportError, TypeError):

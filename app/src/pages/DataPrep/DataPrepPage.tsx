@@ -188,7 +188,7 @@ export function DataPrepPage() {
   const { projects, fetchProjects, currentProject, setCurrentProject } =
     useProjectStore();
   const [rawFiles, setRawFiles] = useState<FileInfo[]>([]);
-  const [_cleanedFiles, setCleanedFiles] = useState<FileInfo[]>([]);
+  const [, setCleanedFiles] = useState<FileInfo[]>([]);
   const [datasetVersions, setDatasetVersions] = useState<DatasetVersionInfo[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");

@@ -6,6 +6,7 @@ Input:  --project-dir <path>
 Output: cleaned files in <project-dir>/cleaned/
 Progress: JSON lines to stdout
 """
+
 import argparse
 import json
 import os
@@ -18,19 +19,19 @@ import time
 from i18n import t, init_i18n, add_lang_arg
 
 
-def emit(event_type, **kwargs):
+def emit(event_type: str, **kwargs: str) -> None:
     """Emit a JSON event line to stdout for Rust to parse."""
-    payload = {"type": event_type, **kwargs}
+    payload: dict[str, str] = {"type": event_type, **kwargs}
     print(json.dumps(payload, ensure_ascii=False), flush=True)
 
 
-def fix_encoding(text):
+def fix_encoding(text: str) -> str:
     """Try to fix common encoding issues."""
     # Already decoded as UTF-8 by Python open(), just clean surrogates
     return text.encode("utf-8", errors="replace").decode("utf-8")
 
 
-def remove_noise(text):
+def remove_noise(text: str) -> str:
     """Remove common noise patterns."""
     # Remove HTML tags
     text = re.sub(r"<[^>]+>", "", text)
@@ -45,7 +46,7 @@ def remove_noise(text):
     return "\n".join(lines)
 
 
-def apply_privacy_filter(text):
+def apply_privacy_filter(text: str) -> str:
     """Mask common PII patterns while keeping sentence structure."""
     patterns = [
         (re.compile(r"\b1[3-9]\d{9}\b"), "[手机号]"),
@@ -119,8 +120,24 @@ def smart_segment(text, max_tokens=1024):
 
 MARKDOWN_EXTS = {".md", ".markdown"}
 CODE_EXTS = {
-    ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".c", ".cpp", ".h", ".hpp",
-    ".go", ".rs", ".swift", ".kt", ".sql", ".sh", ".bash", ".zsh",
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".java",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".go",
+    ".rs",
+    ".swift",
+    ".kt",
+    ".sql",
+    ".sh",
+    ".bash",
+    ".zsh",
 }
 STRUCTURED_EXTS = {".json", ".jsonl", ".csv", ".tsv", ".xml", ".yaml", ".yml"}
 
@@ -203,7 +220,7 @@ def segment_fixed_length(text, max_tokens=1024, overlap_ratio=0.12):
     start = 0
 
     while start < len(content):
-        piece = content[start:start + max_chars].strip()
+        piece = content[start : start + max_chars].strip()
         if piece:
             segments.append(piece)
         if start + max_chars >= len(content):
@@ -240,10 +257,14 @@ def read_docx(path):
     """Extract text from a .docx file."""
     try:
         from docx import Document
+
         doc = Document(path)
         return "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
     except ImportError:
-        emit("warning", message=t("clean.docx_not_installed", filename=os.path.basename(path)))
+        emit(
+            "warning",
+            message=t("clean.docx_not_installed", filename=os.path.basename(path)),
+        )
         return None
     except Exception as e:
         emit("warning", message=f"Failed to read docx {path}: {e}")
@@ -254,6 +275,7 @@ def read_pdf(path):
     """Extract text from a .pdf file."""
     try:
         import PyPDF2
+
         text_parts = []
         with open(path, "rb") as f:
             reader = PyPDF2.PdfReader(f)
@@ -263,14 +285,19 @@ def read_pdf(path):
                     text_parts.append(page_text)
         return "\n\n".join(text_parts) if text_parts else None
     except ImportError:
-        emit("warning", message=t("clean.pdf_not_installed", filename=os.path.basename(path)))
+        emit(
+            "warning",
+            message=t("clean.pdf_not_installed", filename=os.path.basename(path)),
+        )
         return None
     except Exception as e:
         emit("warning", message=f"Failed to read pdf {path}: {e}")
         return None
 
 
-def clean_file(input_path, privacy_filter=False, fuzzy_dedup=False, fuzzy_threshold=0.85):
+def clean_file(
+    input_path, privacy_filter=False, fuzzy_dedup=False, fuzzy_threshold=0.85
+):
     """Clean a single file and return cleaned segments."""
     ext = os.path.splitext(input_path)[1].lower()
 
@@ -334,9 +361,18 @@ def clean_file(input_path, privacy_filter=False, fuzzy_dedup=False, fuzzy_thresh
 def main():
     parser = argparse.ArgumentParser(description="Courtyard data cleaning")
     parser.add_argument("--project-dir", required=True, help="Project directory path")
-    parser.add_argument("--privacy-filter", action="store_true", help="Enable PII masking")
-    parser.add_argument("--fuzzy-dedup", action="store_true", help="Enable fuzzy near-duplicate removal")
-    parser.add_argument("--fuzzy-threshold", type=float, default=0.85, help="Fuzzy dedup threshold (0.5-1.0)")
+    parser.add_argument(
+        "--privacy-filter", action="store_true", help="Enable PII masking"
+    )
+    parser.add_argument(
+        "--fuzzy-dedup", action="store_true", help="Enable fuzzy near-duplicate removal"
+    )
+    parser.add_argument(
+        "--fuzzy-threshold",
+        type=float,
+        default=0.85,
+        help="Fuzzy dedup threshold (0.5-1.0)",
+    )
     add_lang_arg(parser)
     args = parser.parse_args()
 
@@ -350,7 +386,9 @@ def main():
         emit("error", message=t("clean.raw_not_found", path=raw_dir))
         sys.exit(1)
 
-    files = sorted([f for f in os.listdir(raw_dir) if os.path.isfile(os.path.join(raw_dir, f))])
+    files = sorted(
+        [f for f in os.listdir(raw_dir) if os.path.isfile(os.path.join(raw_dir, f))]
+    )
     if not files:
         emit("error", message=t("clean.no_files"))
         sys.exit(1)
@@ -362,7 +400,12 @@ def main():
     removed_dupes = 0
     removed_short = 0
 
-    emit("progress", step=0, total=total_files, desc=t("clean.starting", count=total_files))
+    emit(
+        "progress",
+        step=0,
+        total=total_files,
+        desc=t("clean.starting", count=total_files),
+    )
 
     all_segments = []
     raw_manifest = []
@@ -410,16 +453,26 @@ def main():
             cleaned_chars = sum(len(s["text"]) for s in segments)
             total_cleaned_chars += cleaned_chars
             total_segments += len(segments)
-            removed_dupes += max(0, len(raw_paras) - len(set(p.strip() for p in raw_paras if p.strip())))
+            removed_dupes += max(
+                0, len(raw_paras) - len(set(p.strip() for p in raw_paras if p.strip()))
+            )
             removed_short += len([p for p in raw_paras if 0 < len(p.strip()) < 20])
 
             all_segments.extend(segments)
 
         except Exception as e:
-            emit("warning", message=t("clean.error_file", filename=filename, error=str(e)))
+            emit(
+                "warning",
+                message=t("clean.error_file", filename=filename, error=str(e)),
+            )
             continue
 
-        emit("progress", step=i + 1, total=total_files, desc=t("clean.cleaned", filename=filename, segments=len(segments)))
+        emit(
+            "progress",
+            step=i + 1,
+            total=total_files,
+            desc=t("clean.cleaned", filename=filename, segments=len(segments)),
+        )
 
     # Write cleaned output as single file
     output_path = os.path.join(cleaned_dir, "cleaned_all.txt")
@@ -457,13 +510,15 @@ def main():
             )
         )
 
-    emit("complete",
-         total_files=total_files,
-         raw_chars=total_raw_chars,
-         cleaned_chars=total_cleaned_chars,
-         segments=total_segments,
-         removed_dupes=removed_dupes,
-         removed_short=removed_short)
+    emit(
+        "complete",
+        total_files=total_files,
+        raw_chars=total_raw_chars,
+        cleaned_chars=total_cleaned_chars,
+        segments=total_segments,
+        removed_dupes=removed_dupes,
+        removed_short=removed_short,
+    )
 
 
 if __name__ == "__main__":

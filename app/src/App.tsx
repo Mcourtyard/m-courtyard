@@ -8,6 +8,8 @@ import { TrainingPage } from "@/pages/Training";
 import { TestingPage } from "@/pages/Testing";
 import { ExportPage } from "@/pages/Export";
 import { SettingsPage } from "@/pages/Settings";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useNavigationShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useProjectStore } from "@/stores/projectStore";
 import { useGenerationStore } from "@/stores/generationStore";
 import { useNotificationStore } from "@/stores/notificationStore";
@@ -19,6 +21,7 @@ import { useTestingStore } from "@/stores/testingStore";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 function App() {
+  useNavigationShortcuts();
   const { currentProject } = useProjectStore();
   const prevProjectIdRef = useRef<string | undefined>(undefined);
   const notificationLoaded = useNotificationStore((s) => s.loaded);
@@ -56,21 +59,23 @@ function App() {
   }, [currentProject?.id]);
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/data-prep" element={<DataPrepPage />} />
-            <Route path="/training" element={<TrainingPage />} />
-            <Route path="/testing" element={<TestingPage />} />
-            <Route path="/export" element={<ExportPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ErrorBoundary>
+      <TooltipProvider delayDuration={300}>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/data-prep" element={<DataPrepPage />} />
+              <Route path="/training" element={<TrainingPage />} />
+              <Route path="/testing" element={<TestingPage />} />
+              <Route path="/export" element={<ExportPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -24,8 +24,9 @@ export default tseslint.config(
       ],
       "@typescript-eslint/no-unused-vars": [
         "warn",
-        { argsIgnorePattern: "^_" },
+        { argsIgnorePattern: "^_" }, // underscore prefix is intentional
       ],
+      "no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/rules-of-hooks": "warn",
       "react-hooks/exhaustive-deps": "warn",
