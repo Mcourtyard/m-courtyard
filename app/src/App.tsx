@@ -9,6 +9,7 @@ import { TestingPage } from "@/pages/Testing";
 import { ExportPage } from "@/pages/Export";
 import { SettingsPage } from "@/pages/Settings";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useNavigationShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useProjectStore } from "@/stores/projectStore";
 import { useGenerationStore } from "@/stores/generationStore";
@@ -60,6 +61,7 @@ function App() {
 
   return (
     <ErrorBoundary>
+      <OfflineIndicator />
       <TooltipProvider delayDuration={300}>
         <BrowserRouter>
           <Routes>

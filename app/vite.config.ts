@@ -18,6 +18,19 @@ export default defineConfig(async () => ({
     },
   },
 
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom", "react-router-dom"],
+          "i18n": ["i18next", "react-i18next"],
+          "ui": ["lucide-react", "clsx", "tailwind-merge"],
+          "zustand": ["zustand"],
+        },
+      },
+    },
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors
