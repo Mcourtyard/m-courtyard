@@ -22,7 +22,7 @@ type MaxSeqLengthMode = "preset" | "custom";
 const MAX_SEQ_LENGTH_PRESETS = [512, 1024, 2048, 4096, 8192] as const;
 
 interface SmartAlert {
-  id: "memory" | "runtime" | "thermal" | "stalled" | "lossRising" | "quantizedVjp";
+  id: "memory" | "runtime" | "thermal" | "stalled" | "lossRising" | "quantizedVjp" | "metalInteractivity";
   level: AlertLevel;
   titleKey: string;
   detailKey: string;
@@ -203,6 +203,23 @@ function deriveSmartAlerts({
       titleKey: "alerts.quantizedVjp.title",
       detailKey: "alerts.quantizedVjp.detail",
       actionKey: "alerts.quantizedVjp.action",
+    });
+  }
+
+  if (
+    containsAny([
+      "impacting interactivity",
+      "command buffer execution failed",
+      "kiogpucommandbuffercallbackerror",
+      "[metal]",
+    ])
+  ) {
+    pushAlert({
+      id: "metalInteractivity",
+      level: "critical",
+      titleKey: "alerts.metalInteractivity.title",
+      detailKey: "alerts.metalInteractivity.detail",
+      actionKey: "alerts.metalInteractivity.action",
     });
   }
 

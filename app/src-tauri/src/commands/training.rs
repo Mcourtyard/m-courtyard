@@ -258,7 +258,7 @@ pub async fn start_training(
         cmd.args(&caffeinate_args)
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped());
-        // Set HF_ENDPOINT if user configured a mirror source
+        cmd.env("AGX_RELAX_CDM_CTXSTORE_TIMEOUT", "1");
         if let Some(ref endpoint) = hf_endpoint {
             cmd.env("HF_ENDPOINT", endpoint);
         }

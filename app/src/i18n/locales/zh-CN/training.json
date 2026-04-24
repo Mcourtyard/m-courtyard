@@ -182,6 +182,11 @@
       "title": "量化模型不支持 Full 全参数微调",
       "detail": "MLX 报错：[QuantizedMatmul::vjp] no gradient wrt the quantized weights。",
       "action": "请切换为 LoRA 或 DoRA——两者均支持量化模型的 QLoRA 微调方式。"
+    },
+    "metalInteractivity": {
+      "title": "macOS GPU 看门狗终止了训练任务",
+      "detail": "这是 MLX + macOS Tahoe 的已知回归问题（ml-explore/mlx#3267）：macOS 会因「影响交互响应」主动杀掉长 Metal 命令。App 已为训练进程自动设置 AGX_RELAX_CDM_CTXSTORE_TIMEOUT=1，大多数情况下可避免此问题。",
+      "action": "如仍崩溃：保持 app 运行，直接合上 MacBook 盖子（app 已用 caffeinate 防止睡眠）。屏幕关闭后 WindowServer 不再争抢 GPU，训练即可稳定跑完。"
     }
   },
   "latestTrainLoss": "最新 Train Loss:",

@@ -182,6 +182,11 @@
       "title": "Quantized model — Full fine-tuning not supported",
       "detail": "MLX error: [QuantizedMatmul::vjp] no gradient wrt the quantized weights.",
       "action": "Switch to LoRA or DoRA — both support quantized models via QLoRA."
+    },
+    "metalInteractivity": {
+      "title": "macOS GPU watchdog terminated the task",
+      "detail": "This is a known MLX + macOS Tahoe regression (ml-explore/mlx#3267): macOS kills long Metal command buffers to protect UI responsiveness. The app already sets AGX_RELAX_CDM_CTXSTORE_TIMEOUT=1 for the training process, which fixes most cases.",
+      "action": "If it still crashes: keep the app running and close the MacBook lid — the app already prevents sleep via caffeinate. With no active display, WindowServer stops competing for the GPU and training completes reliably."
     }
   },
   "latestTrainLoss": "Latest Train Loss:",

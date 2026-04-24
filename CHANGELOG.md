@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.6] - 2026-04-24
+
+### Fixed
+- **macOS Tahoe GPU Watchdog Crashes During LoRA Training**: Training on macOS 26 (Tahoe) could crash mid-run with `[METAL] Command buffer execution failed: Impacting Interactivity (kIOGPUCommandBufferCallbackErrorImpactingInteractivity)`, even on high-end Apple Silicon machines with low batch sizes and short sequences. Root cause is a confirmed upstream regression in MLX + macOS Tahoe ([ml-explore/mlx#3267](https://github.com/ml-explore/mlx/issues/3267)) where the system's Metal watchdog kills long training command buffers to protect UI responsiveness. The app now injects `AGX_RELAX_CDM_CTXSTORE_TIMEOUT=1` into the training subprocess, which relaxes the Apple GPU driver's interactivity timeout (workaround confirmed in [ml-explore/mlx#3302](https://github.com/ml-explore/mlx/issues/3302)). Fixes [#8](https://github.com/Mcourtyard/m-courtyard/issues/8).
+- **Smart Alerts**: Added detection for the Metal Impacting Interactivity / `[METAL] Command buffer execution failed` signature in training logs. When the rare residual case occurs, the alerts panel now surfaces a clear explanation and a practical fallback (close the MacBook lid while the app keeps running via `caffeinate`) instead of a generic "runtime error" message.
+
 ## [0.5.5] - 2026-04-21
 
 ### Changed
@@ -404,6 +410,7 @@ Delivers the **Batch Processing** cluster (PRD D-1 · D-2 · H-3): multi-file dr
 - **GitHub Actions CI**: Automated .dmg build and release on tag push
 - **Discord Integration**: Automated release notifications via webhook
 
+[0.5.6]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.5.6
 [0.5.5]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.5.5
 [0.5.4]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.5.4
 [0.5.3]: https://github.com/Mcourtyard/m-courtyard/releases/tag/v0.5.3
